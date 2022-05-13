@@ -3,12 +3,14 @@ use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PingResponse {
-    message: &'static str,
+    message: String,
 }
 
 #[web::get("/ping")]
 async fn get_ping(_req: web::HttpRequest) -> Result<web::HttpResponse, web::Error> {
-    let response = PingResponse { message: "pong" };
+    let response = PingResponse {
+      message: String::from("pong"),
+    };
     Ok(
         web::HttpResponse::Ok()
         .content_type("application/json")

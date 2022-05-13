@@ -1,6 +1,6 @@
 use std::rc::Rc;
-mod docker_client;
-mod container;
+pub mod docker_client;
+pub mod container;
 use container::Container;
 use docker_client::DockerClient;
 
