@@ -1,9 +1,7 @@
 [workspace]
 members = [
   "daemon",
-  "dockerust",
 ]
 
 [patch.crates-io]
 daemon = { path = "daemon" }
-dockerust = { path = "dockerust" }

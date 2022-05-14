@@ -1,13 +1,19 @@
 use ntex::web;
 use serde::{Serialize, Deserialize};
 
+use crate::app_state::DaemonState;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PingResponse {
     message: String,
 }
 
 #[web::get("/ping")]
-async fn get_ping(_req: web::HttpRequest) -> Result<web::HttpResponse, web::Error> {
+async fn get_ping(req: web::HttpRequest) -> Result<web::HttpResponse, web::Error> {
+    let _state = match req.app_state::<DaemonState>() {
+      Some(state)=> state,
+      None => todo!(),
+    };
     let response = PingResponse {
       message: String::from("pong"),
     };
@@ -24,9 +30,9 @@ pub fn ctrl_config(config: &mut web::ServiceConfig) {
 
 #[cfg(test)]
 mod ctrl_ping_tests {
-  use crate::controllers::ping::*;
-  use ntex::http::{StatusCode};
+  use ntex::http::StatusCode;
   use ntex::web::{test, App, Error};
+  use crate::controllers::ping::*;
 
   #[ntex::test]
   async fn test_get_ping() -> Result<(), Error> {
