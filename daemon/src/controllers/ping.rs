@@ -32,12 +32,15 @@ pub fn ctrl_config(config: &mut web::ServiceConfig) {
 mod ctrl_ping_tests {
   use ntex::http::StatusCode;
   use ntex::web::{test, App, Error};
+  use crate::app_state;
   use crate::controllers::ping::*;
 
   #[ntex::test]
   async fn test_get_ping() -> Result<(), Error> {
+    let state = app_state::init_state().await.unwrap();
     let srv = test::server(move || {
         App::new()
+        .app_state(state.clone())
         .configure(ctrl_config)
     });
 

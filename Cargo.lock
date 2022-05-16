@@ -266,6 +266,7 @@ version = "0.1.0"
 dependencies = [
  "docker-api",
  "env_logger",
+ "futures",
  "mongodb",
  "ntex",
  "serde",
