@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use mongodb::bson::{oid::ObjectId, serde_helpers::serialize_object_id_as_hex_string};
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Namespace {
   #[serde(rename = "_id", serialize_with = "serialize_object_id_as_hex_string")]
   pub id: ObjectId,
@@ -17,7 +17,7 @@ impl Default for Namespace {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NamespaceRelation {
   pub namespace_id: ObjectId,
   pub mutex_id: ObjectId,

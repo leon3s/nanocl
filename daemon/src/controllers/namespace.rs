@@ -1,86 +1,44 @@
 use ntex::web;
-use serde::{Serialize, Deserialize};
 
 use crate::app_state::DaemonState;
 use crate::datasources::mongo::models;
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct RequestError {
-  status_code: u16,
-  message: String,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct CreateResponse {
-  id: String,
-}
+use crate::responses::mongo_error;
+use crate::responses::models::{CreateResponse, DeleteResponse};
 
 #[web::get("/namespaces")]
-async fn get_namespace(req: web::HttpRequest) -> Result<web::HttpResponse, web::Error> {
-    let state = match req.app_state::<DaemonState>() {
-      Some(state)=> state,
-      None => {
-        return Ok(
-          web::HttpResponse::InternalServerError()
-          .content_type("application/json")
-          .json(&RequestError {
-            status_code: 500,
-            message: "daemon error unable to get app_state".to_string(),
-          })
-        )
-      },
-    };
-    let response = match state.repositories.namespace.list().await {
+async fn get_namespace(
+  state: web::types::State<DaemonState>,
+) -> Result<web::HttpResponse, web::Error> {
+    let namespace = &state.repositories.namespace;
+    let response = match namespace.find().await {
       Ok(response) => response,
       Err(err) => {
         return Ok(
-          web::HttpResponse::InternalServerError()
-          .content_type("application/json")
-          .json(&RequestError {
-            status_code: 500,
-            message: format!("mongodb error {}", err),
-          })
-        );
+          mongo_error(err)
+        )
       },
     };
     Ok(
-        web::HttpResponse::Ok()
-        .content_type("application/json")
-        .json(&response)
+      web::HttpResponse::Ok()
+      .content_type("application/json")
+      .json(&response)
     )
 }
 
 #[web::post("/namespaces")]
-async fn post_namespace(req: web::HttpRequest, payload: web::types::Json<models::Namespace>) -> Result<web::HttpResponse, web::Error> {
-  let new_namespace = payload.into_inner();
-  let state = match req.app_state::<DaemonState>() {
-    Some(state)=> state,
-    None => {
-      return Ok(
-        web::HttpResponse::InternalServerError()
-        .content_type("application/json")
-        .json(&RequestError {
-          status_code: 500,
-          message: "daemon error unable to get app_state".to_string(),
-        })
-      )
+async fn post_namespace(
+  state: web::types::State<DaemonState>,
+  payload: web::types::Json<models::Namespace>
+) -> Result<web::HttpResponse, web::Error> {
+  let namespace = &state.repositories.namespace;
+  let id = match namespace.create(payload.into_inner()).await {
+    Ok(success_resp) => success_resp,
+    Err(err) => {
+      return Ok(mongo_error(err));
     },
   };
-  let id = match state.repositories.namespace.create(new_namespace).await {
-    Ok(id) => id,
-    Err(err) => {
-      return Ok(
-        web::HttpResponse::InternalServerError()
-        .content_type("application/json")
-        .json(&RequestError {
-          status_code: 500,
-          message: format!("mongodb error {}", err),
-        })
-      )
-    }
-  };
   Ok(
-    web::HttpResponse::Ok()
+    web::HttpResponse::Created()
     .content_type("application/json")
     .json(&CreateResponse {
       id,
@@ -88,49 +46,76 @@ async fn post_namespace(req: web::HttpRequest, payload: web::types::Json<models:
   )
 }
 
+// #[web::delete("/namespaces")]
+// async fn delete_namespace(
+//   state: web::types::State<DaemonState>,
+//   req: web::HttpRequest,
+//   id: web::types::Path<String>
+// ) -> Result<web::HttpResponse, web::Error> {
+//   let namespace = &state.repositories.namespace;
+//   // let count = match namespace.delete().await {
+//   //   Ok(count) => count,
+//   //   Err(err) => {
+//   //     return Ok(mongo_error(err));
+//   //   }
+//   // };
+//   Ok(
+//     web::HttpResponse::Accepted()
+//     .content_type("application/json")
+//     .json(&DeleteResponse {
+//       // count
+//     })
+//   )
+// }
+
+#[web::delete("/namespaces/{id}")]
+async fn delete_namespace_by_id(
+  state: web::types::State<DaemonState>,
+  id: web::types::Path<String>,
+) -> Result<web::HttpResponse, web::Error> {
+  println!("id : {}", id);
+  let namespace = &state.repositories.namespace;
+  let count = match namespace.delete_by_id(id.to_string()).await {
+    Ok(count) => count,
+    Err(err) => {
+      return Ok(mongo_error(err));
+    }
+  };
+  println!("count : {}", count);
+  Ok(
+    web::HttpResponse::Accepted()
+    .content_type("application/json")
+    .json(&DeleteResponse {
+      count
+    })
+  )
+}
+
 pub fn ctrl_config(config: &mut web::ServiceConfig) {
   config.service(get_namespace);
   config.service(post_namespace);
+  config.service(delete_namespace_by_id);
 }
 
 #[cfg(test)]
 mod ctrl_namespace_tests {
+  use std::{thread, time};
   use ntex::http::StatusCode;
   use ntex::web::{test, App, Error};
 
-  use crate::app_state;
+  use crate::{app_state, responses};
   use crate::controllers::namespace::*;
-  use crate::datasources::mongo::models::Namespace;
-
-  #[ntex::test]
-  async fn test_get_namespace() -> Result<(), Error> {
-    let state = app_state::init_state().await.unwrap();
-    let srv = test::server(move || {
-        App::new()
-        .app_state(state.clone())
-        .configure(ctrl_config)
-    });
-
-    let mut response = srv
-    .get("/namespaces")
-    .send()
-    .await
-    .unwrap();
-
-    let status = response.status();
-    response.json::<Vec<Namespace>>().await.unwrap();
-    assert_eq!(status, StatusCode::OK);
-    Ok(())
-  }
+  use crate::datasources::mongo::models;
 
   #[ntex::test]
   async fn test_post_namespace() -> Result<(), Error> {
     let state = app_state::init_state().await.unwrap();
     let srv = test::server(move || {
         App::new()
-        .app_state(state.clone())
+        .state(state.clone())
         .configure(ctrl_config)
     });
+
     let mut response = srv
     .post("/namespaces")
     .send_json(&models::Namespace {
@@ -142,7 +127,70 @@ mod ctrl_namespace_tests {
 
     let status = response.status();
     response.json::<CreateResponse>().await.unwrap();
+    assert_eq!(status, StatusCode::CREATED);
+    Ok(())
+  }
+
+  #[ntex::test]
+  async fn test_get_namespace() -> Result<(), Error> {
+    let state = app_state::init_state().await.unwrap();
+    let srv = test::server(move || {
+        App::new()
+        .state(state.clone())
+        .configure(ctrl_config)
+    });
+
+    let mut response = srv
+    .get("/namespaces")
+    .send()
+    .await
+    .unwrap();
+
+    let status = response.status();
+    response.json::<Vec<models::Namespace>>().await.unwrap();
     assert_eq!(status, StatusCode::OK);
+    Ok(())
+  }
+
+  #[ntex::test]
+  async fn test_delete_by_id() -> Result<(), Error> {
+    let state = app_state::init_state().await.unwrap();
+    let srv = test::server(move || {
+        App::new()
+        .state(state.clone())
+        .configure(ctrl_config)
+    });
+
+    let test_namespace = models::Namespace {
+      name: String::from("to_delete"),
+      ..models::Namespace::default()
+    };
+
+    let mut post_resp = srv
+    .post("/namespaces")
+    .send_json(&test_namespace)
+    .await.unwrap();
+
+    let create_payload = post_resp
+    .json::<responses::models::CreateResponse>()
+    .await.unwrap();
+
+    let sleep_time = time::Duration::from_millis(6000);
+    thread::sleep(sleep_time);
+
+    println!("create payload {:?}", create_payload);
+    // create_payload.id;
+    let mut response = srv
+    .delete(format!("/namespaces/{id}", id = create_payload.id))
+    .send()
+    .await
+    .unwrap();
+
+    let status = response.status();
+    let delete_payload = response.json::<responses::models::DeleteResponse>().await.unwrap();
+    println!("delete_payload : {:?}", delete_payload);
+    assert_eq!(status, StatusCode::ACCEPTED);
+    assert_eq!(delete_payload.count, 1);
     Ok(())
   }
 }

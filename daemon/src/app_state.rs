@@ -1,10 +1,12 @@
 use docker_api::Docker;
 
-use crate::{datasources::{self, mongo::{DatasourceMongoDb, models}, Repositories}, docker};
+use crate::docker;
+use crate::datasources;
+use crate::datasources::Repositories;
+use crate::datasources::mongo::{DatasourceMongoDb, models};
 
 #[derive(Debug, Clone)]
 pub struct DaemonState {
-  pub database: DatasourceMongoDb,
   pub docker_api: Docker,
   pub repositories: Repositories,
 }
@@ -14,7 +16,7 @@ pub struct AppStateError {
   pub message: String,
 }
 
-pub fn init_repositories(db: &DatasourceMongoDb) -> Repositories {
+fn init_repositories(db: DatasourceMongoDb) -> Repositories {
   Repositories {
     namespace: db.new_repository::<models::Namespace>("namespace"),
   }
@@ -40,10 +42,9 @@ pub async fn init_state() -> Result<DaemonState, AppStateError> {
     }
   };
 
-  let repositories = init_repositories(&database);
+  let repositories = init_repositories(database);
 
   let state = DaemonState {
-      database,
       docker_api,
       repositories,
   };

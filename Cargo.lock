@@ -270,6 +270,7 @@ dependencies = [
  "mongodb",
  "ntex",
  "serde",
+ "serde_json",
  "sysinfo",
 ]
 

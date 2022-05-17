@@ -2,9 +2,9 @@ use ntex::web;
 use serde::{Serialize, Deserialize};
 
 mod docker;
-mod datasources;
-
+mod responses;
 mod app_state;
+mod datasources;
 mod controllers;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -32,7 +32,7 @@ async fn main() -> std::io::Result<()> {
     let mut server = web::HttpServer::new(move ||
         web::App::new()
         .wrap(web::middleware::Logger::default())
-        .app_state(state.clone())
+        .state(state.clone())
         .default_service(
             web::route().to(default_response)
         )

@@ -32,6 +32,7 @@ pub async fn connect() -> Result<DatasourceMongoDb, mongodb::error::Error> {
 
 #[cfg(test)]
 mod mongodb_tests {
+  use mongodb::bson::doc;
   use super::{connect, models};
 
   #[ntex::test]
@@ -43,15 +44,29 @@ mod mongodb_tests {
 
   #[ntex::test]
   async fn test_repository() -> Result<(), mongodb::error::Error> {
+    // Connect datasource to mongodb
     let datasource = connect().await?;
+    // Generate a repository
     let repository = datasource.new_repository::<models::Namespace>("namespace");
-    repository.list().await?;
+    // Delete Everything before test
+    repository.delete(doc! {}).await?;
+    // Expect to find 0 elements
+    let find_resp = repository.find().await?;
+    assert_eq!(find_resp.len(), 0);
+    // Create a new namespace //
     let new_namespace = models::Namespace {
       name: String::from("new_entry"),
       ..models::Namespace::default()
     };
-    let id = repository.create(new_namespace).await?;
-    println!("id: {}", id);
+    repository.create(new_namespace).await?;
+    // Expect to find 1 elements
+    let find_resp = repository.find().await?;
+    assert_eq!(find_resp.len(), 1);
+    let id_to_delete = find_resp[0].id.to_string();
+    // Expect to delete one element
+    println!("id to delete {:?}", id_to_delete);
+    let delete_resp = repository.delete_by_id(id_to_delete).await?;
+    assert_eq!(delete_resp, 1);
     Ok(())
   }
 }
