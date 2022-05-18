@@ -39,6 +39,7 @@ async fn main() -> std::io::Result<()> {
         .configure(controllers::ping::ctrl_config)
         .configure(controllers::system::ctrl_config)
         .configure(controllers::namespace::ctrl_config)
+        .configure(controllers::docker_image::ctrl_config)
     );
     server = server.bind("0.0.0.0:8383")?;
     println!("starting server on 0.0.0.0:8383");

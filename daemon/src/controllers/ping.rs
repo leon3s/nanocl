@@ -1,7 +1,7 @@
 use ntex::web;
 use serde::{Serialize, Deserialize};
 
-use crate::responses::error;
+use crate::responses::errors;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PingResponse {
@@ -9,7 +9,7 @@ pub struct PingResponse {
 }
 
 #[web::get("/ping")]
-async fn get_ping() -> Result<web::HttpResponse, error::HttpError> {
+async fn get_ping() -> Result<web::HttpResponse, errors::HttpError> {
     let response = PingResponse {
       message: String::from("pong"),
     };

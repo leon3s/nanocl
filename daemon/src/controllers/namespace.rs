@@ -2,19 +2,19 @@ use ntex::web;
 
 use crate::app_state::DaemonState;
 use crate::datasources::mongo::models;
-use crate::responses::error;
+use crate::responses::errors;
 use crate::responses::models::{CreateResponse, DeleteResponse};
 
 #[web::get("/namespaces")]
 async fn get_namespace(
   state: web::types::State<DaemonState>,
-) -> Result<web::HttpResponse, error::HttpError> {
+) -> Result<web::HttpResponse, errors::HttpError> {
     let namespace = &state.repositories.namespace;
     let response = match namespace.find().await {
       Ok(response) => response,
       Err(err) => {
         return Err(
-          error::mongo_error(err)
+          errors::mongo_error(err)
         );
       },
     };
@@ -29,12 +29,12 @@ async fn get_namespace(
 async fn post_namespace(
   state: web::types::State<DaemonState>,
   payload: web::types::Json<models::Namespace>
-) -> Result<web::HttpResponse, error::HttpError> {
+) -> Result<web::HttpResponse, errors::HttpError> {
   let namespace = &state.repositories.namespace;
   let id = match namespace.create(payload.into_inner()).await {
     Ok(success_resp) => success_resp,
     Err(err) => {
-      return Err(error::mongo_error(err));
+      return Err(errors::mongo_error(err));
     },
   };
   Ok(
@@ -72,18 +72,14 @@ async fn post_namespace(
 async fn delete_namespace_by_id(
   state: web::types::State<DaemonState>,
   id: web::types::Path<String>,
-) -> Result<web::HttpResponse, error::HttpError> {
-  let test = "test";
-  println!("id : [{}]", id);
-  println!("test : [{}]", test);
+) -> Result<web::HttpResponse, errors::HttpError> {
   let namespace = &state.repositories.namespace;
   let count = match namespace.delete_by_id(id.to_owned()).await {
     Ok(count) => count,
     Err(err) => {
-      return Err(error::mongo_error(err));
+      return Err(errors::mongo_error(err));
     }
   };
-  println!("count : {}", count);
   Ok(
     web::HttpResponse::Accepted()
     .content_type("application/json")
