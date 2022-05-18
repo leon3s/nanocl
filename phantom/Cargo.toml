@@ -1,0 +1,10 @@
+[package]
+name = "phantom"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bollard = "0.12"
+docker-api = "0.8"
+futures-util = "0.3"
+ntex = { version = "0.5", features = ["openssl", "rustls", "tokio"] }
