@@ -1,3 +1,4 @@
+use mongodb::bson::doc;
 use ntex::web;
 
 use crate::app_state::DaemonState;
@@ -46,27 +47,35 @@ async fn post_namespace(
   )
 }
 
-// #[web::delete("/namespaces")]
-// async fn delete_namespace(
-//   state: web::types::State<DaemonState>,
-//   req: web::HttpRequest,
-//   id: web::types::Path<String>
-// ) -> Result<web::HttpResponse, web::Error> {
-//   let namespace = &state.repositories.namespace;
-//   // let count = match namespace.delete().await {
-//   //   Ok(count) => count,
-//   //   Err(err) => {
-//   //     return Ok(mongo_error(err));
-//   //   }
-//   // };
-//   Ok(
-//     web::HttpResponse::Accepted()
-//     .content_type("application/json")
-//     .json(&DeleteResponse {
-//       // count
-//     })
-//   )
-// }
+#[derive(Debug, serde::Deserialize)]
+struct DeleteQuery {
+  m_where: models::Namespace,
+}
+
+#[web::delete("/namespaces")]
+async fn delete_namespace(
+  state: web::types::State<DaemonState>,
+  web::types::Query(query): web::types::Query<DeleteQuery>
+) -> Result<web::HttpResponse, errors::HttpError> {
+  let namespace = &state.repositories.namespace;
+  println!("query : {:?}", query.m_where);
+  let count = match namespace.delete(doc! {
+    "_id": query.m_where.id,
+    "name": query.m_where.name,
+  }).await {
+    Ok(count) => count,
+    Err(err) => {
+      return Err(errors::mongo_error(err));
+    }
+  };
+  Ok(
+    web::HttpResponse::Accepted()
+    .content_type("application/json")
+    .json(&DeleteResponse {
+      count
+    })
+  )
+}
 
 #[web::get("/namespaces/{id}")]
 async fn delete_namespace_by_id(

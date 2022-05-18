@@ -28,6 +28,7 @@ async fn main() -> std::io::Result<()> {
         Ok(state) => state,
         Err(err) => panic!("Error while initing application state {}", err.message),
     };
+    app_state::ensure_required_services(&state.docker_api).await;
     // let mut server = server::create_server();
     let mut server = web::HttpServer::new(move ||
         web::App::new()
