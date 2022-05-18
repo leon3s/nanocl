@@ -28,9 +28,11 @@ impl<T> Repository<T> {
       item,
       None
     ).await?
-    .inserted_id
-    .to_string();
-    Ok(result)
+    .inserted_id;
+
+    let id = result.as_str()
+    .expect("expect inserted_id to be a string").to_string();
+    Ok(id)
   }
 
   pub async fn delete(&self, query: Document) -> Result<u64, MongoError> {

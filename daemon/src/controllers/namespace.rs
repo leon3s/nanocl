@@ -2,20 +2,20 @@ use ntex::web;
 
 use crate::app_state::DaemonState;
 use crate::datasources::mongo::models;
-use crate::responses::mongo_error;
+use crate::responses::error;
 use crate::responses::models::{CreateResponse, DeleteResponse};
 
 #[web::get("/namespaces")]
 async fn get_namespace(
   state: web::types::State<DaemonState>,
-) -> Result<web::HttpResponse, web::Error> {
+) -> Result<web::HttpResponse, error::HttpError> {
     let namespace = &state.repositories.namespace;
     let response = match namespace.find().await {
       Ok(response) => response,
       Err(err) => {
-        return Ok(
-          mongo_error(err)
-        )
+        return Err(
+          error::mongo_error(err)
+        );
       },
     };
     Ok(
@@ -29,12 +29,12 @@ async fn get_namespace(
 async fn post_namespace(
   state: web::types::State<DaemonState>,
   payload: web::types::Json<models::Namespace>
-) -> Result<web::HttpResponse, web::Error> {
+) -> Result<web::HttpResponse, error::HttpError> {
   let namespace = &state.repositories.namespace;
   let id = match namespace.create(payload.into_inner()).await {
     Ok(success_resp) => success_resp,
     Err(err) => {
-      return Ok(mongo_error(err));
+      return Err(error::mongo_error(err));
     },
   };
   Ok(
@@ -68,17 +68,19 @@ async fn post_namespace(
 //   )
 // }
 
-#[web::delete("/namespaces/{id}")]
+#[web::get("/namespaces/{id}")]
 async fn delete_namespace_by_id(
   state: web::types::State<DaemonState>,
   id: web::types::Path<String>,
-) -> Result<web::HttpResponse, web::Error> {
-  println!("id : {}", id);
+) -> Result<web::HttpResponse, error::HttpError> {
+  let test = "test";
+  println!("id : [{}]", id);
+  println!("test : [{}]", test);
   let namespace = &state.repositories.namespace;
-  let count = match namespace.delete_by_id(id.to_string()).await {
+  let count = match namespace.delete_by_id(id.to_owned()).await {
     Ok(count) => count,
     Err(err) => {
-      return Ok(mongo_error(err));
+      return Err(error::mongo_error(err));
     }
   };
   println!("count : {}", count);
@@ -99,7 +101,6 @@ pub fn ctrl_config(config: &mut web::ServiceConfig) {
 
 #[cfg(test)]
 mod ctrl_namespace_tests {
-  use std::{thread, time};
   use ntex::http::StatusCode;
   use ntex::web::{test, App, Error};
 
@@ -175,13 +176,10 @@ mod ctrl_namespace_tests {
     .json::<responses::models::CreateResponse>()
     .await.unwrap();
 
-    let sleep_time = time::Duration::from_millis(6000);
-    thread::sleep(sleep_time);
-
     println!("create payload {:?}", create_payload);
     // create_payload.id;
     let mut response = srv
-    .delete(format!("/namespaces/{id}", id = create_payload.id))
+    .get(format!("/namespaces/{}", create_payload.id))
     .send()
     .await
     .unwrap();

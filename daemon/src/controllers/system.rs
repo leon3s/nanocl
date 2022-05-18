@@ -2,6 +2,8 @@ use ntex::web;
 use serde::{Serialize, Deserialize};
 use sysinfo::{System, SystemExt, NetworkExt};
 
+use crate::responses::error;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SystemMemory {
   total_memory: u64,
@@ -18,7 +20,8 @@ pub struct SystemNetwork {
 }
 
 #[web::get("/system/networks")]
-async fn get_system_networks(_: web::HttpRequest) -> Result<web::HttpResponse, web::Error> {
+async fn get_system_networks(
+) -> Result<web::HttpResponse, error::HttpError> {
   /* init system library */
   let mut sys = System::new_all();
   let mut list: Vec<SystemNetwork> = Vec::new();
@@ -45,7 +48,8 @@ async fn get_system_networks(_: web::HttpRequest) -> Result<web::HttpResponse, w
 }
 
 #[web::get("/system/memory")]
-pub async fn get_system_memory(_req: web::HttpRequest) -> Result<web::HttpResponse, web::Error> {
+pub async fn get_system_memory(
+) -> Result<web::HttpResponse, error::HttpError> {
   let mut sys = System::new_all();
   sys.refresh_all();
   let response = SystemMemory {
