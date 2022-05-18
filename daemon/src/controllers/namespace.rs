@@ -106,14 +106,18 @@ mod ctrl_namespace_tests {
 
   #[ntex::test]
   async fn test_post_namespace() -> Result<(), Error> {
+    // Generate daemon state
     let state = app_state::init_state().await.unwrap();
+    let namespace = state.repositories.namespace.clone();
+    // Generate server
     let srv = test::server(move || {
         App::new()
         .state(state.clone())
         .configure(ctrl_config)
     });
 
-    let mut response = srv
+    // Test post request
+    let mut resp = srv
     .post("/namespaces")
     .send_json(&models::Namespace {
       name: "test".to_string(),
@@ -121,31 +125,39 @@ mod ctrl_namespace_tests {
     })
     .await
     .unwrap();
+    let resp_status = resp.status();
+    let resp_body = resp.json::<CreateResponse>().await.unwrap();
+    assert_eq!(resp_status, StatusCode::CREATED);
 
-    let status = response.status();
-    response.json::<CreateResponse>().await.unwrap();
-    assert_eq!(status, StatusCode::CREATED);
+    // Clean entry
+    let count = namespace.delete_by_id(resp_body.id).await.unwrap();
+    assert_eq!(count, 1);
     Ok(())
   }
 
   #[ntex::test]
   async fn test_get_namespace() -> Result<(), Error> {
+    // Generate daemon state
     let state = app_state::init_state().await.unwrap();
+    let namespace = state.repositories.namespace.clone();
+    // Generate server
     let srv = test::server(move || {
         App::new()
         .state(state.clone())
         .configure(ctrl_config)
     });
 
-    let mut response = srv
+    // Test get request
+    let mut resp = srv
     .get("/namespaces")
     .send()
     .await
     .unwrap();
-
-    let status = response.status();
-    response.json::<Vec<models::Namespace>>().await.unwrap();
-    assert_eq!(status, StatusCode::OK);
+    let resp_status = resp.status();
+    let resp_body = resp.json::<Vec<models::Namespace>>().await.unwrap();
+    assert_eq!(resp_status, StatusCode::OK);
+    let to_match = namespace.find().await.unwrap();
+    assert_eq!(resp_body.len(), to_match.len());
     Ok(())
   }
 
