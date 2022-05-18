@@ -1,7 +1,9 @@
 [workspace]
 members = [
   "daemon",
+  "phantom",
 ]
 
 [patch.crates-io]
 daemon = { path = "daemon" }
+phantom = { path = "phantom" }

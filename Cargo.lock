@@ -98,6 +98,46 @@ dependencies = [
 ]
 
 [[package]]
+name = "bollard"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1b1d4b9e55620571c2200f4be87db2a9a69e2a107fc7d206a6accad58c3536cb"
+dependencies = [
+ "base64",
+ "bollard-stubs",
+ "bytes 1.1.0",
+ "chrono",
+ "futures-core",
+ "futures-util",
+ "hex",
+ "http",
+ "hyper",
+ "hyperlocal",
+ "log",
+ "pin-project-lite",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "serde_urlencoded",
+ "thiserror",
+ "tokio",
+ "tokio-util",
+ "url",
+ "winapi",
+]
+
+[[package]]
+name = "bollard-stubs"
+version = "1.42.0-rc.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4295240332c78d04291f3ac857a281d5534a8e036f3dfcdaa294b22c0d424427"
+dependencies = [
+ "chrono",
+ "serde",
+ "serde_with",
+]
+
+[[package]]
 name = "bson"
 version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -728,6 +768,7 @@ dependencies = [
  "futures-channel",
  "futures-core",
  "futures-util",
+ "h2",
  "http",
  "http-body",
  "httparse",
@@ -1285,6 +1326,16 @@ name = "percent-encoding"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d4fd5641d01c8f18a23da7b6fe29298ff4b55afcccdf78973b24cf3175fee32e"
+
+[[package]]
+name = "phantom"
+version = "0.1.0"
+dependencies = [
+ "bollard",
+ "docker-api",
+ "futures-util",
+ "ntex",
+]
 
 [[package]]
 name = "pin-project"
