@@ -1,48 +1,28 @@
+use diesel::prelude::*;
+
 use ntex::web;
-use serde::{Serialize, Deserialize};
+use diesel::r2d2::ConnectionManager;
 
 mod models;
 mod openapi;
-mod app_state;
-mod datasources;
 mod controllers;
-
-#[derive(Serialize, Deserialize, Debug)]
-struct DefaultResponse {
-  pub message: String,
-}
-
-async fn default_response() -> Result<web::HttpResponse, web::Error> {
-  let resp = DefaultResponse {
-      message: String::from("not found."),
-  };
-  Ok(web::HttpResponse::NotFound().json(&resp))
-}
 
 #[ntex::main]
 async fn main() -> std::io::Result<()> {
-  // Enable ntex logs
-  // std::env::set_var("RUST_LOG", "ntex=trace");
   env_logger::init();
-  let state = match app_state::init_state().await {
-      Ok(state) => state,
-      Err(err) => panic!("Error while initing application state {}", err.message),
-  };
-  // let mut server = server::create_server();
+
+  let db_url = "postgres://root:root@localhost/nanocl";
+  let manager = ConnectionManager::<PgConnection>::new(db_url);
+  let pool = r2d2::Pool::builder()
+      .build(manager)
+      .expect("Failed to create pool.");
+
   let mut server = web::HttpServer::new(move ||
     web::App::new()
     .wrap(web::middleware::Logger::default())
-    .state(state.clone())
-    // .default_service(
-    //     web::route().to(default_response)
-    // )
     .configure(
       openapi::ntex_config
-        // static files
     )
-    // .configure(controllers::ping::ctrl_config)
-    // .configure(controllers::system::ctrl_config)
-    // .configure(controllers::namespace::ctrl_config)
   );
   server = server.bind("0.0.0.0:8383")?;
   println!("starting server on http://0.0.0.0:8383");

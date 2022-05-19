@@ -14,7 +14,7 @@ async fn download_mongo_image(docker: &Docker) {
   let mut stream = docker
   .create_image(
       Some(CreateImageOptions {
-          from_image: "mongo:latest",
+          from_image: "postgres:latest",
           ..Default::default()
       }),
       None,
@@ -30,21 +30,21 @@ async fn download_mongo_image(docker: &Docker) {
 
 async fn create_mongo_container(docker: &Docker) {
   let options = Some(CreateContainerOptions{
-    name: "nanocldb",
+    name: "nanoclq",
   });
   let mut port_bindings: HashMap<String, Option<Vec<PortBinding>>> = HashMap::new();
   port_bindings.insert(
-    String::from("27017/tcp"),
+    String::from("5432/tcp"),
     Some(vec![PortBinding {
       host_ip: Some(String::from("")),
-      host_port: Some(String::from("27017")),
+      host_port: Some(String::from("5432")),
     }],
   ));
   let config = Config {
-      image: Some("mongo"),
+      image: Some("postgres"),
       env: Some(vec![
-        "MONGO_INITDB_ROOT_USERNAME=root",
-        "MONGO_INITDB_ROOT_PASSWORD=root",
+        "POSTGRES_USER=root",
+        "POSTGRES_PASSWORD=root",
       ]),
       host_config: Some(HostConfig {
         port_bindings: Some(port_bindings),
@@ -82,7 +82,7 @@ async fn get_dependency_status(docker: &Docker, container_name: &'static str) ->
 
 async fn start_mongo_container(docker: &Docker) {
   docker.start_container(
-    "nanocldb",
+    "nanoclq",
     None::<StartContainerOptions<String>>
   ).await.unwrap();
 }
@@ -91,7 +91,7 @@ pub async fn init_mongo_container(docker: &Docker) {
   download_mongo_image(docker).await;
   let container_status = get_dependency_status(
     docker,
-    "nanocldb",
+    "nanoclq",
   ).await;
   if container_status == DepencencyStatus::Uninstalled {
     create_mongo_container(docker).await;
