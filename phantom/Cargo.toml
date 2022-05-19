@@ -5,6 +5,5 @@ edition = "2021"
 
 [dependencies]
 bollard = "0.12"
-docker-api = "0.8"
 futures = "0.3"
 ntex = { version = "0.5", features = ["openssl", "rustls", "tokio"] }

@@ -8,8 +8,8 @@ use serde_json::{json, to_string_pretty};
 
 #[derive(Debug, Serialize)]
 pub struct HttpError {
-    msg: String,
-    status: u16,
+  pub(crate) msg: String,
+  pub(crate) status: u16,
 }
 
 impl HttpError {
