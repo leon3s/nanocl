@@ -2,16 +2,17 @@ use ntex::web;
 use ntex_files as fs;
 use utoipa::OpenApi;
 
-use crate::controllers::namespace::*;
-use crate::models::errors;
-use crate::models::namespace::Namespace;
+use crate::controllers::*;
+use crate::models::NamespaceItem;
 
 #[derive(OpenApi)]
-#[openapi(handlers(list_namespace), components(Namespace))]
+#[openapi(handlers(
+  namespace::list
+), components(NamespaceItem))]
 struct ApiDoc;
 
 #[web::get("/explorer/swagger.json")]
-async fn get_api_specs() -> Result<web::HttpResponse, errors::HttpError>{
+async fn get_api_specs() -> Result<web::HttpResponse, web::Error>{
   let api_spec = ApiDoc::openapi().to_pretty_json().unwrap();
   Ok(
       web::HttpResponse::Ok()
