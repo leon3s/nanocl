@@ -1,11 +1,11 @@
 use ntex::web;
 use serde::{Serialize, Deserialize};
 
-mod docker;
 mod responses;
 mod app_state;
 mod datasources;
 mod controllers;
+mod dependencies;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct DefaultResponse {
@@ -28,7 +28,6 @@ async fn main() -> std::io::Result<()> {
         Ok(state) => state,
         Err(err) => panic!("Error while initing application state {}", err.message),
     };
-    app_state::ensure_required_services(&state.docker_api).await;
     // let mut server = server::create_server();
     let mut server = web::HttpServer::new(move ||
         web::App::new()
@@ -40,7 +39,6 @@ async fn main() -> std::io::Result<()> {
         .configure(controllers::ping::ctrl_config)
         .configure(controllers::system::ctrl_config)
         .configure(controllers::namespace::ctrl_config)
-        .configure(controllers::docker_image::ctrl_config)
     );
     server = server.bind("0.0.0.0:8383")?;
     println!("starting server on 0.0.0.0:8383");

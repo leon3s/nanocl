@@ -304,7 +304,7 @@ dependencies = [
 name = "daemon"
 version = "0.1.0"
 dependencies = [
- "docker-api",
+ "bollard",
  "env_logger",
  "futures",
  "mongodb",
@@ -1333,7 +1333,7 @@ version = "0.1.0"
 dependencies = [
  "bollard",
  "docker-api",
- "futures-util",
+ "futures",
  "ntex",
 ]
 
