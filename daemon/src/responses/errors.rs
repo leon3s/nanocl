@@ -1,6 +1,5 @@
 use std::fmt::{Display, Formatter, Result as FmtResult};
 use mongodb::error::Error as MongoError;
-use docker_api::Error as DockerError;
 
 use ntex::web;
 use ntex::http::StatusCode;
@@ -43,9 +42,9 @@ pub fn mongo_error(_error: MongoError) -> HttpError {
 }
 
 // Todo generic docker errors
-pub fn docker_error(_err: DockerError) -> HttpError {
-  HttpError::new(
-    500,
-    String::from("unexpected docker error"),
-  )
-}
+// pub fn docker_error(_err: DockerError) -> HttpError {
+//   HttpError::new(
+//     500,
+//     String::from("unexpected docker error"),
+//   )
+// }
