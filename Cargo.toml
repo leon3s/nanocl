@@ -7,3 +7,4 @@ members = [
 [patch.crates-io]
 daemon = { path = "daemon" }
 phantom = { path = "phantom" }
+ntex-files = { git = "https://github.com/ntex-rs/ntex-extras.git" }

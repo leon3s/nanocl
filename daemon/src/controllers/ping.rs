@@ -1,7 +1,7 @@
 use ntex::web;
 use serde::{Serialize, Deserialize};
 
-use crate::responses::errors;
+use crate::models::errors;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PingResponse {
@@ -47,9 +47,7 @@ mod ctrl_ping_tests {
     .unwrap();
 
     let status = response.status();
-    let body = response.body().await.unwrap();
-    println!("{:?}", body);
-
+    let _body = response.body().await.unwrap();
     assert_eq!(status, StatusCode::OK);
     Ok(())
   }

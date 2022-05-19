@@ -2,7 +2,7 @@ use ntex::web;
 use serde::{Serialize, Deserialize};
 use sysinfo::{System, SystemExt, NetworkExt};
 
-use crate::responses::errors;
+use crate::models::errors;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SystemMemory {
@@ -108,9 +108,8 @@ mod ctrl_system_tests {
     .await
     .unwrap();
 
-    let body = response.body().await;
+    let _body = response.body().await;
 
-    println!("{:?}", body);
     let status = response.status();
     assert_eq!(status, StatusCode::OK);
     Ok(())

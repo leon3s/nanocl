@@ -30,8 +30,11 @@ impl<T> Repository<T> {
     ).await?
     .inserted_id;
 
+    println!("result ! {:?}", result);
+
     let id = result.as_str()
     .expect("expect inserted_id to be a string").to_string();
+    println!("id: {}", id);
     Ok(id)
   }
 
@@ -51,7 +54,6 @@ impl<T> Repository<T> {
   }
 
   pub async fn delete_by_id(&self, id: String) -> Result<u64, MongoError> {
-    println!("debug id {}", id);
     self.delete_one(doc! {
       "_id": id,
     }).await

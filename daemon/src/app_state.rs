@@ -1,6 +1,13 @@
-use crate::datasources;
-use crate::datasources::Repositories;
-use crate::datasources::mongo::{DatasourceMongoDb, models};
+use crate::datasources::mongo::{
+  repository::Repository,
+  datasource::DatasourceMongoDb
+};
+use crate::models::namespace::Namespace;
+
+#[derive(Debug, Clone)]
+pub struct Repositories {
+  pub(crate) namespace: Repository<Namespace>,
+}
 
 #[derive(Debug, Clone)]
 pub struct DaemonState {
@@ -14,13 +21,13 @@ pub struct AppStateError {
 
 fn init_repositories(db: DatasourceMongoDb) -> Repositories {
   Repositories {
-    namespace: db.new_repository::<models::Namespace>("namespace"),
+    namespace: db.new_repository::<Namespace>("namespace"),
   }
 }
 
 // Todo implement generic error //
 pub async fn init_state() -> Result<DaemonState, AppStateError> {
-  let database = match datasources::mongo::connect().await {
+  let database = match DatasourceMongoDb::connect().await {
     Ok(db) => db,
     Err(err) => {
       return Err(AppStateError {
