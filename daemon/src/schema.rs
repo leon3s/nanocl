@@ -1,6 +1,6 @@
 table! {
-  users (id) {
-      id -> Uuid,
-      name -> Text,
-  }
+    namespaces (id) {
+        id -> Uuid,
+        name -> Varchar,
+    }
 }

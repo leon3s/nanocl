@@ -19,3 +19,21 @@ List of system compatible and tested
 ```sh
 sudo apt install -y nginx nginx-extras dnsmasq docker-compose mongodb # For ubuntu
 ```
+
+namespace docktron {
+  network backend {
+    cargo [
+      mongodb
+    ]
+
+    cargo [
+      api.docktron.com,
+    ]
+  }
+
+  network frontend {
+    cargo [
+      docktron.com // main website
+    ]
+  }
+}

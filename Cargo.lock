@@ -265,7 +265,7 @@ dependencies = [
  "serde_json",
  "sysinfo",
  "utoipa",
- "uuid",
+ "uuid 0.8.2",
 ]
 
 [[package]]
@@ -324,9 +324,11 @@ checksum = "b28135ecf6b7d446b43e27e225622a038cc4e2930a1022f51cdb97ada19b8e4d"
 dependencies = [
  "bitflags",
  "byteorder",
+ "chrono",
  "diesel_derives",
  "pq-sys",
  "r2d2",
+ "uuid 0.8.2",
 ]
 
 [[package]]
@@ -1713,9 +1715,9 @@ dependencies = [
 
 [[package]]
 name = "utoipa"
-version = "0.2.0"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21efa1674d11ec5df52e949d561d2f3a38dfd819f2dba0c42669843033c5d9f1"
+checksum = "d40e50571a27124759c4288cea75bc72fa1f70a8b3946fce502d0a6485517359"
 dependencies = [
  "serde",
  "serde_json",
@@ -1724,14 +1726,15 @@ dependencies = [
 
 [[package]]
 name = "utoipa-gen"
-version = "0.2.0"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22463714b2ef594316781e883a4d180d25d097d7360401fa4b3935506f2c5c25"
+checksum = "3532347b00922d3e9f0009939d4de65fdefbbf6d7a96f5408367bc4d4c060660"
 dependencies = [
  "proc-macro-error",
  "proc-macro2",
  "quote",
  "syn",
+ "uuid 1.0.0",
 ]
 
 [[package]]
@@ -1743,6 +1746,12 @@ dependencies = [
  "getrandom",
  "serde",
 ]
+
+[[package]]
+name = "uuid"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8cfcd319456c4d6ea10087ed423473267e1a071f3bc0aa89f80d60997843c6f0"
 
 [[package]]
 name = "v_escape"

@@ -2,13 +2,17 @@ use ntex::web;
 use ntex_files as fs;
 use utoipa::OpenApi;
 
+use crate::models::*;
 use crate::controllers::*;
-use crate::models::NamespaceItem;
 
 #[derive(OpenApi)]
 #[openapi(handlers(
-  namespace::list
-), components(NamespaceItem))]
+  namespace::list,
+  namespace::create
+), components(
+  NamespaceItem,
+  NamespaceCreate
+))]
 struct ApiDoc;
 
 #[web::get("/explorer/swagger.json")]
@@ -26,7 +30,7 @@ pub fn ntex_config(config: &mut web::ServiceConfig) {
   config.service(
     fs::Files::new(
       "/explorer",
-      "./daemon/static/swagger")
+      "./static/swagger")
     .index_file("index.html"),
   );
 }
