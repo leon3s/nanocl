@@ -2,6 +2,7 @@
 extern crate diesel;
 
 use ntex::web;
+use ntex_files as fs;
 use diesel::prelude::*;
 use diesel::r2d2::ConnectionManager;
 
@@ -31,6 +32,11 @@ async fn main() -> std::io::Result<()> {
     )
     .configure(
       controllers::namespace::ntex_config
+    ).service(
+      fs::Files::new(
+        "/websocket",
+        "./static/websocket")
+      .index_file("index.html")
     )
   );
   server = server.bind("0.0.0.0:8383")?;
