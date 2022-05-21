@@ -4,7 +4,7 @@ use crate::models::{Pool, DBConn};
 
 use super::http_error::HttpError;
 
-pub fn get_poll(pool: web::types::State<Pool>) -> Result<DBConn, HttpError> {
+pub fn get_poll_conn(pool: web::types::State<Pool>) -> Result<DBConn, HttpError> {
   let conn = match pool.get() {
     Ok(conn) => conn,
     Err(_) => {

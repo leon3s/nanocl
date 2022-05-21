@@ -8,10 +8,13 @@ use crate::controllers::*;
 #[derive(OpenApi)]
 #[openapi(handlers(
   namespace::list,
-  namespace::create
+  namespace::create,
+  namespace::get_by_id_or_name,
+  namespace::delete_by_id_or_name,
 ), components(
   NamespaceItem,
-  NamespaceCreate
+  NamespaceCreate,
+  PgDeleteGeneric,
 ))]
 struct ApiDoc;
 
