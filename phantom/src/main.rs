@@ -119,36 +119,29 @@ pub async fn test_deploy(docker: &Docker, git_url: &'static str) {
     }
   }
 
-  let options = Some(CreateContainerOptions{
+  let options = Some(CreateContainerOptions {
     name: "nanoclqq",
   });
-  let mut port_bindings: HashMap<String, Option<Vec<PortBinding>>> = HashMap::new();
-  port_bindings.insert(
-    String::from("5432/tcp"),
-    Some(vec![PortBinding {
-      host_ip: Some(String::from("")),
-      host_port: Some(String::from("5432")),
-    }],
-  ));
   let config = Config {
-      image: Some("postgres"),
-      env: Some(vec![
-        "POSTGRES_USER=root",
-        "POSTGRES_PASSWORD=root",
-      ]),
-      host_config: Some(HostConfig {
-        port_bindings: Some(port_bindings),
-        ..Default::default()
-      }),
+      image: Some("ubuntu:latest"),
+      tty: Some(true),
+      attach_stdout: Some(true),
+      attach_stderr: Some(true),
       ..Default::default()
   };
   let result = match docker.create_container(options, config).await {
     Ok(result) => result,
     Err(err) => panic!("{:?}", err),
   };
+
+  docker.start_container(
+    "nanoclqq",
+    None::<StartContainerOptions<String>>
+  )
+  .await
+  .unwrap();
   println!("{:?}", result);
 }
-
 
 #[ntex::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
