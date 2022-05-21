@@ -9,7 +9,7 @@ use crate::schema::namespaces;
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
 pub type DBConn = PooledConnection<ConnectionManager<PgConnection>>;
 
-#[derive(Component, Serialize, Deserialize, Queryable, Insertable)]
+#[derive(Debug, Component, Serialize, Deserialize, Queryable, Insertable)]
 #[table_name="namespaces"]
 pub struct NamespaceItem {
   pub(crate) id: Uuid,
@@ -19,4 +19,10 @@ pub struct NamespaceItem {
 #[derive(Component, Deserialize)]
 pub struct NamespaceCreate {
   pub(crate) name: String,
+}
+
+
+#[derive(Component, Serialize)]
+pub struct PgDeleteGeneric {
+  pub(crate) count: usize,
 }

@@ -102,38 +102,58 @@ pub async fn init_mongo_container(docker: &Docker) {
   println!("im called");
 }
 
+pub async fn test_deploy(docker: &Docker, git_url: &'static str) {
+  let mut stream = docker
+  .create_image(
+      Some(CreateImageOptions {
+          from_image: "ubuntu:latest",
+          ..Default::default()
+      }),
+      None,
+      None,
+  );
+  while let Some(output) = stream.next().await {
+    match output {
+      Ok(output) => println!("{:?}", output),
+      Err(err) => panic!("{:?}", err),
+    }
+  }
+
+  let options = Some(CreateContainerOptions{
+    name: "nanoclqq",
+  });
+  let mut port_bindings: HashMap<String, Option<Vec<PortBinding>>> = HashMap::new();
+  port_bindings.insert(
+    String::from("5432/tcp"),
+    Some(vec![PortBinding {
+      host_ip: Some(String::from("")),
+      host_port: Some(String::from("5432")),
+    }],
+  ));
+  let config = Config {
+      image: Some("postgres"),
+      env: Some(vec![
+        "POSTGRES_USER=root",
+        "POSTGRES_PASSWORD=root",
+      ]),
+      host_config: Some(HostConfig {
+        port_bindings: Some(port_bindings),
+        ..Default::default()
+      }),
+      ..Default::default()
+  };
+  let result = match docker.create_container(options, config).await {
+    Ok(result) => result,
+    Err(err) => panic!("{:?}", err),
+  };
+  println!("{:?}", result);
+}
+
+
 #[ntex::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
   println!("hello world! ");
-  // let docker = Docker::unix("/var/run/docker.sock");
-  // let pull_opts = PullOpts::builder().image("mongo").build();
-  // let mut stream = docker.images().pull(&pull_opts);
-  // while let Some(ouput) = stream.next().await {
-  //   match ouput {
-  //     Ok(ouput) => println!("{:?}", ouput),
-  //     Err(err) => eprintln!("{:?}", err),
-  //   }
-  // }
-  // println!("gg");
   let docker = Docker::connect_with_socket_defaults().unwrap();
-  init_mongo_container(&docker).await;
-  // let mut stream = docker
-  // .create_image(
-  //     Some(CreateImageOptions {
-  //         from_image: "mongo:latest",
-  //         ..Default::default()
-  //     }),
-  //     None,
-  //     None,
-  // );
-  // while let Some(output) = stream.next().await {
-  //   match output {
-  //     Ok(o) => println!("{:?}", o),
-  //     Err(err) => eprintln!("error : {}", err),
-  //   }
-  // }
-  // .try_collect::<Vec<_>>()
-  // .await?;
-  // docker.create_image();
+  test_deploy(&docker, "https://github.com/leon3s/express-test-deploy").await;
   Ok(())
 }
