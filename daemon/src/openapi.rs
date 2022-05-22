@@ -11,10 +11,16 @@ use crate::controllers::*;
   namespace::create,
   namespace::get_by_id_or_name,
   namespace::delete_by_id_or_name,
+
+  cargo::list,
 ), components(
+  PgDeleteGeneric,
+  
   NamespaceItem,
   NamespaceCreate,
-  PgDeleteGeneric,
+
+  CargoItem,
+  CargoCreate,
 ))]
 struct ApiDoc;
 
