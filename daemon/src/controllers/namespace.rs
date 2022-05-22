@@ -1,9 +1,11 @@
+/**
+ * HTTP Method to administrate namespace
+ */
 use ntex::web;
 use crate::repositories;
 use crate::models::{
   Pool,
   NamespaceCreate,
-  PgDeleteGeneric,
 };
 
 use super::utils::get_poll_conn;
