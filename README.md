@@ -25,6 +25,10 @@ List of system compatible and tested
 sudo apt install -y nginx nginx-extras dnsmasq docker-compose # For ubuntu
 ```
 
+## Note
+
+must read /sys/class/net and /proc/net to get network informations
+
 ## Shema of possible configuration
 
 This is just for myself in order to plan what im doing
