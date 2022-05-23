@@ -145,8 +145,37 @@ pub async fn test_deploy(docker: &Docker, git_url: &'static str) {
 
 #[ntex::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
-  println!("hello world! ");
-  let docker = Docker::connect_with_socket_defaults().unwrap();
-  test_deploy(&docker, "https://github.com/leon3s/express-test-deploy").await;
+  // let addrs = nix::ifaddrs::getifaddrs().unwrap();
+  // for ifaddr in addrs {
+  //   println!("[{}]", ifaddr.interface_name);
+  //   match ifaddr.address {
+  //     Some(address) => {
+  //       println!("address {}", address);
+  //     },
+  //     None => {
+  //       eprintln!("interface {} with unsupported address family",
+  //                ifaddr.interface_name);
+  //     }
+  //   }
+  //   match ifaddr.broadcast {
+  //     Some(broadcast) => {
+  //       println!("{:?}", broadcast.to_string());
+  //     },
+  //     None => {
+
+  //     }
+  //   }
+  //   match ifaddr.netmask {
+  //     Some(netmask) => {
+  //       println!("{}", netmask.to_string());
+  //     }
+  //     None => {
+  //     }
+  //   }
+  //   println!("-------------");
+  // }
+  // println!("hello world! ");
+  // let docker = Docker::connect_with_socket_defaults().unwrap();
+  // test_deploy(&docker, "https://github.com/leon3s/express-test-deploy").await;
   Ok(())
 }

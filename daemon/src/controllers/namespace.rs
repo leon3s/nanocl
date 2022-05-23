@@ -1,5 +1,5 @@
 /**
- * HTTP Method to administrate namespace
+ * HTTP Method to administrate namespaces
  */
 use ntex::web;
 use crate::repositories;
