@@ -31,11 +31,12 @@ async fn main() -> std::io::Result<()> {
       openapi::ntex_config
     )
     .configure(
-      controllers::cargo::ntex_config,
+      controllers::namespace::ntex_config
     )
     .configure(
-      controllers::namespace::ntex_config,
-    ).service(
+      controllers::git_repository::ntex_config
+    )
+    .service(
       fs::Files::new(
         "/websocket",
         "./static/websocket")

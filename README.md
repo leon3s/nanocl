@@ -62,6 +62,26 @@ git_repository {
 }
 
 namespace docktron {
+  virtual_machine ci {
+    environement test {
+      network backend {
+        cargo [
+          mongodb
+        ]
+
+        cargo [
+          api.docktron.com,
+        ]
+      }
+
+      network frontend {
+        cargo [
+          docktron.com // main website
+        ]
+      }
+    }
+  }
+
   environement development {
     network backend {
       cargo [
