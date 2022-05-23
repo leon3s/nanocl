@@ -4,7 +4,10 @@ use serde::{Serialize, Deserialize};
 use r2d2::PooledConnection;
 use diesel::{r2d2::ConnectionManager, PgConnection};
 
-use crate::schema::namespaces;
+use crate::schema::{
+  namespaces,
+  git_repositories,
+};
 
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
 pub type DBConn = PooledConnection<ConnectionManager<PgConnection>>;
@@ -26,17 +29,21 @@ pub struct NamespaceCreate {
   pub(crate) name: String,
 }
 
-#[derive(Component)]
-pub struct CargoItem {
-  id:  Uuid,
-  name: String,
-  git_url: String,
-  git_token: String,
+#[derive(Debug, Component, Serialize, Deserialize, Queryable, Insertable)]
+#[table_name="git_repositories"]
+pub struct GitRepositoryItem {
+  pub(crate) id: Uuid,
+  pub(crate) namespace: String,
+  pub(crate) uname: String,
+  pub(crate) name: String,
+  pub(crate) url: String,
+  pub(crate) token: String,
 }
 
 #[derive(Component, Deserialize)]
-pub struct CargoCreate {
-  name: String,
-  git_url: String,
-  git_token: String,
+pub struct GitRepositoryCreate {
+  pub(crate) namespace: String,
+  pub(crate) name: String,
+  pub(crate) url: String,
+  pub(crate) token: Option<String>,
 }

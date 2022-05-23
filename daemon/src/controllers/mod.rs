@@ -1,4 +1,4 @@
 pub mod utils;
-pub mod cargo;
 pub mod namespace;
 pub mod http_error;
+pub mod git_repository;

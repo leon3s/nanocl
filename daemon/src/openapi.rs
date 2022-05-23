@@ -12,15 +12,16 @@ use crate::controllers::*;
   namespace::get_by_id_or_name,
   namespace::delete_by_id_or_name,
 
-  cargo::list,
+  git_repository::list,
+  git_repository::create,
 ), components(
   PgDeleteGeneric,
-  
+
   NamespaceItem,
   NamespaceCreate,
 
-  CargoItem,
-  CargoCreate,
+  GitRepositoryItem,
+  GitRepositoryCreate,
 ))]
 struct ApiDoc;
 
