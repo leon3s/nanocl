@@ -9,6 +9,7 @@ use crate::schema::{
   git_repositories,
 };
 
+pub type Docker = bollard::Docker;
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
 pub type DBConn = PooledConnection<ConnectionManager<PgConnection>>;
 

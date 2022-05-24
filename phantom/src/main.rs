@@ -1,7 +1,6 @@
-use std::collections::HashMap;
-
-use futures::StreamExt;
-use bollard::{Docker, image::CreateImageOptions, container::{CreateContainerOptions, Config, StartContainerOptions}, models::{HostConfig, PortBinding}};
+use std::{collections::HashMap, thread};
+use futures::{StreamExt, TryStreamExt, FutureExt};
+use bollard::{Docker, image::CreateImageOptions, container::{CreateContainerOptions, Config, StartContainerOptions, StatsOptions, Stats}, models::{HostConfig, PortBinding}};
 
 #[derive(PartialEq)]
 enum DepencencyStatus {
@@ -143,8 +142,41 @@ pub async fn test_deploy(docker: &Docker, git_url: &'static str) {
   println!("{:?}", result);
 }
 
+type Callback = fn (stats: Stats);
+
+async fn test_stats(docker: &Docker, callback: Callback) {
+  let options = Some(StatsOptions {
+    stream: false,
+    one_shot: false,
+  });
+  let mut stream = docker.stats("nanoclq", options);
+  let stats = stream.try_next().await;
+  match stats {
+    Ok(stats) => {
+      match stats {
+        Some(stats) => {
+          println!("{:?}", stats);
+          callback(stats);
+        },
+        None => {
+          eprintln!("Stats are empty");
+        }
+      }
+    },
+    Err(err) => {
+      eprintln!("error while collecting stats {}", err);
+    }
+  }
+  println!("finished .");
+}
+
 #[ntex::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
+  let docker = Docker::connect_with_socket_defaults().unwrap();
+  test_stats(&docker, |_| {
+    println!("sucess");
+  }).await;
+  // test_deploy(&docker, "https://github.com/leon3s/express-test-deploy").await;
   // let addrs = nix::ifaddrs::getifaddrs().unwrap();
   // for ifaddr in addrs {
   //   println!("[{}]", ifaddr.interface_name);
@@ -175,7 +207,5 @@ async fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
   //   println!("-------------");
   // }
   // println!("hello world! ");
-  // let docker = Docker::connect_with_socket_defaults().unwrap();
-  // test_deploy(&docker, "https://github.com/leon3s/express-test-deploy").await;
   Ok(())
 }
