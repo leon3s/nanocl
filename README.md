@@ -67,7 +67,7 @@ git_repository {
 
 namespace docktron {
   virtual_machine ci {
-    environement test {
+    cluster test {
       network backend {
         cargo [
           mongodb
@@ -86,7 +86,7 @@ namespace docktron {
     }
   }
 
-  environement development {
+  cluster development {
     network backend {
       cargo [
         mongodb
@@ -103,15 +103,8 @@ namespace docktron {
       ]
     }
   }
-  environement staging {
-    base_url: {},
-
+  cluster staging {
     network backend {
-      cargo mongodb {
-        expose: false,
-        env: [],
-      }
-
       cargo docktron_backend {
         env: [],
       }

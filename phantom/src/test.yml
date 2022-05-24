@@ -1,0 +1,21 @@
+namespace: docktron
+  service:
+    name: docktron-db
+    image: mongodb:latest
+  repository:
+    name: api-docktron-org
+    url: https://github.com/leon3s/api-docktron-org
+    release_branch: main
+    on_pull_request:
+      branch: any
+      cluster: development
+    env:
+      - 
+
+  repository:
+    name: landing-docktron-org
+    url: https://github.com/leon3s/landing-docktron-org
+
+  cluster:
+    name: development
+      
