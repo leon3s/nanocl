@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-
 use bollard::{
   Docker,
   models::{
@@ -9,30 +8,33 @@ use bollard::{
   container::{
     CreateContainerOptions,
     Config,
-    StartContainerOptions
   }
 };
 
 use crate::docker_helper::*;
 
-async fn create_postgre_container(docker: &Docker) {
-  let options = Some(CreateContainerOptions{
-    name: "nanoclq",
-  });
+async fn create_postgre_container(docker: &Docker, name: &str) {
+  let image = "postgres:latest";
+  let env = vec![
+    "POSTGRES_USER=root",
+    "POSTGRES_PASSWORD=root",
+  ];
+  let labels = gen_namespace_label("nanocl");
   let mut port_bindings: HashMap<String, Option<Vec<PortBinding>>> = HashMap::new();
   port_bindings.insert(
     String::from("5432/tcp"),
     Some(vec![PortBinding {
-      host_ip: Some(String::from("")),
+      host_ip: None,
       host_port: Some(String::from("5432")),
     }],
   ));
+  let options = Some(CreateContainerOptions{
+    name,
+  });
   let config = Config {
-      image: Some("postgres"),
-      env: Some(vec![
-        "POSTGRES_USER=root",
-        "POSTGRES_PASSWORD=root",
-      ]),
+      image: Some(image),
+      env: Some(env),
+      labels: Some(labels),
       host_config: Some(HostConfig {
         port_bindings: Some(port_bindings),
         ..Default::default()
@@ -46,24 +48,20 @@ async fn create_postgre_container(docker: &Docker) {
   println!("{:?}", result);
 }
 
-async fn start_posgre_container(docker: &Docker) {
-  docker.start_container(
-    "nanoclq",
-    None::<StartContainerOptions<String>>
-  ).await.unwrap();
-}
-
-pub async fn init_posgre_container(docker: &Docker) {
-  install_service(docker, "postgre:latest").await;
+pub async fn ensure_start(docker: &Docker) {
+  let container_name = "nanocl-db-postgre";
+  install_service(docker, "postgres:latest").await;
   let container_status = get_service_state(
     docker,
-    "nanoclq",
+    container_name,
   ).await;
   if container_status == ServiceState::Uninstalled {
-    create_postgre_container(docker).await;
+    create_postgre_container(docker, container_name).await;
   }
   if container_status != ServiceState::Running {
-    start_posgre_container(docker).await;
+    if let Err(err) = start_service(docker, container_name).await {
+      eprintln!("error while starting {} {}", container_name, err);
+    }
   }
   println!("im called");
 }

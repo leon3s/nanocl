@@ -44,5 +44,7 @@ async fn _test_stats(docker: &Docker, callback: _Callback) {
 async fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
   let docker = Docker::connect_with_socket_defaults().unwrap();
 
+  nginx::ensure_start(&docker).await;
+  posgresql::ensure_start(&docker).await;
   Ok(())
 }
