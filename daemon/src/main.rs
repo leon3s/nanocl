@@ -17,7 +17,7 @@ mod repositories;
 async fn main() -> std::io::Result<()> {
   env_logger::init();
 
-  let db_url = "postgres://root:root@localhost/nanocl";
+  let db_url = "postgres://root:root@nanocl-db-postgre/nanocl";
   let manager = ConnectionManager::<PgConnection>::new(db_url);
   let pool = r2d2::Pool::builder()
       .build(manager)

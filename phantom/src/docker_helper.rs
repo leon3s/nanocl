@@ -3,11 +3,11 @@ use futures::StreamExt;
 use bollard::{
   Docker,
   errors::Error as DockerError,
-  image::CreateImageOptions,
-  container::StartContainerOptions,
+  image::{CreateImageOptions, BuildImageOptions},
+  container::StartContainerOptions, network::ConnectNetworkOptions, models::{EndpointIpamConfig, EndpointSettings},
 };
 
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum ServiceState {
   Uninstalled,
   Running,
@@ -28,6 +28,28 @@ pub async fn start_service(docker: &Docker, name: &str) -> Result<(), DockerErro
   Ok(())
 }
 
+pub async fn build_service(docker: &Docker, service_name: &'static str) {
+  let git_url = "https://github.com/nxthat/".to_owned();
+  let image_url = git_url + service_name + ".git";
+  let options = BuildImageOptions{
+    dockerfile: "Dockerfile",
+    t: service_name,
+    remote: &image_url,
+    ..Default::default()
+  };
+  let mut stream = docker.build_image(
+    options,
+    None,
+    None,
+  );
+  while let Some(output) = stream.next().await {
+    match output {
+      Err(err) => panic!("{:?}", err),
+      Ok(output) => println!("{:?}", output),
+    }
+  }
+}
+
 pub async fn install_service(docker: &Docker, image_name: &'static str) {
   let mut stream = docker
   .create_image(
@@ -40,9 +62,27 @@ pub async fn install_service(docker: &Docker, image_name: &'static str) {
   );
   while let Some(output) = stream.next().await {
     match output {
-      Ok(output) => println!("{:?}", output),
       Err(err) => panic!("{:?}", err),
+      Ok(output) => println!("{:?}", output),
     }
+  }
+}
+
+pub async fn connect_to_network(docker: &Docker, container_name: &str, network_name: &str) {
+  let config = ConnectNetworkOptions {
+    container: container_name,
+    endpoint_config: EndpointSettings {
+      ipam_config: Some(EndpointIpamConfig {
+          ipv4_address: Some(String::from("127.0.0.1")),
+          ..Default::default()
+      }),
+      ..Default::default()
+    },
+  };
+  let resp = docker.connect_network(network_name, config).await;
+  match resp {
+    Err(err) => panic!("{:?}", err),
+    Ok(body) => println!("{:?}", body),
   }
 }
 
@@ -51,7 +91,8 @@ pub async fn get_service_state(docker: &Docker, container_name: &'static str) ->
     container_name,
     None
   ).await;
-  if resp.is_err() {
+  if let Err(err) = resp {
+    println!("error : {:?}", err);
     return ServiceState::Uninstalled;
   }
   let body = resp.expect("ContainerInspectResponse");
