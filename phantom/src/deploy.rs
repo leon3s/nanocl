@@ -9,6 +9,7 @@ use bollard::{
 
 use crate::docker_helper::install_service;
 
+// todo lolz
 pub async fn test_deploy(docker: &Docker, git_url: &'static str) {
   install_service(docker, "ubuntu:latest").await;
 
