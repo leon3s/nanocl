@@ -20,10 +20,12 @@ List of system compatible and tested
 
 ## Installation
 
-- Required dependencies
+### Required dependencies
+- Ubuntu:
 ```sh
-sudo apt install -y nginx nginx-extras dnsmasq docker-compose # For ubuntu
+sudo apt install -y libpq-dev libssl-dev
 ```
+
 
 ## Note
 

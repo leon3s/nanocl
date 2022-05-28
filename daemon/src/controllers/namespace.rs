@@ -29,15 +29,15 @@ pub async fn list(
   }).await;
 
   match res {
+    Err(err) => {
+      Err(db_bloking_error(err))
+    },
     Ok(namespaces) => {
       Ok(
         web::HttpResponse::Ok()
         .json(&namespaces)
       )
     },
-    Err(err) => {
-      Err(db_bloking_error(err))
-    }
   }
 }
 
@@ -133,15 +133,15 @@ pub async fn create(
   }).await;
 
   match res {
+    Err(err) => {
+      Err(db_bloking_error(err))
+    },
     Ok(inserted_namespace) => {
       Ok(
         web::HttpResponse::Created()
         .json(&inserted_namespace)
       )
     },
-    Err(err) => {
-      Err(db_bloking_error(err))
-    }
   }
 }
 

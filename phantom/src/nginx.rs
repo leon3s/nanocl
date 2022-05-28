@@ -1,34 +1,22 @@
-use std::collections::HashMap;
-
 use bollard::{
   Docker,
   container::{
     CreateContainerOptions,
     Config
   },
-  models::{
-    PortBinding,
-    HostConfig
-  }
+  models::HostConfig,
 };
 
 use crate::docker_helper::*;
 
 fn gen_nginx_host_conf() -> HostConfig {
-  let mut port_bindings: HashMap<String, Option<Vec<PortBinding>>> = HashMap::new();
-  port_bindings.insert(
-    String::from("80/tcp"),
-    Some(vec![PortBinding {
-      host_ip: None,
-      host_port: Some(String::from("80")),
-    }],
-  ));
   let binds = vec![
     String::from("/var/lib/nanocl/nginx/sites-enabled:/etc/nginx/sites-enabled"),
+    String::from("/var/lib/nanocl/nginx/log:/var/log/nginx"),
   ];
   HostConfig {
     binds: Some(binds),
-    port_bindings: Some(port_bindings),
+    network_mode: Some(String::from("host")),
     ..Default::default()
   }
 }
@@ -44,6 +32,9 @@ async fn create_nginx_container(docker: &Docker, name: &str) {
       image,
       labels,
       host_config,
+      tty: Some(true),
+      attach_stdout: Some(true),
+      attach_stderr: Some(true),
       ..Default::default()
   };
   let result = match docker.create_container(options, config).await {
@@ -55,9 +46,10 @@ async fn create_nginx_container(docker: &Docker, name: &str) {
 
 pub async fn ensure_start(docker: &Docker) {
   let container_name = "nanocl-proxy-nginx";
-  install_service(docker, "nginx:latest").await;
-  let s_state = get_service_state(docker, "nanocl-ctrl-nginx").await;
+  build_service(docker, "nanocl-proxy-nginx").await;
+  let s_state = get_service_state(docker, container_name).await;
 
+  println!("service state {:?}", s_state);
   if s_state == ServiceState::Uninstalled {
     create_nginx_container(docker, container_name).await;
   }

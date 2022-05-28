@@ -13,13 +13,7 @@ use bollard::{
 
 use crate::docker_helper::*;
 
-async fn create_postgre_container(docker: &Docker, name: &str) {
-  let image = "postgres:latest";
-  let env = vec![
-    "POSTGRES_USER=root",
-    "POSTGRES_PASSWORD=root",
-  ];
-  let labels = gen_namespace_label("nanocl");
+fn gen_postgre_host_conf() -> HostConfig {
   let mut port_bindings: HashMap<String, Option<Vec<PortBinding>>> = HashMap::new();
   port_bindings.insert(
     String::from("5432/tcp"),
@@ -28,24 +22,44 @@ async fn create_postgre_container(docker: &Docker, name: &str) {
       host_port: Some(String::from("5432")),
     }],
   ));
+
+  let binds = vec![
+    String::from("/var/lib/nanocl/nginx/sites-enabled:/etc/nginx/sites-enabled"),
+    String::from("/var/lib/nanocl/postgre/data:/var/lib/postgresql/data"),
+  ];
+
+  HostConfig {
+    binds: Some(binds),
+    port_bindings: Some(port_bindings),
+    network_mode: Some(String::from("nanocl")),
+    ..Default::default()
+  }
+}
+
+async fn create_postgre_container(docker: &Docker, name: &str) {
+  let image = Some("postgres:latest");
+  let env = Some(vec![
+    "POSTGRES_USER=root",
+    "POSTGRES_PASSWORD=root",
+  ]);
+  let labels = Some(gen_namespace_label("nanocl"));
+  let host_config = Some(gen_postgre_host_conf());
   let options = Some(CreateContainerOptions{
     name,
   });
   let config = Config {
-      image: Some(image),
-      env: Some(env),
-      labels: Some(labels),
-      host_config: Some(HostConfig {
-        port_bindings: Some(port_bindings),
-        ..Default::default()
-      }),
+      image,
+      env,
+      labels,
+      host_config,
+      hostname: Some(name),
+      domainname: Some(name),
       ..Default::default()
   };
-  let result = match docker.create_container(options, config).await {
-    Ok(result) => result,
+  match docker.create_container(options, config).await {
     Err(err) => panic!("{:?}", err),
-  };
-  println!("{:?}", result);
+    Ok(result) => println!("{:?}", result),
+  }
 }
 
 pub async fn ensure_start(docker: &Docker) {
@@ -63,5 +77,4 @@ pub async fn ensure_start(docker: &Docker) {
       eprintln!("error while starting {} {}", container_name, err);
     }
   }
-  println!("im called");
 }
