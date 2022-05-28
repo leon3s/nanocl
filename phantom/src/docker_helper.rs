@@ -2,9 +2,13 @@ use std::collections::HashMap;
 use futures::StreamExt;
 use bollard::{
   Docker,
+  image::{
+    CreateImageOptions,
+    BuildImageOptions,
+  },
   errors::Error as DockerError,
-  image::{CreateImageOptions, BuildImageOptions},
-  container::StartContainerOptions, network::ConnectNetworkOptions, models::{EndpointIpamConfig, EndpointSettings},
+  network::ConnectNetworkOptions,
+  container::StartContainerOptions,
 };
 
 #[derive(Debug, PartialEq)]
@@ -71,13 +75,7 @@ pub async fn install_service(docker: &Docker, image_name: &'static str) {
 pub async fn connect_to_network(docker: &Docker, container_name: &str, network_name: &str) {
   let config = ConnectNetworkOptions {
     container: container_name,
-    endpoint_config: EndpointSettings {
-      ipam_config: Some(EndpointIpamConfig {
-          ipv4_address: Some(String::from("127.0.0.1")),
-          ..Default::default()
-      }),
-      ..Default::default()
-    },
+    ..Default::default()
   };
   let resp = docker.connect_network(network_name, config).await;
   match resp {
