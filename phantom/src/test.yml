@@ -15,7 +15,10 @@ cargos:
     network: docktron-backend
 
   - name: docktron-api
-    domain: "{CLUSTER.NAME}"
+    network: docktron-backend
+    domain: "{CLUSTER.NAME}-api.docktron.org"
+    proxy_config:
+      host: 172.19.205.44
     git_repository: docktron-api
     env:
       - NODE_ENV={NODE_ENV}
