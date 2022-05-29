@@ -2,13 +2,16 @@ use std::collections::HashMap;
 use futures::StreamExt;
 use bollard::{
   Docker,
+  errors::Error as DockerError,
   image::{
     CreateImageOptions,
     BuildImageOptions,
   },
-  errors::Error as DockerError,
-  network::ConnectNetworkOptions,
-  container::StartContainerOptions,
+  network::{
+    ConnectNetworkOptions,
+    CreateNetworkOptions, InspectNetworkOptions,
+  },
+  container::StartContainerOptions, models::Network,
 };
 
 #[derive(Debug, PartialEq)]
@@ -18,7 +21,13 @@ pub enum ServiceState {
   Stopped,
 }
 
-pub fn gen_namespace_label(namespace: &str) -> HashMap<&str, &str> {
+#[derive(Debug, PartialEq)]
+pub enum NetworkState {
+  NotFound,
+  Ready,
+}
+
+pub fn gen_label_namespace(namespace: &str) -> HashMap<&str, &str> {
   let mut labels: HashMap<&str, &str> = HashMap::new();
   labels.insert("namespace", namespace);
   labels
@@ -32,7 +41,7 @@ pub async fn start_service(docker: &Docker, name: &str) -> Result<(), DockerErro
   Ok(())
 }
 
-pub async fn build_service(docker: &Docker, service_name: &'static str) {
+pub async fn build_service(docker: &Docker, service_name: &'static str) -> Result<(), DockerError>{
   let git_url = "https://github.com/nxthat/".to_owned();
   let image_url = git_url + service_name + ".git";
   let options = BuildImageOptions{
@@ -47,14 +56,14 @@ pub async fn build_service(docker: &Docker, service_name: &'static str) {
     None,
   );
   while let Some(output) = stream.next().await {
-    match output {
-      Err(err) => panic!("{:?}", err),
-      Ok(output) => println!("{:?}", output),
+    if let Err(err) = output {
+      return Err(err);
     }
-  }
+  };
+  Ok(())
 }
 
-pub async fn install_service(docker: &Docker, image_name: &'static str) {
+pub async fn install_service(docker: &Docker, image_name: &'static str) -> Result<(), DockerError> {
   let mut stream = docker
   .create_image(
       Some(CreateImageOptions {
@@ -65,23 +74,53 @@ pub async fn install_service(docker: &Docker, image_name: &'static str) {
       None,
   );
   while let Some(output) = stream.next().await {
-    match output {
-      Err(err) => panic!("{:?}", err),
-      Ok(output) => println!("{:?}", output),
+    if let Err(err) = output {
+      return Err(err);
     }
-  }
+  };
+  Ok(())
 }
 
-pub async fn connect_to_network(docker: &Docker, container_name: &str, network_name: &str) {
+pub async fn connect_to_network(docker: &Docker, container_name: &str, network_name: &str) -> Result<(), DockerError> {
   let config = ConnectNetworkOptions {
     container: container_name,
     ..Default::default()
   };
-  let resp = docker.connect_network(network_name, config).await;
-  match resp {
-    Err(err) => panic!("{:?}", err),
-    Ok(body) => println!("{:?}", body),
+  docker.connect_network(network_name, config).await?;
+  Ok(())
+}
+
+pub async fn get_network_state(docker: &Docker, network_name: &str) -> Result<NetworkState, DockerError> {
+  let config = InspectNetworkOptions {
+    verbose: true,
+    scope: "local"
+  };
+
+  let res = docker.inspect_network(network_name, Some(config)).await;
+  if let Err(err) = res {
+    match err {
+      DockerError::DockerResponseServerError { status_code, message } => {
+        if status_code == 404 {
+          return Ok(NetworkState::NotFound);
+        }
+        return Err(DockerError::DockerResponseServerError {
+          status_code,
+          message,
+        });
+      }
+      _ => return Err(err),
+    }
   }
+  Ok(NetworkState::Ready)
+}
+
+pub async fn create_network(docker: &Docker, network_name: &str) -> Result<(), DockerError> {
+  let config = CreateNetworkOptions {
+    name: network_name,
+    ..Default::default()
+  };
+  docker.create_network(config).await?;
+  Ok(())
 }
 
 pub async fn get_service_state(docker: &Docker, container_name: &'static str) -> ServiceState {

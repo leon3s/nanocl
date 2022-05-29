@@ -1,5 +1,6 @@
 use bollard::{
   Docker,
+  errors::Error as DockerError,
   container::{
     CreateContainerOptions,
     Config
@@ -21,9 +22,9 @@ fn gen_nginx_host_conf() -> HostConfig {
   }
 }
 
-async fn create_nginx_container(docker: &Docker, name: &str) {
+async fn create_nginx_container(docker: &Docker, name: &str) -> Result<(), DockerError>{
   let image = Some("nginx:latest");
-  let labels = Some(gen_namespace_label("nanocl"));
+  let labels = Some(gen_label_namespace("nanocl"));
   let host_config = Some(gen_nginx_host_conf());
   let options = Some(CreateContainerOptions{
     name,
@@ -37,25 +38,23 @@ async fn create_nginx_container(docker: &Docker, name: &str) {
       attach_stderr: Some(true),
       ..Default::default()
   };
-  let result = match docker.create_container(options, config).await {
-    Err(err) => panic!("{:?}", err),
-    Ok(result) => result,
-  };
-  println!("{:?}", result);
+  docker.create_container(options, config).await?;
+  Ok(())
 }
 
-pub async fn ensure_start(docker: &Docker) {
+pub async fn ensure_start(docker: &Docker) -> Result<(), DockerError> {
   let container_name = "nanocl-proxy-nginx";
-  build_service(docker, "nanocl-proxy-nginx").await;
+  build_service(docker, "nanocl-proxy-nginx").await?;
   let s_state = get_service_state(docker, container_name).await;
 
   println!("service state {:?}", s_state);
   if s_state == ServiceState::Uninstalled {
-    create_nginx_container(docker, container_name).await;
+    create_nginx_container(docker, container_name).await?;
   }
   if s_state != ServiceState::Running {
     if let Err(err) = start_service(docker, container_name).await {
       eprintln!("error while starting {} {}", container_name, err);
     }
   }
+  Ok(())
 }

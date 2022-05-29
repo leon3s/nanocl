@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use bollard::{
   Docker,
+  errors::Error as DockerError,
   models::{
     PortBinding,
     HostConfig
@@ -36,13 +37,13 @@ fn gen_postgre_host_conf() -> HostConfig {
   }
 }
 
-async fn create_postgre_container(docker: &Docker, name: &str) {
+async fn create_postgre_container(docker: &Docker, name: &str) -> Result<(), DockerError> {
   let image = Some("postgres:latest");
   let env = Some(vec![
     "POSTGRES_USER=root",
     "POSTGRES_PASSWORD=root",
   ]);
-  let labels = Some(gen_namespace_label("nanocl"));
+  let labels = Some(gen_label_namespace("nanocl"));
   let host_config = Some(gen_postgre_host_conf());
   let options = Some(CreateContainerOptions{
     name,
@@ -56,25 +57,24 @@ async fn create_postgre_container(docker: &Docker, name: &str) {
       domainname: Some(name),
       ..Default::default()
   };
-  match docker.create_container(options, config).await {
-    Err(err) => panic!("{:?}", err),
-    Ok(result) => println!("{:?}", result),
-  }
+  docker.create_container(options, config).await?;
+  Ok(())
 }
 
-pub async fn ensure_start(docker: &Docker) {
+pub async fn ensure_start(docker: &Docker) -> Result<(), DockerError> {
   let container_name = "nanocl-db-postgre";
-  install_service(docker, "postgres:latest").await;
+  install_service(docker, "postgres:latest").await?;
   let container_status = get_service_state(
     docker,
     container_name,
   ).await;
   if container_status == ServiceState::Uninstalled {
-    create_postgre_container(docker, container_name).await;
+    create_postgre_container(docker, container_name).await?;
   }
   if container_status != ServiceState::Running {
     if let Err(err) = start_service(docker, container_name).await {
       eprintln!("error while starting {} {}", container_name, err);
     }
   }
+  Ok(())
 }
