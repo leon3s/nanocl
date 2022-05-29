@@ -15,7 +15,18 @@ namespace: docktron
       network: docktron-backend
 
     - name: docktron-api
+      domain: {CLUSTER.NAME}
       git_repository: docktron-api
       env:
         - NODE_ENV={NODE_ENV}
         - DB_URL={DB_URL}
+
+  clusters:
+    - name: dev
+      env:
+        NODE_ENV: production
+        DB_URL: dev-docktron-db
+      update_on:
+        push:
+          branches:
+            - development
