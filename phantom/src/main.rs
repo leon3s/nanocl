@@ -9,6 +9,7 @@ use bollard::{
 
 mod nginx;
 mod deploy;
+mod network;
 mod posgresql;
 mod docker_helper;
 
@@ -37,14 +38,19 @@ async fn _test_stats(docker: &Docker, callback: _Callback) {
       eprintln!("error while collecting stats {}", err);
     }
   }
-  println!("finished .");
 }
 
 #[ntex::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
-  let docker = Docker::connect_with_socket_defaults().unwrap();
-
-  nginx::ensure_start(&docker).await;
-  posgresql::ensure_start(&docker).await;
+  let docker = Docker::connect_with_socket_defaults()?;
+  if let Err(err) = network::ensure_start(&docker).await {
+    panic!("unable to setup nanocl network {}", err);
+  }
+  if let Err(err) = nginx::ensure_start(&docker).await {
+    panic!("unable to setup nginx service {}", err);
+  }
+  if let Err(err) = posgresql::ensure_start(&docker).await {
+    panic!("unable to setup postgresql service {}", err);
+  }
   Ok(())
 }
