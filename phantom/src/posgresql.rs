@@ -64,14 +64,12 @@ async fn create_postgre_container(docker: &Docker, name: &str) -> Result<(), Doc
 pub async fn ensure_start(docker: &Docker) -> Result<(), DockerError> {
   let container_name = "nanocl-db-postgre";
   install_service(docker, "postgres:latest").await?;
-  let container_status = get_service_state(
-    docker,
-    container_name,
-  ).await;
-  if container_status == ServiceState::Uninstalled {
+  let s_state = get_service_state(docker, container_name).await;
+
+  if s_state == ServiceState::Uninstalled {
     create_postgre_container(docker, container_name).await?;
   }
-  if container_status != ServiceState::Running {
+  if s_state != ServiceState::Running {
     if let Err(err) = start_service(docker, container_name).await {
       eprintln!("error while starting {} {}", container_name, err);
     }

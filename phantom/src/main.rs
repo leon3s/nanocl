@@ -10,6 +10,7 @@ use bollard::{
 mod nginx;
 mod deploy;
 mod network;
+mod dnsmasq;
 mod posgresql;
 mod docker_helper;
 
@@ -40,17 +41,24 @@ async fn _test_stats(docker: &Docker, callback: _Callback) {
   }
 }
 
+async fn init_services(docker: &Docker) {
+  if let Err(err) = network::ensure_start(docker).await {
+    panic!("unable to setup nanocl network {}", err);
+  }
+  if let Err(err) = dnsmasq::ensure_start(docker).await {
+    panic!("unable to setup dnsmasq service {}", err);
+  }
+  if let Err(err) = nginx::ensure_start(docker).await {
+    panic!("unable to setup nginx service {}", err);
+  }
+  if let Err(err) = posgresql::ensure_start(docker).await {
+    panic!("unable to setup postgresql service {}", err);
+  }
+}
+
 #[ntex::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
   let docker = Docker::connect_with_socket_defaults()?;
-  if let Err(err) = network::ensure_start(&docker).await {
-    panic!("unable to setup nanocl network {}", err);
-  }
-  if let Err(err) = nginx::ensure_start(&docker).await {
-    panic!("unable to setup nginx service {}", err);
-  }
-  if let Err(err) = posgresql::ensure_start(&docker).await {
-    panic!("unable to setup postgresql service {}", err);
-  }
+  init_services(&docker).await;
   Ok(())
 }

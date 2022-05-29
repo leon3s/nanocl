@@ -9,9 +9,10 @@ use bollard::{
   },
   network::{
     ConnectNetworkOptions,
-    CreateNetworkOptions, InspectNetworkOptions,
+    CreateNetworkOptions,
+    InspectNetworkOptions,
   },
-  container::StartContainerOptions, models::Network,
+  container::StartContainerOptions,
 };
 
 #[derive(Debug, PartialEq)]
@@ -81,7 +82,7 @@ pub async fn install_service(docker: &Docker, image_name: &'static str) -> Resul
   Ok(())
 }
 
-pub async fn connect_to_network(docker: &Docker, container_name: &str, network_name: &str) -> Result<(), DockerError> {
+pub async fn _connect_to_network(docker: &Docker, container_name: &str, network_name: &str) -> Result<(), DockerError> {
   let config = ConnectNetworkOptions {
     container: container_name,
     ..Default::default()
