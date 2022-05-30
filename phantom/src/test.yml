@@ -5,25 +5,6 @@ git_repositories:
   - name: docktron-landing
     url: https://github.com/leon3s/docktron-landing
 
-networks:
-  - name: docktron-backend
-  - name: docktron-frontend
-
-cargos:
-  - name: docktron-db
-    image: mongodb:latest
-    network: docktron-backend
-
-  - name: docktron-api
-    network: docktron-backend
-    domain: "{CLUSTER.NAME}-api.docktron.org"
-    proxy_config:
-      host: 172.19.205.44
-    git_repository: docktron-api
-    env:
-      - NODE_ENV={NODE_ENV}
-      - DB_URL={DB_URL}
-
 clusters:
   - name: dev
     env:
@@ -33,3 +14,22 @@ clusters:
       push:
         branches:
           - development
+
+networks:
+  - name: "{cluster.name}-docktron-backend"
+  - name: docktron-frontend
+
+cargos:
+  - name: docktron-db
+    image: mongodb:latest
+    network: docktron-backend
+
+  - name: docktron-api
+    network: docktron-backend
+    domain: "{cluster.name}-api.docktron.org"
+    proxy_config:
+      host: 172.19.205.44
+    git_repository: docktron-api
+    env:
+      - NODE_ENV={NODE_ENV}
+      - DB_URL={DB_URL}
