@@ -2,4 +2,4 @@ pub mod utils;
 pub mod namespace;
 pub mod container;
 pub mod http_error;
-pub mod git_repository;
+pub mod namespace_git_repository;

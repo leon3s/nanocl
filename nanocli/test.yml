@@ -34,3 +34,13 @@ cargos:
     env:
       - NODE_ENV={NODE_ENV}
       - DB_URL={DB_URL}
+
+  - name:  docktron-landing
+    network: docktron-frontend
+    domain: "{cluster.name}.docktron.org"
+    proxy_config:
+      host: 172.19.205.44
+    git_repository: docktron-landing
+    env:
+      - NODE_ENV={NODE_ENV}
+      - DB_URL={DB_URL}

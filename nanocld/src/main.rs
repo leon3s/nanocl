@@ -38,7 +38,7 @@ async fn main() -> std::io::Result<()> {
       controllers::namespace::ntex_config
     )
     .configure(
-      controllers::git_repository::ntex_config
+      controllers::namespace_git_repository::ntex_config
     )
     .configure(
       controllers::container::ntex_config
