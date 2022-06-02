@@ -12,8 +12,8 @@ use crate::controllers::*;
   namespace::get_by_id_or_name,
   namespace::delete_by_id_or_name,
 
-  git_repository::list,
-  git_repository::create,
+  namespace_git_repository::list,
+  namespace_git_repository::create,
 ), components(
   PgDeleteGeneric,
 

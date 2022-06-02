@@ -57,10 +57,10 @@ pub async fn get_by_id_or_name(
   id_or_name: web::types::Path<String>,
   pool: web::types::State<Pool>,
 ) -> Result<web::HttpResponse, HttpError> {
+  let id = id_or_name.into_inner();
   let conn = get_poll_conn(pool)?;
-
   let res = web::block(move || {
-    repositories::namespace::find_by_id_or_name(id_or_name.to_owned(), &conn)
+    repositories::namespace::find_by_id_or_name(id, &conn)
   }).await;
 
   match res {
@@ -92,10 +92,10 @@ pub async fn delete_by_id_or_name(
   id_or_name: web::types::Path<String>,
   pool: web::types::State<Pool>,
 ) -> Result<web::HttpResponse, HttpError> {
+  let id = id_or_name.into_inner();
   let conn = get_poll_conn(pool)?;
-
   let res = web::block(move || {
-    repositories::namespace::delete_by_id_or_name(id_or_name.to_owned(), &conn)
+    repositories::namespace::delete_by_id_or_name(id, &conn)
   }).await;
   match res {
     Err(err) => {

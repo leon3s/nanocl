@@ -34,16 +34,14 @@ pub struct NamespaceCreate {
 #[table_name="git_repositories"]
 pub struct GitRepositoryItem {
   pub(crate) id: Uuid,
-  pub(crate) namespace: String,
-  pub(crate) uname: String,
   pub(crate) name: String,
+  pub(crate) namespace: String,
   pub(crate) url: String,
   pub(crate) token: String,
 }
 
 #[derive(Component, Deserialize)]
 pub struct GitRepositoryCreate {
-  pub(crate) namespace: String,
   pub(crate) name: String,
   pub(crate) url: String,
   pub(crate) token: Option<String>,
