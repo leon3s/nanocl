@@ -1,18 +1,18 @@
-use ntex::{web, http::StatusCode};
+use ntex::{http::StatusCode, web};
 
-use crate::models::{Pool, DBConn};
+use crate::models::{DBConn, Pool};
 
 use super::http_error::HttpError;
 
 pub fn get_poll_conn(pool: web::types::State<Pool>) -> Result<DBConn, HttpError> {
-  let conn = match pool.get() {
-    Ok(conn) => conn,
-    Err(_) => {
-      return Err(HttpError {
-        msg: String::from(""),
-        status: StatusCode::INTERNAL_SERVER_ERROR,
-      });
-    },
-  };
-  Ok(conn)
+    let conn = match pool.get() {
+        Ok(conn) => conn,
+        Err(_) => {
+            return Err(HttpError {
+                msg: String::from(""),
+                status: StatusCode::INTERNAL_SERVER_ERROR,
+            });
+        }
+    };
+    Ok(conn)
 }

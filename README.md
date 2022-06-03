@@ -26,6 +26,12 @@ List of system compatible and tested
 sudo apt install -y pkg-config libpq-dev libssl-dev
 ```
 
+### Recommanded rust devtools
+rustup component add llvm-tools-preview --toolchain stable-x86_64-unknown-linux-gnu
+cargo install cargo-watch
+cargo install cargo-nextest
+cargo install cargo-llvm-cov
+
 ## Note
 
 must read /sys/class/net and /proc/net to get network informations

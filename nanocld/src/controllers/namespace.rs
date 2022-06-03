@@ -1,15 +1,12 @@
+use crate::models::{NamespaceCreate, Pool};
+use crate::repositories;
 /**
  * HTTP Method to administrate namespaces
  */
 use ntex::web;
-use crate::repositories;
-use crate::models::{
-  Pool,
-  NamespaceCreate,
-};
 
+use super::http_error::{db_bloking_error, HttpError};
 use super::utils::get_poll_conn;
-use super::http_error::{HttpError, db_bloking_error};
 
 #[utoipa::path(
   get,
@@ -19,26 +16,15 @@ use super::http_error::{HttpError, db_bloking_error};
   ),
 )]
 #[web::get("/namespaces")]
-pub async fn list(
-  pool: web::types::State<Pool>,
-) -> Result<web::HttpResponse, HttpError> {
-  let conn = get_poll_conn(pool)?;
+pub async fn list(pool: web::types::State<Pool>) -> Result<web::HttpResponse, HttpError> {
+    let conn = get_poll_conn(pool)?;
 
-  let res = web::block(move || {
-    repositories::namespace::find_all(&conn)
-  }).await;
+    let res = web::block(move || repositories::namespace::find_all(&conn)).await;
 
-  match res {
-    Err(err) => {
-      Err(db_bloking_error(err))
-    },
-    Ok(namespaces) => {
-      Ok(
-        web::HttpResponse::Ok()
-        .json(&namespaces)
-      )
-    },
-  }
+    match res {
+        Err(err) => Err(db_bloking_error(err)),
+        Ok(namespaces) => Ok(web::HttpResponse::Ok().json(&namespaces)),
+    }
 }
 
 #[utoipa::path(
@@ -54,27 +40,20 @@ pub async fn list(
 )]
 #[web::get("/namespaces/{id_or_name}")]
 pub async fn get_by_id_or_name(
-  id_or_name: web::types::Path<String>,
-  pool: web::types::State<Pool>,
+    id_or_name: web::types::Path<String>,
+    pool: web::types::State<Pool>,
 ) -> Result<web::HttpResponse, HttpError> {
-  let id = id_or_name.into_inner();
-  let conn = get_poll_conn(pool)?;
-  let res = web::block(move || {
-    repositories::namespace::find_by_id_or_name(id, &conn)
-  }).await;
+    let id = id_or_name.into_inner();
+    let conn = get_poll_conn(pool)?;
+    let res = web::block(move || repositories::namespace::find_by_id_or_name(id, &conn)).await;
 
-  match res {
-    Err(err) => {
-      eprintln!("error : {:?}", err);
-      Err(db_bloking_error(err))
-    },
-    Ok(namespace) => {
-      Ok(
-        web::HttpResponse::Ok()
-        .json(&namespace)
-      )
+    match res {
+        Err(err) => {
+            eprintln!("error : {:?}", err);
+            Err(db_bloking_error(err))
+        }
+        Ok(namespace) => Ok(web::HttpResponse::Ok().json(&namespace)),
     }
-  }
 }
 
 #[utoipa::path(
@@ -89,25 +68,16 @@ pub async fn get_by_id_or_name(
 )]
 #[web::delete("/namespaces/{id_or_name}")]
 pub async fn delete_by_id_or_name(
-  id_or_name: web::types::Path<String>,
-  pool: web::types::State<Pool>,
+    id_or_name: web::types::Path<String>,
+    pool: web::types::State<Pool>,
 ) -> Result<web::HttpResponse, HttpError> {
-  let id = id_or_name.into_inner();
-  let conn = get_poll_conn(pool)?;
-  let res = web::block(move || {
-    repositories::namespace::delete_by_id_or_name(id, &conn)
-  }).await;
-  match res {
-    Err(err) => {
-      Err(db_bloking_error(err))
-    },
-    Ok(json) => {
-      Ok(
-        web::HttpResponse::Ok()
-        .json(&json)
-      )
+    let id = id_or_name.into_inner();
+    let conn = get_poll_conn(pool)?;
+    let res = web::block(move || repositories::namespace::delete_by_id_or_name(id, &conn)).await;
+    match res {
+        Err(err) => Err(db_bloking_error(err)),
+        Ok(json) => Ok(web::HttpResponse::Ok().json(&json)),
     }
-  }
 }
 
 #[utoipa::path(
@@ -122,32 +92,23 @@ pub async fn delete_by_id_or_name(
 )]
 #[web::post("/namespaces")]
 pub async fn create(
-  payload: web::types::Json<NamespaceCreate>,
-  pool: web::types::State<Pool>,
+    payload: web::types::Json<NamespaceCreate>,
+    pool: web::types::State<Pool>,
 ) -> Result<web::HttpResponse, HttpError> {
-  let new_namespace = payload.into_inner();
-  let conn = get_poll_conn(pool)?;
+    let new_namespace = payload.into_inner();
+    let conn = get_poll_conn(pool)?;
 
-  let res = web::block(move || {
-    repositories::namespace::create(new_namespace, &conn)
-  }).await;
+    let res = web::block(move || repositories::namespace::create(new_namespace, &conn)).await;
 
-  match res {
-    Err(err) => {
-      Err(db_bloking_error(err))
-    },
-    Ok(inserted_namespace) => {
-      Ok(
-        web::HttpResponse::Created()
-        .json(&inserted_namespace)
-      )
-    },
-  }
+    match res {
+        Err(err) => Err(db_bloking_error(err)),
+        Ok(inserted_namespace) => Ok(web::HttpResponse::Created().json(&inserted_namespace)),
+    }
 }
 
 pub fn ntex_config(config: &mut web::ServiceConfig) {
-  config.service(list);
-  config.service(create);
-  config.service(get_by_id_or_name);
-  config.service(delete_by_id_or_name);
+    config.service(list);
+    config.service(create);
+    config.service(get_by_id_or_name);
+    config.service(delete_by_id_or_name);
 }

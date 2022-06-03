@@ -1,0 +1,13 @@
+[tasks.run]
+command = "cargo"
+args = ["run"]
+
+[tasks.test]
+command = "cargo"
+args = ["llvm-cov", "nextest"]
+
+[tasks.my-flow]
+dependencies = [
+    "build",
+    "test"
+]
