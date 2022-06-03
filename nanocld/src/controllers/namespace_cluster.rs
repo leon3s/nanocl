@@ -35,21 +35,18 @@ async fn list(
     }
 }
 
-pub fn config_ntex(config: &mut web::ServiceConfig) {
+pub fn ntex_config(config: &mut web::ServiceConfig) {
     config.service(list);
 }
 
 #[cfg(test)]
 mod test_namespace_cluster {
-    use crate::postgre::create_pool;
-    use ntex::web::*;
-
-    use super::config_ntex;
+    use crate::test::utils::*;
+    use super::ntex_config;
 
     #[ntex::test]
     async fn test_list() {
-        let pool = create_pool();
-        let srv = test::server(move || App::new().state(pool.clone()).configure(config_ntex));
+        let srv = generate_server(ntex_config);
 
         let resp = srv
             .get("/namespaces/default/clusters")

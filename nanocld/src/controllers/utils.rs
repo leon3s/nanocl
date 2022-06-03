@@ -9,7 +9,7 @@ pub fn get_poll_conn(pool: web::types::State<Pool>) -> Result<DBConn, HttpError>
         Ok(conn) => conn,
         Err(_) => {
             return Err(HttpError {
-                msg: String::from(""),
+                msg: String::from("unable to connect to nanocl-db"),
                 status: StatusCode::INTERNAL_SERVER_ERROR,
             });
         }

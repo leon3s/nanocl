@@ -1,9 +1,10 @@
-use crate::models::{NamespaceCreate, Pool};
-use crate::repositories;
 /**
  * HTTP Method to administrate namespaces
  */
 use ntex::web;
+
+use crate::models::{NamespaceCreate, Pool};
+use crate::repositories;
 
 use super::http_error::{db_bloking_error, HttpError};
 use super::utils::get_poll_conn;
@@ -57,14 +58,40 @@ pub async fn get_by_id_or_name(
 }
 
 #[utoipa::path(
-  delete,
-  path = "/namespaces/{id_or_name}",
+  post,
+  path = "/namespaces",
+  request_body = NamespaceCreate,
   responses(
-      (status = 200, description = "Database delete response", body = PgDeleteGeneric),
+    (status = 201, description = "Fresh created namespace", body = NamespaceItem),
+    (status = 400, description = "Generic database error"),
+    (status = 422, description = "The provided payload is not valid"),
   ),
-  params(
-    ("id_or_name" = String, path, description = "Id or Name of the namespace"),
-  )
+)]
+#[web::post("/namespaces")]
+pub async fn create(
+    pool: web::types::State<Pool>,
+    payload: web::types::Json<NamespaceCreate>,
+) -> Result<web::HttpResponse, HttpError> {
+    let new_namespace = payload.into_inner();
+    let conn = get_poll_conn(pool)?;
+
+    let res = web::block(move || repositories::namespace::create(new_namespace, &conn)).await;
+
+    match res {
+        Err(err) => Err(db_bloking_error(err)),
+        Ok(inserted_namespace) => Ok(web::HttpResponse::Created().json(&inserted_namespace)),
+    }
+}
+
+#[utoipa::path(
+    delete,
+    path = "/namespaces/{id_or_name}",
+    responses(
+        (status = 200, description = "Database delete response", body = PgDeleteGeneric),
+    ),
+    params(
+        ("id_or_name" = String, path, description = "Id or Name of the namespace"),
+    )
 )]
 #[web::delete("/namespaces/{id_or_name}")]
 pub async fn delete_by_id_or_name(
@@ -80,35 +107,102 @@ pub async fn delete_by_id_or_name(
     }
 }
 
-#[utoipa::path(
-  post,
-  path = "/namespaces",
-  request_body = NamespaceCreate,
-  responses(
-    (status = 201, description = "Fresh created namespace", body = NamespaceItem),
-    (status = 400, description = "Generic database error"),
-    (status = 422, description = "The provided payload is not valid"),
-  ),
-)]
-#[web::post("/namespaces")]
-pub async fn create(
-    payload: web::types::Json<NamespaceCreate>,
-    pool: web::types::State<Pool>,
-) -> Result<web::HttpResponse, HttpError> {
-    let new_namespace = payload.into_inner();
-    let conn = get_poll_conn(pool)?;
-
-    let res = web::block(move || repositories::namespace::create(new_namespace, &conn)).await;
-
-    match res {
-        Err(err) => Err(db_bloking_error(err)),
-        Ok(inserted_namespace) => Ok(web::HttpResponse::Created().json(&inserted_namespace)),
-    }
-}
-
 pub fn ntex_config(config: &mut web::ServiceConfig) {
     config.service(list);
     config.service(create);
     config.service(get_by_id_or_name);
     config.service(delete_by_id_or_name);
+}
+
+#[cfg(test)]
+mod test_namespace {
+    use serde_json::json;
+
+    use crate::test::utils::*;
+    use crate::models::{NamespaceCreate, PgDeleteGeneric};
+
+    use super::ntex_config;
+
+    async fn test_list() -> TestReturn {
+        let srv = generate_server(ntex_config);
+
+        let resp = srv
+            .get("/namespaces")
+            .send()
+            .await?;
+
+        assert!(resp.status().is_success());
+        Ok(())
+    }
+
+    async fn test_create() -> TestReturn {
+        let srv = generate_server(ntex_config);
+
+        let new_namespace = NamespaceCreate {
+            name: String::from("default"),
+        };
+
+        let resp = srv
+        .post("/namespaces")
+        .send_json(&new_namespace)
+        .await?;
+
+        println!("{:?}", resp);
+        assert!(resp.status().is_success());
+        Ok(())
+    }
+
+    async fn test_fail_create() -> TestReturn {
+        let srv = generate_server(ntex_config);
+        let resp = srv
+        .post("/namespaces")
+        .send_json(&json!({
+            "name": 1,
+        })).await?;
+
+        assert!(resp.status().is_client_error());
+
+        let resp = srv
+        .post("/namespaces")
+        .send().await?;
+
+        assert!(resp.status().is_client_error());
+        Ok(())
+    }
+
+    async fn test_get_by_id() -> TestReturn {
+        let srv = generate_server(ntex_config);
+
+        let resp = srv
+        .get(format!("/namespaces/{name}", name = "default"))
+        .send()
+        .await?;
+
+        assert!(resp.status().is_success());
+        Ok(())
+    }
+
+    async fn test_delete() -> TestReturn {
+        let srv = generate_server(ntex_config);
+
+        let mut resp = srv
+        .delete(format!("/namespaces/{name}", name = "default"))
+        .send()
+        .await?;
+
+        let body = resp.json::<PgDeleteGeneric>().await?;
+        assert_eq!(body.count, 1);
+        assert!(resp.status().is_success());
+        Ok(())
+    }
+
+    #[ntex::test]
+    async fn main() -> TestReturn {
+        test_fail_create().await?;
+        test_create().await?;
+        test_get_by_id().await?;
+        test_list().await?;
+        test_delete().await?;
+        Ok(())
+    }
 }
