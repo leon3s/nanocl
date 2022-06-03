@@ -1,9 +1,15 @@
-use diesel_derive_enum::DbEnum;
 use uuid::Uuid;
 use utoipa::Component;
-use serde::{Serialize, Deserialize};
 use r2d2::PooledConnection;
-use diesel::{r2d2::ConnectionManager, PgConnection};
+use diesel_derive_enum::DbEnum;
+use serde::{
+  Serialize,
+  Deserialize,
+};
+use diesel::{
+  PgConnection,
+  r2d2::ConnectionManager,
+};
 use crate::schema::{
   clusters,
   namespaces,
@@ -40,7 +46,7 @@ pub enum GitRepositorySourceType {
     Local,
 }
 
-#[derive(Component, Serialize, Deserialize, Insertable, Queryable, Identifiable, Debug, PartialEq)]
+#[derive(Component, Serialize, Deserialize, Insertable, Queryable, Identifiable)]
 #[table_name = "git_repositories"]
 pub struct GitRepositoryItem {
   pub(crate) id: Uuid,
@@ -66,4 +72,13 @@ pub struct ClusterItem {
   pub(crate) id: Uuid,
   pub(crate) name: String,
   pub(crate) namespace: String,
+}
+
+#[derive(Component, Serialize, Deserialize)]
+pub struct  ClusterCreate {
+  pub(crate) name: String,
+}
+
+pub mod exports {
+  pub use super::Git_repository_source_type;
 }
