@@ -10,7 +10,7 @@ pub type Docker = bollard::Docker;
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
 pub type DBConn = PooledConnection<ConnectionManager<PgConnection>>;
 
-#[derive(Component, Serialize)]
+#[derive(Component, Serialize, Deserialize)]
 pub struct PgDeleteGeneric {
     pub(crate) count: usize,
 }
@@ -22,7 +22,7 @@ pub struct NamespaceItem {
     pub(crate) name: String,
 }
 
-#[derive(Component, Deserialize)]
+#[derive(Component, Serialize, Deserialize)]
 pub struct NamespaceCreate {
     pub(crate) name: String,
 }

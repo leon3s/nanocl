@@ -11,12 +11,12 @@ pub fn create_for_namespace(
     use crate::repositories::namespace::find_by_id_or_name;
     use crate::schema::git_repositories::dsl::*;
 
-    let resp = find_by_id_or_name(nsp.clone(), conn)?;
+    let resp = find_by_id_or_name(nsp, conn)?;
 
     let new_namespace = GitRepositoryItem {
         id: Uuid::new_v4(),
         name: item.name,
-        namespace: nsp,
+        namespace: resp.name,
         owner: item.owner,
         source: item.source,
         token: item.token.ok_or("").unwrap_or_else(|_| String::from("")),

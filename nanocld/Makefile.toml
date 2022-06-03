@@ -1,3 +1,12 @@
+[tasks.format]
+install_crate = "rustfmt"
+command = "cargo"
+args = ["fmt"]
+
+[tasks.clean]
+command = "cargo"
+args = ["clean"]
+
 [tasks.run]
 command = "cargo"
 args = ["run"]

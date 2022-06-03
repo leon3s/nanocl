@@ -11,6 +11,8 @@ mod openapi;
 mod postgre;
 mod repositories;
 mod schema;
+#[cfg(test)]
+mod test;
 
 #[ntex::main]
 async fn main() -> std::io::Result<()> {
@@ -30,7 +32,7 @@ async fn main() -> std::io::Result<()> {
             .configure(controllers::namespace::ntex_config)
             .configure(controllers::namespace_git_repository::ntex_config)
             .configure(controllers::container::ntex_config)
-            .configure(controllers::namespace_cluster::config_ntex)
+            .configure(controllers::namespace_cluster::ntex_config)
             .service(fs::Files::new("/websocket", "./static/websocket").index_file("index.html"))
     });
     server = server.bind("0.0.0.0:8383")?;
