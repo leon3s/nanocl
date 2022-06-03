@@ -7,6 +7,7 @@ use ntex_files as fs;
 use diesel::prelude::*;
 use diesel::r2d2::ConnectionManager;
 
+mod utils;
 mod models;
 mod schema;
 mod openapi;
