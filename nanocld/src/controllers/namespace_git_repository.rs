@@ -3,14 +3,13 @@
  */
 use ntex::web;
 
-use crate::repositories::{
-  namespace,
-  git_repository,
-};
+use crate::repositories::git_repository;
 use crate::models::{
   Pool,
   GitRepositoryCreate,
 };
+
+use crate::utils::github;
 
 use super::utils::get_poll_conn;
 use super::http_error::{
@@ -76,11 +75,11 @@ async fn create(
   let jsonp = payload.into_inner();
   let conn = get_poll_conn(pool)?;
 
-  let res = web::block(move ||
+  let db_res = web::block(move ||
     git_repository::create_for_namespace(nsp, jsonp, &conn)
   ).await;
 
-  match res {
+  match db_res {
     Err(err) => {
       eprintln!("db error : {}", err);
       Err(db_bloking_error(err))

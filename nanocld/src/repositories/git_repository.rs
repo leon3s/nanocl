@@ -22,7 +22,8 @@ pub fn create_for_namespace(
     id: Uuid::new_v4(),
     name: item.name,
     namespace: nsp,
-    url: item.url,
+    owner: item.owner,
+    source: item.source,
     token: item.token.ok_or("").unwrap_or_else(|_| String::from("")),
   };
 

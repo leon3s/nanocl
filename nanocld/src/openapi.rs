@@ -22,6 +22,7 @@ use crate::controllers::*;
 
   GitRepositoryItem,
   GitRepositoryCreate,
+  GitRepositorySourceType,
 ))]
 struct ApiDoc;
 
