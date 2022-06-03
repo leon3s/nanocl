@@ -3,19 +3,11 @@
  */
 use ntex::web;
 
+use crate::models::{GitRepositoryCreate, Pool};
 use crate::repositories::git_repository;
-use crate::models::{
-  Pool,
-  GitRepositoryCreate,
-};
 
-use crate::utils::github;
-
+use super::http_error::{db_bloking_error, HttpError};
 use super::utils::get_poll_conn;
-use super::http_error::{
-  HttpError,
-  db_bloking_error,
-};
 
 #[utoipa::path(
   get,
@@ -29,26 +21,17 @@ use super::http_error::{
 )]
 #[web::get("/namespaces/{name}/git_repositories")]
 async fn list(
-  poll: web::types::State<Pool>,
-  name: web::types::Path<String>,
-) -> Result<web::HttpResponse, HttpError>{
-  let nsp = name.into_inner();
-  let conn = get_poll_conn(poll)?;
-  let res = web::block(move ||
-    git_repository::find_by_namespace(nsp, &conn)
-  ).await;
+    poll: web::types::State<Pool>,
+    name: web::types::Path<String>,
+) -> Result<web::HttpResponse, HttpError> {
+    let nsp = name.into_inner();
+    let conn = get_poll_conn(poll)?;
+    let res = web::block(move || git_repository::find_by_namespace(nsp, &conn)).await;
 
-  match res {
-    Err(err) => {
-      Err(db_bloking_error(err))
-    },
-    Ok(items) => {
-      Ok(
-        web::HttpResponse::Ok()
-        .json(&items)
-      )
+    match res {
+        Err(err) => Err(db_bloking_error(err)),
+        Ok(items) => Ok(web::HttpResponse::Ok().json(&items)),
     }
-  }
 }
 
 #[utoipa::path(
@@ -67,33 +50,26 @@ async fn list(
 )]
 #[web::post("/namespaces/{name}/git_repositories")]
 async fn create(
-  pool: web::types::State<Pool>,
-  name: web::types::Path<String>,
-  payload: web::types::Json<GitRepositoryCreate>,
-) -> Result<web::HttpResponse, HttpError>{
-  let nsp = name.into_inner();
-  let jsonp = payload.into_inner();
-  let conn = get_poll_conn(pool)?;
+    pool: web::types::State<Pool>,
+    name: web::types::Path<String>,
+    payload: web::types::Json<GitRepositoryCreate>,
+) -> Result<web::HttpResponse, HttpError> {
+    let nsp = name.into_inner();
+    let jsonp = payload.into_inner();
+    let conn = get_poll_conn(pool)?;
 
-  let db_res = web::block(move ||
-    git_repository::create_for_namespace(nsp, jsonp, &conn)
-  ).await;
+    let db_res = web::block(move || git_repository::create_for_namespace(nsp, jsonp, &conn)).await;
 
-  match db_res {
-    Err(err) => {
-      eprintln!("db error : {}", err);
-      Err(db_bloking_error(err))
-    },
-    Ok(git_repository) => {
-      Ok(
-        web::HttpResponse::Created()
-        .json(&git_repository)
-      )
+    match db_res {
+        Err(err) => {
+            eprintln!("db error : {}", err);
+            Err(db_bloking_error(err))
+        }
+        Ok(git_repository) => Ok(web::HttpResponse::Created().json(&git_repository)),
     }
-  }
 }
 
 pub fn ntex_config(config: &mut web::ServiceConfig) {
-  config.service(list);
-  config.service(create);
+    config.service(list);
+    config.service(create);
 }

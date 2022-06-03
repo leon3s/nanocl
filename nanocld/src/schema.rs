@@ -47,10 +47,4 @@ table! {
     }
 }
 
-allow_tables_to_appear_in_same_query!(
-    cargos,
-    clusters,
-    git_repositories,
-    namespaces,
-    users,
-);
+allow_tables_to_appear_in_same_query!(cargos, clusters, git_repositories, namespaces, users,);
