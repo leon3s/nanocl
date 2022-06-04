@@ -7,7 +7,9 @@ use crate::utils::get_poll_conn;
 use crate::repositories::namespace;
 use crate::models::{NamespaceCreate, Pool};
 
-use super::errors::{db_bloking_error, HttpError};
+use crate::repositories::errors::db_bloking_error;
+
+use super::errors::HttpError;
 
 #[utoipa::path(
   get,
@@ -18,16 +20,9 @@ use super::errors::{db_bloking_error, HttpError};
 )]
 #[web::get("/namespaces")]
 pub async fn list(pool: web::types::State<Pool>) -> Result<web::HttpResponse, HttpError> {
-    let conn = get_poll_conn(pool)?;
+    let items = namespace::find_all(pool).await?;
 
-    let res = web::block(move ||
-        namespace::find_all(&conn)
-    ).await;
-
-    match res {
-        Err(err) => Err(db_bloking_error(err)),
-        Ok(namespaces) => Ok(web::HttpResponse::Ok().json(&namespaces)),
-    }
+    Ok(web::HttpResponse::Ok().json(&items))
 }
 
 #[utoipa::path(
@@ -77,16 +72,9 @@ pub async fn create(
     payload: web::types::Json<NamespaceCreate>,
 ) -> Result<web::HttpResponse, HttpError> {
     let new_namespace = payload.into_inner();
-    let conn = get_poll_conn(pool)?;
+    let item = namespace::create(new_namespace, pool).await?;
 
-    let res = web::block(move ||
-        namespace::create(new_namespace, &conn)
-    ).await;
-
-    match res {
-        Err(err) => Err(db_bloking_error(err)),
-        Ok(inserted_namespace) => Ok(web::HttpResponse::Created().json(&inserted_namespace)),
-    }
+    Ok(web::HttpResponse::Created().json(&item))
 }
 
 #[utoipa::path(
