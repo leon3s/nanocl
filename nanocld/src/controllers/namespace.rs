@@ -3,11 +3,11 @@
  */
 use ntex::web;
 
+use crate::utils::get_poll_conn;
+use crate::repositories::namespace;
 use crate::models::{NamespaceCreate, Pool};
-use crate::repositories;
 
-use super::http_error::{db_bloking_error, HttpError};
-use super::utils::get_poll_conn;
+use super::errors::{db_bloking_error, HttpError};
 
 #[utoipa::path(
   get,
@@ -20,7 +20,9 @@ use super::utils::get_poll_conn;
 pub async fn list(pool: web::types::State<Pool>) -> Result<web::HttpResponse, HttpError> {
     let conn = get_poll_conn(pool)?;
 
-    let res = web::block(move || repositories::namespace::find_all(&conn)).await;
+    let res = web::block(move ||
+        namespace::find_all(&conn)
+    ).await;
 
     match res {
         Err(err) => Err(db_bloking_error(err)),
@@ -46,7 +48,9 @@ pub async fn get_by_id_or_name(
 ) -> Result<web::HttpResponse, HttpError> {
     let id = id_or_name.into_inner();
     let conn = get_poll_conn(pool)?;
-    let res = web::block(move || repositories::namespace::find_by_id_or_name(id, &conn)).await;
+    let res = web::block(move ||
+        namespace::find_by_id_or_name(id, &conn)
+    ).await;
 
     match res {
         Err(err) => {
@@ -75,7 +79,9 @@ pub async fn create(
     let new_namespace = payload.into_inner();
     let conn = get_poll_conn(pool)?;
 
-    let res = web::block(move || repositories::namespace::create(new_namespace, &conn)).await;
+    let res = web::block(move ||
+        namespace::create(new_namespace, &conn)
+    ).await;
 
     match res {
         Err(err) => Err(db_bloking_error(err)),
@@ -100,7 +106,9 @@ pub async fn delete_by_id_or_name(
 ) -> Result<web::HttpResponse, HttpError> {
     let id = id_or_name.into_inner();
     let conn = get_poll_conn(pool)?;
-    let res = web::block(move || repositories::namespace::delete_by_id_or_name(id, &conn)).await;
+    let res = web::block(move ||
+        namespace::delete_by_id_or_name(id, &conn)
+    ).await;
     match res {
         Err(err) => Err(db_bloking_error(err)),
         Ok(json) => Ok(web::HttpResponse::Ok().json(&json)),
@@ -116,16 +124,15 @@ pub fn ntex_config(config: &mut web::ServiceConfig) {
 
 #[cfg(test)]
 mod test_namespace {
+    use ntex::web::test::TestServer;
     use serde_json::json;
 
-    use crate::test::utils::*;
+    use crate::utils::test::*;
     use crate::models::{NamespaceCreate, PgDeleteGeneric};
 
     use super::ntex_config;
 
-    async fn test_list() -> TestReturn {
-        let srv = generate_server(ntex_config);
-
+    async fn test_list(srv: &TestServer) -> TestReturn {
         let resp = srv
             .get("/namespaces")
             .send()
@@ -135,9 +142,7 @@ mod test_namespace {
         Ok(())
     }
 
-    async fn test_create() -> TestReturn {
-        let srv = generate_server(ntex_config);
-
+    async fn test_create(srv: &TestServer) -> TestReturn {
         let new_namespace = NamespaceCreate {
             name: String::from("default"),
         };
@@ -152,8 +157,7 @@ mod test_namespace {
         Ok(())
     }
 
-    async fn test_fail_create() -> TestReturn {
-        let srv = generate_server(ntex_config);
+    async fn test_fail_create(srv: &TestServer) -> TestReturn {
         let resp = srv
         .post("/namespaces")
         .send_json(&json!({
@@ -170,9 +174,7 @@ mod test_namespace {
         Ok(())
     }
 
-    async fn test_get_by_id() -> TestReturn {
-        let srv = generate_server(ntex_config);
-
+    async fn test_get_by_id(srv: &TestServer) -> TestReturn {
         let resp = srv
         .get(format!("/namespaces/{name}", name = "default"))
         .send()
@@ -182,9 +184,7 @@ mod test_namespace {
         Ok(())
     }
 
-    async fn test_delete() -> TestReturn {
-        let srv = generate_server(ntex_config);
-
+    async fn test_delete(srv: &TestServer) -> TestReturn {
         let mut resp = srv
         .delete(format!("/namespaces/{name}", name = "default"))
         .send()
@@ -198,11 +198,13 @@ mod test_namespace {
 
     #[ntex::test]
     async fn main() -> TestReturn {
-        test_fail_create().await?;
-        test_create().await?;
-        test_get_by_id().await?;
-        test_list().await?;
-        test_delete().await?;
+        let srv = generate_server(ntex_config);
+
+        test_fail_create(&srv).await?;
+        test_create(&srv).await?;
+        test_get_by_id(&srv).await?;
+        test_list(&srv).await?;
+        test_delete(&srv).await?;
         Ok(())
     }
 }

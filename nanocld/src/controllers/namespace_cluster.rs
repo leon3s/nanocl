@@ -2,10 +2,10 @@ use ntex::web;
 
 use crate::models::Pool;
 
+use crate::utils::get_poll_conn;
 use crate::repositories::cluster;
 
-use super::http_error::*;
-use super::utils::get_poll_conn;
+use super::errors::{db_bloking_error, HttpError};
 
 #[utoipa::path(
   get,
@@ -41,13 +41,12 @@ pub fn ntex_config(config: &mut web::ServiceConfig) {
 
 #[cfg(test)]
 mod test_namespace_cluster {
-    use crate::test::utils::*;
+    use ntex::web::test::TestServer;
+
+    use crate::utils::test::*;
     use super::ntex_config;
 
-    #[ntex::test]
-    async fn test_list() {
-        let srv = generate_server(ntex_config);
-
+    async fn test_list(srv: &TestServer) {
         let resp = srv
             .get("/namespaces/default/clusters")
             .send()
@@ -55,5 +54,11 @@ mod test_namespace_cluster {
             .unwrap();
         println!("{:?}", resp);
         assert!(resp.status().is_success());
+    }
+
+    #[ntex::test]
+    async fn main() {
+        let srv = generate_server(ntex_config);
+        test_list(&srv).await;
     }
 }
