@@ -3,11 +3,11 @@
  */
 use ntex::web;
 
-use crate::models::{GitRepositoryCreate, Pool};
+use crate::utils::get_poll_conn;
 use crate::repositories::git_repository;
+use crate::models::{GitRepositoryCreate, Pool};
 
-use super::http_error::{db_bloking_error, HttpError};
-use super::utils::get_poll_conn;
+use super::errors::{db_bloking_error, HttpError};
 
 #[utoipa::path(
   get,
@@ -72,4 +72,30 @@ async fn create(
 pub fn ntex_config(config: &mut web::ServiceConfig) {
     config.service(list);
     config.service(create);
+}
+
+#[cfg(test)]
+mod test_namespace_git_repository {
+  use ntex::web::test::TestServer;
+
+  use crate::utils::test::*;
+
+  use super::ntex_config;  
+
+  async fn test_list(srv: &TestServer) -> TestReturn {
+    let resp = srv
+    .get("/namespaces/default/git_repositories")
+    .send().await?;
+
+    assert!(resp.status().is_success());
+    Ok(())
+  }
+
+  #[ntex::test]
+  async fn main() -> TestReturn {
+    let srv = generate_server(ntex_config);
+
+    test_list(&srv).await?;
+    Ok(())
+  }
 }
