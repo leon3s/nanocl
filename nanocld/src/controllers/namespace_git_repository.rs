@@ -6,9 +6,11 @@ use ntex::web;
 use crate::utils::get_poll_conn;
 use crate::repositories::git_repository;
 use crate::models::{GitRepositoryCreate, Pool};
+use crate::repositories::errors::db_bloking_error;
 
-use super::errors::{db_bloking_error, HttpError};
+use super::errors::HttpError;
 
+/// endpoint to get list of git repositories for a given namespace
 #[utoipa::path(
   get,
   path = "/namespaces/{name}/git_repositories",

@@ -4,8 +4,9 @@ use crate::models::Pool;
 
 use crate::utils::get_poll_conn;
 use crate::repositories::cluster;
+use crate::repositories::errors::db_bloking_error;
 
-use super::errors::{db_bloking_error, HttpError};
+use super::errors::HttpError;
 
 #[utoipa::path(
   get,

@@ -39,9 +39,10 @@ pub fn find_by_namespace(
 }
 
 // Not used for now
-pub fn _find_all(conn: &PgConnection) -> Result<Vec<GitRepositoryItem>, diesel::result::Error> {
+pub async fn _find_all(conn: &PgConnection) -> Result<Vec<GitRepositoryItem>, diesel::result::Error> {
     use crate::schema::git_repositories::dsl::*;
 
     let items = git_repositories.load::<GitRepositoryItem>(conn)?;
+    // let items = git_repositories.load::<GitRepositoryItem>(conn)?;
     Ok(items)
 }

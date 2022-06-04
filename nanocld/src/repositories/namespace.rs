@@ -1,30 +1,51 @@
-use diesel::prelude::*;
+use ntex::web;
 use uuid::Uuid;
+use diesel::prelude::*;
 
-use crate::models::{NamespaceCreate, NamespaceItem, PgDeleteGeneric};
+use crate::controllers::errors::HttpError;
+use crate::models::{NamespaceCreate, NamespaceItem, PgDeleteGeneric, Pool};
+use crate::utils::get_poll_conn;
 
-pub fn create(
+use super::errors::db_bloking_error;
+
+pub async fn create(
     item: NamespaceCreate,
-    conn: &PgConnection,
-) -> Result<NamespaceItem, diesel::result::Error> {
+    pool: web::types::State<Pool>,
+) -> Result<NamespaceItem, HttpError> {
     use crate::schema::namespaces::dsl::*;
 
-    let new_namespace = NamespaceItem {
-        id: Uuid::new_v4(),
-        name: item.name,
-    };
+    let conn = get_poll_conn(pool)?;
+    let res = web::block(move || {
+        let item = NamespaceItem {
+            id: Uuid::new_v4(),
+            name: item.name,
+        };
+        diesel::insert_into(namespaces)
+        .values(&item)
+        .execute(&conn)?;
+        Ok(item)
+    }).await;
 
-    diesel::insert_into(namespaces)
-        .values(&new_namespace)
-        .execute(conn)?;
-    Ok(new_namespace)
+    match res {
+        Err(err) => Err(db_bloking_error(err)),
+        Ok(item) => Ok(item),
+    }
 }
 
-pub fn find_all(conn: &PgConnection) -> Result<Vec<NamespaceItem>, diesel::result::Error> {
+pub async fn find_all(
+    pool: web::types::State<Pool>,
+) -> Result<Vec<NamespaceItem>, HttpError> {
     use crate::schema::namespaces::dsl::*;
+    
+    let conn = get_poll_conn(pool)?;
+    let res = web::block(move || {
+        namespaces.load::<NamespaceItem>(&conn)
+    }).await;
 
-    let items = namespaces.load::<NamespaceItem>(conn)?;
-    Ok(items)
+    match res {
+        Err(err) => Err(db_bloking_error(err)),
+        Ok(items) => Ok(items)
+    }
 }
 
 pub fn find_by_id_or_name(
