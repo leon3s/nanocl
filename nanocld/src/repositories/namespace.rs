@@ -48,44 +48,49 @@ pub async fn find_all(
     }
 }
 
-pub fn find_by_id_or_name(
+pub async fn find_by_id_or_name(
     id_or_name: String,
-    conn: &PgConnection,
-) -> Result<NamespaceItem, diesel::result::Error> {
+    pool: web::types::State<Pool>,
+) -> Result<NamespaceItem, HttpError> {
     use crate::schema::namespaces::dsl::*;
+    let conn = get_poll_conn(pool)?;
 
-    match Uuid::parse_str(&id_or_name) {
-        Err(_) => {
-            let result = namespaces
-                .filter(name.eq(id_or_name))
-                .get_result::<NamespaceItem>(conn)?;
-            Ok(result)
-        }
-        Ok(uuid) => {
-            let result = namespaces
-                .filter(id.eq(uuid))
-                .get_result::<NamespaceItem>(conn)?;
-            Ok(result)
-        }
+    let res = match Uuid::parse_str(&id_or_name) {
+        Err(_) => web::block(move || {
+            namespaces.filter(name.eq(id_or_name))
+            .get_result::<NamespaceItem>(&conn)
+        }).await,
+        Ok(uuid) => web::block(move || {
+            namespaces.filter(id.eq(uuid))
+            .get_result::<NamespaceItem>(&conn)
+        }).await,
+    };
+
+    match res {
+        Err(err) => Err(db_bloking_error(err)),
+        Ok(item) => Ok(item),
     }
 }
 
-pub fn delete_by_id_or_name(
+pub async fn delete_by_id_or_name(
     id_or_name: String,
-    conn: &PgConnection,
-) -> Result<PgDeleteGeneric, diesel::result::Error> {
+    pool: web::types::State<Pool>,
+) -> Result<PgDeleteGeneric, HttpError> {
     use crate::schema::namespaces::dsl::*;
+    
+    let conn = get_poll_conn(pool)?;
 
-    match Uuid::parse_str(&id_or_name) {
-        Err(_) => {
-            let result = diesel::delete(namespaces.filter(name.eq(id_or_name))).execute(conn)?;
-            println!("delete result {:?}", result);
-            Ok(PgDeleteGeneric { count: result })
-        }
-        Ok(uuid) => {
-            let result = diesel::delete(namespaces.filter(id.eq(uuid))).execute(conn)?;
-            println!("delete result {:?}", result);
-            Ok(PgDeleteGeneric { count: result })
-        }
+    let res = match Uuid::parse_str(&id_or_name) {
+        Err(_) => web::block(move || {
+            diesel::delete(namespaces.filter(name.eq(id_or_name))).execute(&conn)
+        }).await,
+        Ok(uuid) => web::block(move || {
+            diesel::delete(namespaces.filter(id.eq(uuid))).execute(&conn)
+        }).await,
+    };
+
+    match res {
+        Err(err) => Err(db_bloking_error(err)),
+        Ok(result) => Ok(PgDeleteGeneric { count: result }),
     }
 }

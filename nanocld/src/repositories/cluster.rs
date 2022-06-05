@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::models::{ClusterCreate, ClusterItem};
 
-pub fn create_for_namespace(
+pub fn _create_for_namespace(
     nsp: String,
     item: ClusterCreate,
     conn: &PgConnection,

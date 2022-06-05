@@ -3,11 +3,8 @@
  */
 use ntex::web;
 
-use crate::utils::get_poll_conn;
 use crate::repositories::namespace;
 use crate::models::{NamespaceCreate, Pool};
-
-use crate::repositories::errors::db_bloking_error;
 
 use super::errors::HttpError;
 
@@ -42,18 +39,9 @@ pub async fn get_by_id_or_name(
     pool: web::types::State<Pool>,
 ) -> Result<web::HttpResponse, HttpError> {
     let id = id_or_name.into_inner();
-    let conn = get_poll_conn(pool)?;
-    let res = web::block(move ||
-        namespace::find_by_id_or_name(id, &conn)
-    ).await;
+    let item = namespace::find_by_id_or_name(id, pool).await?;
 
-    match res {
-        Err(err) => {
-            eprintln!("error : {:?}", err);
-            Err(db_bloking_error(err))
-        }
-        Ok(namespace) => Ok(web::HttpResponse::Ok().json(&namespace)),
-    }
+    Ok(web::HttpResponse::Ok().json(&item))
 }
 
 #[utoipa::path(
@@ -93,14 +81,8 @@ pub async fn delete_by_id_or_name(
     pool: web::types::State<Pool>,
 ) -> Result<web::HttpResponse, HttpError> {
     let id = id_or_name.into_inner();
-    let conn = get_poll_conn(pool)?;
-    let res = web::block(move ||
-        namespace::delete_by_id_or_name(id, &conn)
-    ).await;
-    match res {
-        Err(err) => Err(db_bloking_error(err)),
-        Ok(json) => Ok(web::HttpResponse::Ok().json(&json)),
-    }
+    let res = namespace::delete_by_id_or_name(id, pool).await?;
+    Ok(web::HttpResponse::Ok().json(&res))
 }
 
 pub fn ntex_config(config: &mut web::ServiceConfig) {
