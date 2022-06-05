@@ -1,5 +1,5 @@
 use ntex::web;
-use ntex::{http::StatusCode, web::error::BlockingError};
+use ntex::http::StatusCode;
 use serde::Serialize;
 use serde_json::{json, to_string_pretty};
 use std::fmt::{Display, Formatter, Result as FmtResult};

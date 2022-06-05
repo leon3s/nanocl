@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::Component;
 use uuid::Uuid;
 
-pub type Docker = bollard::Docker;
+// pub type Docker = bollard::Docker;
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
 pub type DBConn = PooledConnection<ConnectionManager<PgConnection>>;
 
