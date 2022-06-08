@@ -1,45 +1,139 @@
-use diesel::prelude::*;
+use ntex::web;
 use uuid::Uuid;
+use diesel::prelude::*;
 
-use crate::models::{GitRepositoryCreate, GitRepositoryItem};
+use crate::utils::get_pool_conn;
+use crate::controllers::errors::HttpError;
+use crate::repositories::errors::db_blocking_error;
+use crate::models::{GitRepositorySourceType, GitRepositoryCreate, GitRepositoryItem, Pool, PgDeleteGeneric};
 
-pub fn create_for_namespace(
-    nsp: String,
+fn gen_git_repository_url(item: &GitRepositoryCreate) -> String {
+    "https://".to_owned() + match item.source {
+        GitRepositorySourceType::Github => "github.com",
+        GitRepositorySourceType::Gitlab => "gitlab.com",
+        GitRepositorySourceType::Local => "localhost",
+    } + "/" + &item.name + ".git"
+}
+
+/// Create git repository
+pub async fn create(
     item: GitRepositoryCreate,
-    conn: &PgConnection,
-) -> Result<GitRepositoryItem, diesel::result::Error> {
-    use crate::schema::git_repositories::dsl::*;
+    pool: &web::types::State<Pool>,
+) -> Result<GitRepositoryItem, HttpError> {
+    use crate::schema::git_repositories::dsl;
 
-    let new_namespace = GitRepositoryItem {
-        id: Uuid::new_v4(),
-        name: item.name,
-        namespace: nsp.clone(),
-        owner: item.owner,
-        source: item.source,
-        token: item.token.ok_or("").unwrap_or_else(|_| String::from("")),
+    let conn = get_pool_conn(pool)?;
+    let res = web::block(move || {
+        let url = gen_git_repository_url(&item);
+        let new_namespace = GitRepositoryItem {
+            id: Uuid::new_v4(),
+            name: item.name,
+            gen_url: url,
+            token: None,
+            source: item.source,
+        };
+        diesel::insert_into(
+            dsl::git_repositories
+        )
+        .values(&new_namespace)
+        .execute(&conn)?;
+        Ok(new_namespace)
+    }).await;
+
+    match res {
+        Err(err) => Err(db_blocking_error(err)),
+        Ok(item) => Ok(item),
+    }
+}
+
+/// Delete git repository by id or name
+pub async fn delete_by_id_or_name(
+    id: String,
+    pool: &web::types::State<Pool>,
+) -> Result<PgDeleteGeneric, HttpError> {
+    use crate::schema::git_repositories::dsl;
+
+    let conn = get_pool_conn(pool)?;
+    let res = match Uuid::parse_str(&id) {
+        Err(_) => web::block(move || {
+            diesel::delete(dsl::git_repositories.filter(dsl::name.eq(id))).execute(&conn)
+        }).await,
+        Ok(uuid) => web::block(move || {
+            diesel::delete(
+                dsl::git_repositories
+                .filter(dsl::id.eq(uuid))
+            ).execute(&conn)
+        }).await,
     };
 
-    diesel::insert_into(git_repositories)
-        .values(&new_namespace)
-        .execute(conn)?;
-    Ok(new_namespace)
+    match res {
+        Err(err) => Err(db_blocking_error(err)),
+        Ok(result) => Ok(PgDeleteGeneric { count: result })
+    }
 }
 
-pub fn find_by_namespace(
-    nsp: String,
-    conn: &PgConnection,
-) -> Result<Vec<GitRepositoryItem>, diesel::result::Error> {
-    use crate::schema::git_repositories::dsl::*;
+/// List all git repository
+pub async fn list(
+    pool: &web::types::State<Pool>,
+) -> Result<Vec<GitRepositoryItem>, HttpError> {
+    use crate::schema::git_repositories::dsl;
 
-    let items = git_repositories.filter(namespace.eq(nsp)).load(conn)?;
-    Ok(items)
+    let conn = get_pool_conn(pool)?;
+    let res = web::block(move || {
+        dsl::git_repositories.load(&conn)
+    }).await;
+    match res {
+        Err(err) => Err(db_blocking_error(err)),
+        Ok(items) => Ok(items),
+    }
 }
 
-// Not used for now
-pub async fn _find_all(conn: &PgConnection) -> Result<Vec<GitRepositoryItem>, diesel::result::Error> {
-    use crate::schema::git_repositories::dsl::*;
+#[cfg(test)]
+mod test_git_repository {
+    use crate::postgre;
+    use crate::models::GitRepositorySourceType;
 
-    let items = git_repositories.load::<GitRepositoryItem>(conn)?;
-    // let items = git_repositories.load::<GitRepositoryItem>(conn)?;
-    Ok(items)
+    use super::*;
+
+    #[ntex::test]
+    async fn main() {
+        let pool = postgre::create_pool();
+        let pool_state = web::types::State::new(pool);
+        // Find
+        let _res = list(
+            &pool_state,
+        ).await.unwrap();
+        let item = GitRepositoryCreate {
+            name: String::from("test"),
+            token: Some(String::from("test")),
+            source: GitRepositorySourceType::Github,
+        };
+        // Create
+        let res = create(
+            item,
+            &pool_state,
+        ).await.unwrap();
+        assert_eq!(res.name, "test");
+
+        // Delete with id
+        let res = delete_by_id_or_name(
+            res.id.to_string(),
+            &pool_state,
+        ).await.unwrap();
+        assert_eq!(res.count, 1);
+        let item = GitRepositoryCreate {
+            name: String::from("test"),
+            token: Some(String::from("test")),
+            source: GitRepositorySourceType::Github,
+        };
+        let res = create(
+            item,
+            &pool_state,
+        ).await.unwrap();
+        let res = delete_by_id_or_name(
+            res.name,
+            &pool_state,
+        ).await.unwrap();
+        assert_eq!(res.count, 1);
+    }
 }

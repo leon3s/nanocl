@@ -27,6 +27,7 @@ sudo apt install -y pkg-config libpq-dev libssl-dev
 ```
 
 ### Recommanded rust devtools
+cargo install diesel_cli --no-default-features --features postgres
 rustup component add llvm-tools-preview --toolchain stable-x86_64-unknown-linux-gnu
 cargo install cargo-make
 cargo install cargo-watch

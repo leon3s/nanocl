@@ -4,6 +4,12 @@ use utoipa::OpenApi;
 
 use crate::controllers::*;
 use crate::models::*;
+use crate::docker::models::{
+    Network,
+    NetworkContainer,
+    Ipam,
+    IpamConfig,
+};
 
 #[derive(OpenApi)]
 #[openapi(
@@ -12,15 +18,22 @@ use crate::models::*;
         namespace::create,
         namespace::get_by_id_or_name,
         namespace::delete_by_id_or_name,
-        namespace_cluster::list,
-        namespace_git_repository::list,
-        namespace_git_repository::create,
+        cluster::list,
+        cluster::create,
+        git_repository::list,
+        git_repository::create,
+        git_repository::delete_by_id_or_name,
+        cluster_network::list_networks,
     ),
     components(
         PgDeleteGeneric,
         NamespaceItem,
         NamespaceCreate,
         ClusterItem,
+        Network,
+        Ipam,
+        IpamConfig,
+        NetworkContainer,
         ClusterCreate,
         GitRepositoryItem,
         GitRepositoryCreate,
@@ -39,5 +52,47 @@ async fn get_api_specs() -> Result<web::HttpResponse, web::Error> {
 
 pub fn ntex_config(config: &mut web::ServiceConfig) {
     config.service(get_api_specs);
-    config.service(fs::Files::new("/explorer", "./static/swagger").index_file("index.html"));
+    config.service(
+        fs::Files::new("/explorer", "./static/swagger")
+        .index_file("index.html")
+    );
+}
+
+
+#[cfg(test)]
+mod test_openapi {
+    use crate::utils::test::*;
+
+    use super::*;
+
+    async fn test_swagger(srv: &TestServer) -> TestReturn {
+        let res = srv
+        .get("/explorer")
+        .send()
+        .await?;
+        assert!(res.status().is_success());
+        Ok(())
+    }
+
+    async fn test_specs(srv: &TestServer) -> TestReturn {
+        let res = srv
+        .get("/explorer/swagger.json")
+        .send().await?;
+        assert!(res.status().is_success());
+        let content_type = match res.header("content-type") {
+            None => "empty",
+            Some(content_type) => content_type.to_str().unwrap(),
+        };
+        assert_eq!(content_type, "application/json");
+        Ok(())
+    }
+
+    #[ntex::test]
+    async fn main() -> TestReturn {
+        let srv = generate_server(ntex_config);
+
+        test_swagger(&srv).await?;
+        test_specs(&srv).await?;
+        Ok(())
+    }
 }

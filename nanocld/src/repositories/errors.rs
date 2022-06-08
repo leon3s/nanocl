@@ -28,7 +28,7 @@ pub fn db_error(err: diesel::result::Error) -> HttpError {
 }
 
 // todo generic database error
-pub fn db_bloking_error(err: BlockingError<diesel::result::Error>) -> HttpError {
+pub fn db_blocking_error(err: BlockingError<diesel::result::Error>) -> HttpError {
   match err {
       web::error::BlockingError::Error(db_err) => {
         db_error(db_err)

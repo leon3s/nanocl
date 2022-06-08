@@ -11,9 +11,17 @@ args = ["clean"]
 command = "cargo"
 args = ["run"]
 
-[tasks.test]
+[tasks.cov]
 command = "cargo"
 args = ["llvm-cov", "nextest"]
+
+[tasks.test]
+command = "cargo"
+args = ["nextest", "run"]
+
+[tasks.test-debug]
+command = "cargo"
+args = ["test", "--", "--nocapture"]
 
 [tasks.my-flow]
 dependencies = [

@@ -871,6 +871,7 @@ name = "nanocld"
 version = "0.1.0"
 dependencies = [
  "bollard",
+ "chrono",
  "diesel",
  "diesel-derive-enum",
  "env_logger",
@@ -880,6 +881,7 @@ dependencies = [
  "r2d2",
  "serde",
  "serde_json",
+ "serde_with",
  "sysinfo",
  "utoipa",
  "uuid 0.8.2",
@@ -913,9 +915,9 @@ dependencies = [
 
 [[package]]
 name = "ntex"
-version = "0.5.17"
+version = "0.5.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "00295e30b3d030c5e40c0b7735ef2048c53a12d55a40154064940a92becbfb90"
+checksum = "44f368161bb68e69ab4f6c79d955ef5a198d4e26fd905720c31c6ad887acee56"
 dependencies = [
  "async-channel",
  "async-oneshot",

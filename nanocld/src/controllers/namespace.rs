@@ -8,42 +8,47 @@ use crate::models::{NamespaceCreate, Pool};
 
 use super::errors::HttpError;
 
+/// List all namespaces
 #[utoipa::path(
   get,
   path = "/namespaces",
   responses(
-      (status = 200, description = "Array of namespace", body = NamespaceItem),
+      (status = 200, description = "Array of namespace", body = [NamespaceItem]),
   ),
 )]
 #[web::get("/namespaces")]
-pub async fn list(pool: web::types::State<Pool>) -> Result<web::HttpResponse, HttpError> {
-    let items = namespace::find_all(pool).await?;
+async fn list(
+    pool: web::types::State<Pool>
+) -> Result<web::HttpResponse, HttpError> {
+    let items = namespace::list(&pool).await?;
 
     Ok(web::HttpResponse::Ok().json(&items))
 }
 
+/// Inspect namespace by id or name
 #[utoipa::path(
   get,
-  path = "/namespaces/{id_or_name}",
+  path = "/namespaces/{id}/inspect",
   responses(
       (status = 200, description = "Namespace found", body = NamespaceItem),
       (status = 404, description = "Namespace not found"),
   ),
   params(
-    ("id_or_name" = String, path, description = "Id or Name of the namespace"),
+    ("id" = String, path, description = "id or name of the namespace"),
   )
 )]
-#[web::get("/namespaces/{id_or_name}")]
-pub async fn get_by_id_or_name(
-    id_or_name: web::types::Path<String>,
+#[web::get("/namespaces/{id}/inspect")]
+async fn get_by_id_or_name(
+    id: web::types::Path<String>,
     pool: web::types::State<Pool>,
 ) -> Result<web::HttpResponse, HttpError> {
-    let id = id_or_name.into_inner();
-    let item = namespace::find_by_id_or_name(id, pool).await?;
+    let id_or_name = id.into_inner();
+    let item = namespace::inspect_by_id_or_name(id_or_name, &pool).await?;
 
     Ok(web::HttpResponse::Ok().json(&item))
 }
 
+/// Create a new namespace
 #[utoipa::path(
   post,
   path = "/namespaces",
@@ -55,33 +60,34 @@ pub async fn get_by_id_or_name(
   ),
 )]
 #[web::post("/namespaces")]
-pub async fn create(
+async fn create(
     pool: web::types::State<Pool>,
     payload: web::types::Json<NamespaceCreate>,
 ) -> Result<web::HttpResponse, HttpError> {
     let new_namespace = payload.into_inner();
-    let item = namespace::create(new_namespace, pool).await?;
+    let item = namespace::create(new_namespace, &pool).await?;
 
     Ok(web::HttpResponse::Created().json(&item))
 }
 
+/// Delete a namespace
 #[utoipa::path(
     delete,
-    path = "/namespaces/{id_or_name}",
+    path = "/namespaces/{id}",
     responses(
-        (status = 200, description = "Database delete response", body = PgDeleteGeneric),
+        (status = 200, description = "database generic delete response", body = PgDeleteGeneric),
     ),
     params(
-        ("id_or_name" = String, path, description = "Id or Name of the namespace"),
+        ("id" = String, path, description = "id or name of the namespace"),
     )
 )]
-#[web::delete("/namespaces/{id_or_name}")]
-pub async fn delete_by_id_or_name(
-    id_or_name: web::types::Path<String>,
+#[web::delete("/namespaces/{id}")]
+async fn delete_by_id_or_name(
+    id: web::types::Path<String>,
     pool: web::types::State<Pool>,
 ) -> Result<web::HttpResponse, HttpError> {
-    let id = id_or_name.into_inner();
-    let res = namespace::delete_by_id_or_name(id, pool).await?;
+    let id_or_name = id.into_inner();
+    let res = namespace::delete_by_id_or_name(id_or_name, &pool).await?;
     Ok(web::HttpResponse::Ok().json(&res))
 }
 
@@ -94,7 +100,6 @@ pub fn ntex_config(config: &mut web::ServiceConfig) {
 
 #[cfg(test)]
 mod test_namespace {
-    use ntex::web::test::TestServer;
     use serde_json::json;
 
     use crate::utils::test::*;
@@ -122,7 +127,6 @@ mod test_namespace {
         .send_json(&new_namespace)
         .await?;
 
-        println!("{:?}", resp);
         assert!(resp.status().is_success());
         Ok(())
     }
@@ -144,9 +148,9 @@ mod test_namespace {
         Ok(())
     }
 
-    async fn test_get_by_id(srv: &TestServer) -> TestReturn {
+    async fn test_inspect_by_id(srv: &TestServer) -> TestReturn {
         let resp = srv
-        .get(format!("/namespaces/{name}", name = "default"))
+        .get(format!("/namespaces/{name}/inspect", name = "default"))
         .send()
         .await?;
 
@@ -172,7 +176,7 @@ mod test_namespace {
 
         test_fail_create(&srv).await?;
         test_create(&srv).await?;
-        test_get_by_id(&srv).await?;
+        test_inspect_by_id(&srv).await?;
         test_list(&srv).await?;
         test_delete(&srv).await?;
         Ok(())

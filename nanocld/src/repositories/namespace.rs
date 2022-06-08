@@ -1,96 +1,149 @@
+/// Repository to manage namespaces in database
+/// We can create delete list or inspect a namespace
 use ntex::web;
 use uuid::Uuid;
 use diesel::prelude::*;
 
+use crate::utils::get_pool_conn;
 use crate::controllers::errors::HttpError;
 use crate::models::{NamespaceCreate, NamespaceItem, PgDeleteGeneric, Pool};
-use crate::utils::get_poll_conn;
 
-use super::errors::db_bloking_error;
+use super::errors::db_blocking_error;
 
+/// Create a fresh namespace
 pub async fn create(
     item: NamespaceCreate,
-    pool: web::types::State<Pool>,
+    pool: &web::types::State<Pool>,
 ) -> Result<NamespaceItem, HttpError> {
-    use crate::schema::namespaces::dsl::*;
+    use crate::schema::namespaces::dsl;
 
-    let conn = get_poll_conn(pool)?;
+    let conn = get_pool_conn(pool)?;
     let res = web::block(move || {
         let item = NamespaceItem {
             id: Uuid::new_v4(),
             name: item.name,
         };
-        diesel::insert_into(namespaces)
-        .values(&item)
+        diesel::insert_into(
+            dsl::namespaces
+        ).values(&item)
         .execute(&conn)?;
         Ok(item)
     }).await;
 
     match res {
-        Err(err) => Err(db_bloking_error(err)),
+        Err(err) => Err(db_blocking_error(err)),
         Ok(item) => Ok(item),
     }
 }
 
-pub async fn find_all(
-    pool: web::types::State<Pool>,
+
+/// List all namespace
+pub async fn list(
+    pool: &web::types::State<Pool>,
 ) -> Result<Vec<NamespaceItem>, HttpError> {
-    use crate::schema::namespaces::dsl::*;
-    
-    let conn = get_poll_conn(pool)?;
+    use crate::schema::namespaces::dsl;
+
+    let conn = get_pool_conn(pool)?;
     let res = web::block(move || {
-        namespaces.load::<NamespaceItem>(&conn)
+        dsl::namespaces.load(&conn)
     }).await;
 
     match res {
-        Err(err) => Err(db_bloking_error(err)),
+        Err(err) => Err(db_blocking_error(err)),
         Ok(items) => Ok(items)
     }
 }
 
-pub async fn find_by_id_or_name(
-    id_or_name: String,
-    pool: web::types::State<Pool>,
-) -> Result<NamespaceItem, HttpError> {
-    use crate::schema::namespaces::dsl::*;
-    let conn = get_poll_conn(pool)?;
 
+/// Inspect a namespace by it's name or id
+pub async fn inspect_by_id_or_name(
+    id_or_name: String,
+    pool: &web::types::State<Pool>,
+) -> Result<NamespaceItem, HttpError> {
+    use crate::schema::namespaces::dsl;
+
+    let conn = get_pool_conn(pool)?;
     let res = match Uuid::parse_str(&id_or_name) {
         Err(_) => web::block(move || {
-            namespaces.filter(name.eq(id_or_name))
-            .get_result::<NamespaceItem>(&conn)
+            dsl::namespaces.filter(
+                dsl::name.eq(id_or_name)
+            ).get_result(&conn)
         }).await,
         Ok(uuid) => web::block(move || {
-            namespaces.filter(id.eq(uuid))
-            .get_result::<NamespaceItem>(&conn)
+            dsl::namespaces.filter(
+                dsl::id.eq(uuid)
+            ).get_result(&conn)
         }).await,
     };
 
     match res {
-        Err(err) => Err(db_bloking_error(err)),
+        Err(err) => Err(db_blocking_error(err)),
         Ok(item) => Ok(item),
     }
 }
 
+/// Delete a namespace by it's name or id
 pub async fn delete_by_id_or_name(
     id_or_name: String,
-    pool: web::types::State<Pool>,
+    pool: &web::types::State<Pool>,
 ) -> Result<PgDeleteGeneric, HttpError> {
-    use crate::schema::namespaces::dsl::*;
-    
-    let conn = get_poll_conn(pool)?;
+    use crate::schema::namespaces::dsl;
 
+    let conn = get_pool_conn(pool)?;
     let res = match Uuid::parse_str(&id_or_name) {
         Err(_) => web::block(move || {
-            diesel::delete(namespaces.filter(name.eq(id_or_name))).execute(&conn)
+            diesel::delete(
+                dsl::namespaces.filter(dsl::name.eq(id_or_name))
+            ).execute(&conn)
         }).await,
         Ok(uuid) => web::block(move || {
-            diesel::delete(namespaces.filter(id.eq(uuid))).execute(&conn)
+            diesel::delete(
+                dsl::namespaces.filter(dsl::id.eq(uuid))
+            ).execute(&conn)
         }).await,
     };
 
     match res {
-        Err(err) => Err(db_bloking_error(err)),
+        Err(err) => Err(db_blocking_error(err)),
         Ok(result) => Ok(PgDeleteGeneric { count: result }),
+    }
+}
+
+#[cfg(test)]
+mod test_namespace {
+    use crate::postgre;
+    use super::*;
+
+    #[ntex::test]
+    async fn main() -> Result<(), HttpError> {
+        let pool = postgre::create_pool();
+        let pool_state = web::types::State::new(pool);
+
+        // List namespace
+        let res = list(&pool_state).await?;
+        assert!(res.is_empty());
+        let namespace_name = String::from("default");
+        let item = NamespaceCreate {
+            name: namespace_name.clone()
+        };
+        // Create namespace
+        let res = create(
+            item,
+            &pool_state,
+        ).await?;
+        assert_eq!(res.name, namespace_name.clone());
+        // Inspect namespace
+        let res = inspect_by_id_or_name(
+            namespace_name.clone(),
+            &pool_state,
+        ).await?;
+        assert_eq!(res.name, namespace_name.clone());
+        // Delete namespace
+        let res = delete_by_id_or_name(
+            namespace_name.clone(),
+            &pool_state,
+        ).await?;
+        assert_eq!(res.count, 1);
+        Ok(())
     }
 }

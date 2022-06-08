@@ -1,12 +1,12 @@
-use crate::schema::{clusters, git_repositories, namespaces};
-use diesel::{r2d2::ConnectionManager, PgConnection};
-use diesel_derive_enum::DbEnum;
-use r2d2::PooledConnection;
-use serde::{Deserialize, Serialize};
-use utoipa::Component;
 use uuid::Uuid;
+use utoipa::Component;
+use r2d2::PooledConnection;
+use diesel_derive_enum::DbEnum;
+use serde::{Deserialize, Serialize};
+use diesel::{r2d2::ConnectionManager, PgConnection, sql_types::Nullable, QueryDsl};
+use crate::schema::{clusters, git_repositories, namespaces};
 
-// pub type Docker = bollard::Docker;
+pub type Docker = bollard::Docker;
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
 pub type DBConn = PooledConnection<ConnectionManager<PgConnection>>;
 
@@ -40,17 +40,15 @@ pub enum GitRepositorySourceType {
 #[table_name = "git_repositories"]
 pub struct GitRepositoryItem {
     pub(crate) id: Uuid,
-    pub(crate) namespace: String,
     pub(crate) name: String,
-    pub(crate) owner: String,
-    pub(crate) token: String,
+    pub(crate) gen_url: String,
+    pub(crate) token: Option<String>,
     pub(crate) source: GitRepositorySourceType,
 }
 
-#[derive(Component, Deserialize)]
+#[derive(Component, Serialize, Deserialize)]
 pub struct GitRepositoryCreate {
     pub(crate) name: String,
-    pub(crate) owner: String,
     pub(crate) token: Option<String>,
     pub(crate) source: GitRepositorySourceType,
 }
@@ -60,6 +58,7 @@ pub struct GitRepositoryCreate {
 pub struct ClusterItem {
     pub(crate) id: Uuid,
     pub(crate) name: String,
+    pub(crate) gen_id: String,
     pub(crate) namespace: String,
 }
 
