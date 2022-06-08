@@ -6,6 +6,7 @@ use ntex::web;
 use ntex_files as fs;
 
 mod utils;
+mod docker;
 mod schema;
 mod models;
 mod openapi;
@@ -29,8 +30,9 @@ async fn main() -> std::io::Result<()> {
         .app_state(web::types::JsonConfig::default().limit(4096))
         .configure(openapi::ntex_config)
         .configure(controllers::namespace::ntex_config)
-        .configure(controllers::namespace_git_repository::ntex_config)
-        .configure(controllers::namespace_cluster::ntex_config)
+        .configure(controllers::cluster_network::ntex_config)
+        .configure(controllers::git_repository::ntex_config)
+        .configure(controllers::cluster::ntex_config)
         .service(fs::Files::new("/websocket", "./static/websocket").index_file("index.html"))
     });
     server = server.bind("0.0.0.0:8383")?;

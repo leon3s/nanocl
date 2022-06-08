@@ -1,4 +1,5 @@
 pub mod errors;
+pub mod cluster;
 pub mod namespace;
-pub mod namespace_cluster;
-pub mod namespace_git_repository;
+pub mod cluster_network;
+pub mod git_repository;

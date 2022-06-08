@@ -1,5 +1,7 @@
 table! {
     use diesel::sql_types::*;
+    use crate::models::exports::*;
+
     cargos (id) {
         id -> Uuid,
         namespace -> Varchar,
@@ -9,10 +11,13 @@ table! {
 
 table! {
     use diesel::sql_types::*;
+    use crate::models::exports::*;
+
     clusters (id) {
         id -> Uuid,
         name -> Varchar,
         namespace -> Varchar,
+        gen_id -> Varchar,
     }
 }
 
@@ -22,16 +27,17 @@ table! {
 
     git_repositories (id) {
         id -> Uuid,
-        namespace -> Varchar,
         name -> Varchar,
-        owner -> Varchar,
-        token -> Varchar,
+        gen_url -> Varchar,
+        token -> Nullable<Varchar>,
         source -> Git_repository_source_type,
     }
 }
 
 table! {
     use diesel::sql_types::*;
+    use crate::models::exports::*;
+
     namespaces (id) {
         id -> Uuid,
         name -> Varchar,
@@ -40,6 +46,8 @@ table! {
 
 table! {
     use diesel::sql_types::*;
+    use crate::models::exports::*;
+
     users (id) {
         id -> Uuid,
         name -> Varchar,
@@ -47,4 +55,10 @@ table! {
     }
 }
 
-allow_tables_to_appear_in_same_query!(cargos, clusters, git_repositories, namespaces, users,);
+allow_tables_to_appear_in_same_query!(
+    cargos,
+    clusters,
+    git_repositories,
+    namespaces,
+    users,
+);
