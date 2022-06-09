@@ -4,8 +4,10 @@
 use ntex::web;
 use serde::{Serialize, Deserialize};
 
+use crate::services::github;
 use crate::repositories::git_repository;
-use crate::models::{GitRepositoryCreate, Pool};
+use crate::models::{Pool, GitRepositoryCreate};
+
 
 use super::errors::HttpError;
 
@@ -53,15 +55,18 @@ async fn create(
     pool: web::types::State<Pool>,
     web::types::Json(payload): web::types::Json<GitRepositoryCreate>,
 ) -> Result<web::HttpResponse, HttpError> {
-    let item = git_repository
-    ::create(payload, &pool).await?;
 
-   Ok(web::HttpResponse::Created().json(&item))
-}
+  let res = github::validate_repository(&payload).await;
 
-#[derive(Debug, Deserialize)]
-struct DeletePath {
-  pub(crate) tail: String,
+  let item = git_repository::create(
+    payload,
+    &pool,
+  ).await?;
+
+  Ok(
+    web::HttpResponse::Created()
+    .json(&item)
+  )
 }
 
 /// Endpoint to delete a git repository by it's id or name for given namespace
@@ -78,34 +83,15 @@ struct DeletePath {
     (status = 404, description = "Namespace name not valid"),
   ),
 )]
-#[web::delete("/git_repositories/{tail:.*}")]
+#[web::delete("/git_repositories/{id}*")]
 async fn delete_by_id_or_name(
   pool: web::types::State<Pool>,
-  req_path: web::types::Path<DeletePath>,
+  req_path: web::types::Path<String>,
 ) -> Result<web::HttpResponse, HttpError> {
-  // let id = match &req_path.1 {
-  //   None => req_path.0.to_owned(),
-  //   Some(more_id) => req_path.0.to_owned() + "/" + more_id,
-  // };
   let id = req_path.into_inner();
   println!("git repository id to delete {:?}", id);
-  // let res = git_repository::delete_by_id_or_name(id, &pool).await?;
-  Ok(web::HttpResponse::Ok().into())
-}
-
-#[derive(Debug, Deserialize)]
-struct TestPath {
-  pub(crate) bar: String,
-  pub(crate) tail: String,
-}
-
-#[web::get(r"foo/{bar}/{tail:.*}")]
-async fn test_path(
-  path: web::types::Path<TestPath>,
-)
--> Result<web::HttpResponse, HttpError> {
-  println!("path : {:?}", path);
-  Ok(web::HttpResponse::Ok().body("gg"))
+  let res = git_repository::delete_by_id_or_name(id, &pool).await?;
+  Ok(web::HttpResponse::Ok().json(&res))
 }
 
 /// Configure ntex to bind our routes
@@ -113,7 +99,6 @@ pub fn ntex_config(config: &mut web::ServiceConfig) {
   config.service(list);
   config.service(create);
   config.service(delete_by_id_or_name);
-  config.service(web::scope("/test").service(test_path));
 }
 
 #[cfg(test)]
@@ -139,7 +124,7 @@ mod test_namespace_git_repository {
 
   async fn test_create(srv: &TestServer) -> TestReturn {
     let new_repository = GitRepositoryCreate {
-        name: String::from("test-user/test-repo"),
+        name: String::from("leon3s/express-test-deploy"),
         token: None,
         source: GitRepositorySourceType::Github,
     };
@@ -164,7 +149,7 @@ mod test_namespace_git_repository {
 
     let item = res.json::<GitRepositoryItem>().await?;
 
-    let mut res = srv.delete(format!("/git_repositories/{id}/", id = item.id)).send().await?;
+    let mut res = srv.delete(format!("/git_repositories/{id}", id = item.id)).send().await?;
 
     println!("res : {:?}", res);
 
@@ -176,9 +161,13 @@ mod test_namespace_git_repository {
     Ok(())
   }
 
+  async fn test_create_fail(srv: &TestServer) -> TestReturn {
+    Ok(())
+  }
+
   async fn test_delete_by_name(srv: &TestServer) -> TestReturn {
     let mut res = srv
-    .delete("/git_repositories/test-user/test-repo")
+    .delete("/git_repositories/leon3s/express-test-deploy")
     .send().await?;
     println!("res {:?}", res);
     let body = res.body().await?;

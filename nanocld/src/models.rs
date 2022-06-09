@@ -3,7 +3,7 @@ use utoipa::Component;
 use r2d2::PooledConnection;
 use diesel_derive_enum::DbEnum;
 use serde::{Deserialize, Serialize};
-use diesel::{r2d2::ConnectionManager, PgConnection, sql_types::Nullable, QueryDsl};
+use diesel::{r2d2::ConnectionManager, PgConnection};
 use crate::schema::{clusters, git_repositories, namespaces};
 
 pub type Docker = bollard::Docker;
