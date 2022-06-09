@@ -5,7 +5,7 @@ use bollard::network::ListNetworksOptions;
 
 use crate::models::{Docker, Pool};
 
-use crate::repositories::{namespace, cluster};
+use crate::repositories::{cluster};
 
 use super::errors::HttpError;
 
