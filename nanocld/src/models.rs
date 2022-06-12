@@ -41,16 +41,16 @@ pub enum GitRepositorySourceType {
 pub struct GitRepositoryItem {
     pub(crate) id: Uuid,
     pub(crate) name: String,
-    pub(crate) gen_url: String,
+    pub(crate) url: String,
     pub(crate) token: Option<String>,
     pub(crate) source: GitRepositorySourceType,
 }
 
 #[derive(Component, Serialize, Deserialize)]
 pub struct GitRepositoryCreate {
+    pub(crate) url: String,
     pub(crate) name: String,
     pub(crate) token: Option<String>,
-    pub(crate) source: GitRepositorySourceType,
 }
 
 #[derive(Component, Serialize, Deserialize, Insertable, Queryable)]

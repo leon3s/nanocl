@@ -2,18 +2,11 @@ use ntex::web;
 use uuid::Uuid;
 use diesel::prelude::*;
 
+use crate::services::github;
 use crate::utils::get_pool_conn;
 use crate::controllers::errors::HttpError;
 use crate::repositories::errors::db_blocking_error;
 use crate::models::{GitRepositorySourceType, GitRepositoryCreate, GitRepositoryItem, Pool, PgDeleteGeneric};
-
-fn gen_git_repository_url(item: &GitRepositoryCreate) -> String {
-    "https://".to_owned() + match item.source {
-        GitRepositorySourceType::Github => "github.com",
-        GitRepositorySourceType::Gitlab => "gitlab.com",
-        GitRepositorySourceType::Local => "localhost",
-    } + "/" + &item.name + ".git"
-}
 
 /// Create git repository
 pub async fn create(
@@ -24,13 +17,13 @@ pub async fn create(
 
     let conn = get_pool_conn(pool)?;
     let res = web::block(move || {
-        let url = gen_git_repository_url(&item);
+        github::parse_git_url(&item.url);
         let new_namespace = GitRepositoryItem {
+            url: item.url,
             id: Uuid::new_v4(),
             name: item.name,
-            gen_url: url,
-            token: None,
-            source: item.source,
+            token: item.token,
+            source: GitRepositorySourceType::Github,
         };
         diesel::insert_into(
             dsl::git_repositories
@@ -104,9 +97,9 @@ mod test_git_repository {
             &pool_state,
         ).await.unwrap();
         let item = GitRepositoryCreate {
+            token: None,
             name: String::from("test"),
-            token: Some(String::from("test")),
-            source: GitRepositorySourceType::Github,
+            url: String::from("https://github.com/leon3s/express-test-deploy"),
         };
         // Create
         let res = create(
@@ -124,7 +117,7 @@ mod test_git_repository {
         let item = GitRepositoryCreate {
             name: String::from("test"),
             token: Some(String::from("test")),
-            source: GitRepositorySourceType::Github,
+            url: String::from("https://github.com/leon3s/express-test-deploy"),
         };
         let res = create(
             item,

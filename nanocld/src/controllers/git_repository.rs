@@ -16,12 +16,12 @@ struct GitRepositoryQuery {
   namespace: Option<String>,
 }
 
-/// Endpoint to get list of git repositories for a given namespace
+/// Endpoint to get list of git repositories
 #[utoipa::path(
   get,
   path = "/git_repositories",
   responses(
-      (status = 200, description = "Array of git_repository", body = GitRepositoryItem),
+      (status = 200, description = "Array of git_repository", body = [GitRepositoryItem]),
   ),
 )]
 #[web::get("/git_repositories")]
@@ -35,14 +35,11 @@ async fn list(
   Ok(web::HttpResponse::Ok().json(&items))
 }
 
-/// Endpoint to create a git repository in given namespace
+/// Endpoint to create a git repository
 #[utoipa::path(
   post,
   path = "/git_repositories",
   request_body = GitRepositoryCreate,
-  params(
-    ("namespace" = Option<String>, query, description = "Namespace to add git repository in if empty we use 'default' as value"),
-  ),
   responses(
     (status = 201, description = "Fresh created git_repository", body = GitRepositoryItem),
     (status = 400, description = "Generic database error"),
@@ -56,7 +53,7 @@ async fn create(
     web::types::Json(payload): web::types::Json<GitRepositoryCreate>,
 ) -> Result<web::HttpResponse, HttpError> {
 
-  let res = github::validate_repository(&payload).await;
+  let res = github::list_branches(&payload).await;
 
   let item = git_repository::create(
     payload,
@@ -72,10 +69,9 @@ async fn create(
 /// Endpoint to delete a git repository by it's id or name for given namespace
 #[utoipa::path(
   delete,
-  path = "/git_repositories/{id}",
+  path = "/git_repositories/{id}*",
   params(
     ("id" = String, path, description = "Id or name of git repository"),
-    ("namespace" = Option<String>, query, description = "Namespace to add git repository in if empty we use 'default' as value"),
   ),
   responses(
     (status = 201, description = "Number of entry deleted", body = PgDeleteGeneric),
@@ -83,7 +79,7 @@ async fn create(
     (status = 404, description = "Namespace name not valid"),
   ),
 )]
-#[web::delete("/git_repositories/{id}*")]
+#[web::delete("/git_repositories/{id}")]
 async fn delete_by_id_or_name(
   pool: web::types::State<Pool>,
   req_path: web::types::Path<String>,
@@ -124,9 +120,9 @@ mod test_namespace_git_repository {
 
   async fn test_create(srv: &TestServer) -> TestReturn {
     let new_repository = GitRepositoryCreate {
-        name: String::from("leon3s/express-test-deploy"),
+        name: String::from("express-test-deploy"),
         token: None,
-        source: GitRepositorySourceType::Github,
+        url: String::from("https://github.com/leon3s/express-test-deploy"),
     };
     let res = srv
     .post("/git_repositories")
@@ -138,9 +134,9 @@ mod test_namespace_git_repository {
 
   async fn test_delete_by_id(srv: &TestServer) -> TestReturn {
     let new_repository = GitRepositoryCreate {
-      name: String::from("test-user/test-repo2"),
       token: None,
-      source: GitRepositorySourceType::Github,
+      name: String::from("test-repo2"),
+      url: String::from("https://github.com/leon3s/express-test-deploy"),
     };
     let mut res = srv
     .post("/git_repositories")
@@ -167,7 +163,7 @@ mod test_namespace_git_repository {
 
   async fn test_delete_by_name(srv: &TestServer) -> TestReturn {
     let mut res = srv
-    .delete("/git_repositories/leon3s/express-test-deploy")
+    .delete("/git_repositories/express-test-deploy")
     .send().await?;
     println!("res {:?}", res);
     let body = res.body().await?;
