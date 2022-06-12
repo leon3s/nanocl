@@ -883,6 +883,7 @@ dependencies = [
  "serde_json",
  "serde_with",
  "sysinfo",
+ "url",
  "utoipa",
  "uuid 0.8.2",
 ]
@@ -1827,6 +1828,7 @@ dependencies = [
  "idna",
  "matches",
  "percent-encoding",
+ "serde",
 ]
 
 [[package]]

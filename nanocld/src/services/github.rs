@@ -1,15 +1,48 @@
-use serde_json::Value;
-use ntex::http::client::{Client, error::SendRequestError};
+use url::{Url, ParseError};
+use ntex::http::client::Client;
+use serde::{Serialize, Deserialize};
 
 use crate::models::GitRepositoryCreate;
 
-pub async fn validate_repository(item: &GitRepositoryCreate) -> Result<(), SendRequestError> {
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GitRepositoryBranch {
+  pub(crate) name: String,
+}
 
+#[derive(Debug)]
+pub struct GitDesc {
+  pub(crate) host: String,
+  pub(crate) path: String,
+}
+
+pub fn parse_git_url(url: &String) -> Result<GitDesc, ParseError> {
+  let url_parsed = Url::parse(url)?;
+
+  let host = match url_parsed.host_str() {
+    Some(host) => host,
+    None => {
+      return Err(ParseError::EmptyHost)
+    },
+  };
+
+  let path = url_parsed.path();
+
+  let result = GitDesc {
+    host: host.to_string(),
+    path: path.to_string(),
+  };
+
+  Ok(result)
+}
+
+pub async fn list_branches(
+  item: &GitRepositoryCreate,
+) -> Result<Vec<GitRepositoryBranch>, Box<dyn std::error::Error + 'static>> {
   let client = Client::new();
 
-  let url = "https://api.github.com/repos/".to_owned() + &item.name + "/branches";
+  let git_desc = parse_git_url(&item.url)?;
 
-  println!("url : {:?}", url);
+  let url = "https://api.github.com/repos".to_owned() + &git_desc.path + "/branches";
 
   let mut res = client
   .get(url)
@@ -17,9 +50,32 @@ pub async fn validate_repository(item: &GitRepositoryCreate) -> Result<(), SendR
   .set_header("User-Agent", "ntex-client")
   .send()
   .await?;
+  let body = res.json::<Vec<GitRepositoryBranch>>().await?;
+  Ok(body)
+}
 
-  let body = res.json::<Value>().await;
 
-  println!("github response {:?} body {:?}", res, body);
-  Ok(())
+#[cfg(test)]
+mod test_github {
+
+  use crate::models::{
+    GitRepositoryCreate,
+    GitRepositorySourceType,
+  };
+
+  use super::*;
+
+  use crate::utils::test::*;
+
+  #[ntex::test]
+  async fn list_repository_branches() -> TestReturn {
+    let item = GitRepositoryCreate {
+      name: String::from("express-test-deploy"),
+      token: None,
+      url: String::from("https://github.com/leon3s/express-test-deploy"),
+    };
+    let branches = list_branches(&item).await?;
+    println!("branches : {:?}", branches);
+    Ok(())
+  }
 }
