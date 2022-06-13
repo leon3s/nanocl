@@ -1,7 +1,6 @@
 use ntex::{http::StatusCode, web};
 
 use crate::models::{DBConn, Pool};
-
 use crate::controllers::errors::HttpError;
 
 pub fn get_pool_conn(

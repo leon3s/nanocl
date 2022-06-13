@@ -70,7 +70,7 @@ mod test_cluster_network {
   async fn list_networks(srv: &TestServer) -> TestReturn {
     let mut res = srv.get("/clusters/default/networks").send().await?;
 
-    let body = res.body().await;
+    let _body = res.body().await;
     Ok(())
   }
 
