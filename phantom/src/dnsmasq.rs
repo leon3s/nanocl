@@ -2,10 +2,7 @@ use bollard::{
   Docker,
   errors::Error as DockerError,
   models::HostConfig,
-  container::{
-    Config,
-    CreateContainerOptions,
-  },
+  container::{Config, CreateContainerOptions},
 };
 
 use crate::docker_helper::*;
@@ -23,21 +20,22 @@ fn gen_dnsmasq_host_conf() -> HostConfig {
   }
 }
 
-async fn create_dnsmasq_container(docker: &Docker, name: &str) -> Result<(), DockerError> {
+async fn create_dnsmasq_container(
+  docker: &Docker,
+  name: &str,
+) -> Result<(), DockerError> {
   let image = Some("nanocl-dns-dnsmasq:latest");
   let labels = Some(gen_label_namespace("nanocl"));
   let host_config = Some(gen_dnsmasq_host_conf());
-  let options = Some(CreateContainerOptions{
-    name,
-  });
+  let options = Some(CreateContainerOptions { name });
   let config = Config {
-      image,
-      labels,
-      host_config,
-      tty: Some(true),
-      attach_stdout: Some(true),
-      attach_stderr: Some(true),
-      ..Default::default()
+    image,
+    labels,
+    host_config,
+    tty: Some(true),
+    attach_stdout: Some(true),
+    attach_stderr: Some(true),
+    ..Default::default()
   };
   docker.create_container(options, config).await?;
   Ok(())

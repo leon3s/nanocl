@@ -1,7 +1,4 @@
-use bollard::{
-  Docker,
-  errors::Error as DockerError,
-};
+use bollard::{Docker, errors::Error as DockerError};
 
 use crate::docker_helper;
 

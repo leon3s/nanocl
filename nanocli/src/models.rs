@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use serde::{Serialize, Deserialize};
 
-
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct YmlFile {
   // name of the namespace

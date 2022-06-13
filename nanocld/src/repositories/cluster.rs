@@ -28,7 +28,7 @@ pub async fn create_for_namespace(
             gen_id: genid,
             namespace: nsp,
         };
-    
+
         diesel::insert_into(clusters)
             .values(&new_cluster)
             .execute(&conn)?;

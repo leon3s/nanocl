@@ -1,13 +1,13 @@
-use ntex::http::StatusCode;
 /**
  * HTTP Method to administrate git_repositories
  */
+use ntex::http::StatusCode;
 use ntex::web;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-use crate::services::github;
+use crate::models::{GitRepositoryBranchCreate, GitRepositoryCreate, Pool};
 use crate::repositories::{git_repository, git_repository_branch};
-use crate::models::{Pool, GitRepositoryCreate, GitRepositoryBranchCreate};
+use crate::services::github;
 
 use super::errors::HttpError;
 
@@ -26,11 +26,9 @@ struct GitRepositoryQuery {
 )]
 #[web::get("/git_repositories")]
 async fn list(
-    pool: web::types::State<Pool>,
+  pool: web::types::State<Pool>,
 ) -> Result<web::HttpResponse, HttpError> {
-  let items = git_repository::list(
-    &pool,
-  ).await?;
+  let items = git_repository::list(&pool).await?;
 
   Ok(web::HttpResponse::Ok().json(&items))
 }
@@ -49,42 +47,38 @@ async fn list(
 )]
 #[web::post("/git_repositories")]
 async fn create(
-    pool: web::types::State<Pool>,
-    web::types::Json(payload): web::types::Json<GitRepositoryCreate>,
+  pool: web::types::State<Pool>,
+  web::types::Json(payload): web::types::Json<GitRepositoryCreate>,
 ) -> Result<web::HttpResponse, HttpError> {
-
   let res = github::list_branches(&payload).await;
 
   let gitbranches = match res {
     Err(_) => {
       return Err(HttpError {
         status: StatusCode::BAD_REQUEST,
-        msg: String::from("unable to list branch for this git repository may token missing ?"),
+        msg: String::from(
+          "unable to list branch for this git repository may token missing ?",
+        ),
       })
-    },
+    }
     Ok(branches) => branches,
   };
-  
-  let item = git_repository::create(
-    payload,
-    &pool,
-  ).await?;
+
+  let item = git_repository::create(payload, &pool).await?;
 
   // TODO create branches for this git repository
 
-  let branches = gitbranches.into_iter().map(|branch| {
-    GitRepositoryBranchCreate {
+  let branches = gitbranches
+    .into_iter()
+    .map(|branch| GitRepositoryBranchCreate {
       name: branch.name,
       repository_id: item.id,
-    }
-  }).collect::<Vec<GitRepositoryBranchCreate>>();
+    })
+    .collect::<Vec<GitRepositoryBranchCreate>>();
 
   git_repository_branch::create_many(branches, &pool).await?;
 
-  Ok(
-    web::HttpResponse::Created()
-    .json(&item)
-  )
+  Ok(web::HttpResponse::Created().json(&item))
 }
 
 /// Endpoint to delete a git repository by it's id or name for given namespace
@@ -109,7 +103,9 @@ async fn delete_by_id_or_name(
   println!("git repository id to delete {:?}", id);
   let repository = git_repository::find_by_id_or_name(id, &pool).await?;
   git_repository_branch::delete_by_repository_id(repository.id, &pool).await?;
-  let res = git_repository::delete_by_id_or_name(repository.id.to_string(), &pool).await?;
+  let res =
+    git_repository::delete_by_id_or_name(repository.id.to_string(), &pool)
+      .await?;
   Ok(web::HttpResponse::Ok().json(&res))
 }
 
@@ -122,19 +118,14 @@ pub fn ntex_config(config: &mut web::ServiceConfig) {
 
 #[cfg(test)]
 mod test_namespace_git_repository {
+  use crate::models::{GitRepositoryCreate, GitRepositoryItem};
   use crate::utils::test::*;
-  use crate::models::{
-    GitRepositoryItem,
-    GitRepositoryCreate,
-  };
 
-  use super::ntex_config;  
+  use super::ntex_config;
 
   // Test to list git repositories
   async fn test_list(srv: &TestServer) -> TestReturn {
-    let resp = srv
-    .get("/git_repositories")
-    .send().await?;
+    let resp = srv.get("/git_repositories").send().await?;
 
     assert!(resp.status().is_success());
     Ok(())
@@ -143,14 +134,14 @@ mod test_namespace_git_repository {
   // test to create git repository from opensource github
   async fn test_create(srv: &TestServer) -> TestReturn {
     let new_repository = GitRepositoryCreate {
-        name: String::from("express-test-deploy"),
-        token: None,
-        url: String::from("https://github.com/leon3s/express-test-deploy"),
+      name: String::from("express-test-deploy"),
+      token: None,
+      url: String::from("https://github.com/leon3s/express-test-deploy"),
     };
     let res = srv
-    .post("/git_repositories")
-    .send_json(&new_repository)
-    .await?;
+      .post("/git_repositories")
+      .send_json(&new_repository)
+      .await?;
     assert!(res.status().is_success());
     Ok(())
   }
@@ -158,8 +149,9 @@ mod test_namespace_git_repository {
   // test to delete previous created repository by it's name
   async fn test_delete_by_name(srv: &TestServer) -> TestReturn {
     let mut res = srv
-    .delete("/git_repositories/express-test-deploy")
-    .send().await?;
+      .delete("/git_repositories/express-test-deploy")
+      .send()
+      .await?;
     println!("res {:?}", res);
     let body = res.body().await?;
     println!("body : {:?}", body);
@@ -175,11 +167,14 @@ mod test_namespace_git_repository {
       url: String::from("https://github.com/leon3s/express-test-deploy"),
     };
     let mut res = srv
-    .post("/git_repositories")
-    .send_json(&new_repository)
-    .await?;
+      .post("/git_repositories")
+      .send_json(&new_repository)
+      .await?;
     let item = res.json::<GitRepositoryItem>().await?;
-    let mut res = srv.delete(format!("/git_repositories/{id}", id = item.id)).send().await?;
+    let mut res = srv
+      .delete(format!("/git_repositories/{id}", id = item.id))
+      .send()
+      .await?;
     println!("res : {:?}", res);
     let body = res.body().await?;
     println!("body : {:?}", body);

@@ -1,0 +1,6 @@
+indent_style = "Block"
+max_width = 80
+tab_spaces = 2
+imports_layout = "Vertical"
+reorder_imports = false
+

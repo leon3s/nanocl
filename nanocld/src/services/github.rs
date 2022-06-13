@@ -1,6 +1,6 @@
-use url::{Url, ParseError};
 use ntex::http::client::Client;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use url::{ParseError, Url};
 
 use crate::models::GitRepositoryCreate;
 
@@ -20,9 +20,7 @@ pub fn parse_git_url(url: &str) -> Result<GitDesc, ParseError> {
 
   let host = match url_parsed.host_str() {
     Some(host) => host,
-    None => {
-      return Err(ParseError::EmptyHost)
-    },
+    None => return Err(ParseError::EmptyHost),
   };
 
   let path = url_parsed.path();
@@ -42,14 +40,18 @@ pub async fn list_branches(
 
   let git_desc = parse_git_url(&item.url)?;
 
-  let url = "https://api.".to_owned() + &git_desc.host + "/repos" + &git_desc.path + "/branches";
+  let url = "https://api.".to_owned()
+    + &git_desc.host
+    + "/repos"
+    + &git_desc.path
+    + "/branches";
 
   let mut res = client
-  .get(url)
-  .set_header("Accept", "application/vnd.github.v3+json")
-  .set_header("User-Agent", "ntex-client")
-  .send()
-  .await?;
+    .get(url)
+    .set_header("Accept", "application/vnd.github.v3+json")
+    .set_header("User-Agent", "ntex-client")
+    .send()
+    .await?;
   let body = res.json::<Vec<GitBranch>>().await?;
   Ok(body)
 }
