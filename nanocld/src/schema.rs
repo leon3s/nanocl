@@ -35,6 +35,16 @@ table! {
 table! {
     use diesel::sql_types::*;
 
+    git_repository_branches (id) {
+        id -> Uuid,
+        name -> Varchar,
+        repository_id -> Uuid,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+
     namespaces (id) {
         id -> Uuid,
         name -> Varchar,
@@ -55,6 +65,7 @@ allow_tables_to_appear_in_same_query!(
     cargos,
     clusters,
     git_repositories,
+    git_repository_branches,
     namespaces,
     users,
 );

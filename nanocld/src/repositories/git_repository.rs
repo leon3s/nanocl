@@ -2,7 +2,6 @@ use ntex::web;
 use uuid::Uuid;
 use diesel::prelude::*;
 
-use crate::services::github;
 use crate::utils::get_pool_conn;
 use crate::controllers::errors::HttpError;
 use crate::repositories::errors::db_blocking_error;
@@ -17,7 +16,6 @@ pub async fn create(
 
     let conn = get_pool_conn(pool)?;
     let res = web::block(move || {
-        github::parse_git_url(&item.url);
         let new_namespace = GitRepositoryItem {
             url: item.url,
             id: Uuid::new_v4(),
@@ -65,6 +63,32 @@ pub async fn delete_by_id_or_name(
     }
 }
 
+pub async fn find_by_id_or_name(
+    id_or_name: String,
+    pool: &web::types::State<Pool>,
+) -> Result<GitRepositoryItem, HttpError> {
+    use crate::schema::git_repositories::dsl;
+
+    let conn = get_pool_conn(pool)?;
+    let res = match Uuid::parse_str(&id_or_name) {
+        Err(_) => web::block(move || {
+            dsl::git_repositories.filter(
+                dsl::name.eq(id_or_name),
+            ).get_result(&conn)
+        }).await,
+        Ok(uuid) => web::block(move || {
+            dsl::git_repositories.filter(
+                dsl::id.eq(uuid),
+            ).get_result(&conn)
+        }).await,
+    };
+
+    match res {
+        Err(err) => Err(db_blocking_error(err)),
+        Ok(item) => Ok(item),
+    }
+}
+
 /// List all git repository
 pub async fn list(
     pool: &web::types::State<Pool>,
@@ -84,7 +108,6 @@ pub async fn list(
 #[cfg(test)]
 mod test_git_repository {
     use crate::postgre;
-    use crate::models::GitRepositorySourceType;
 
     use super::*;
 
@@ -106,6 +129,12 @@ mod test_git_repository {
             item,
             &pool_state,
         ).await.unwrap();
+        assert_eq!(res.name, "test");
+
+        // Find by id or name
+        let res = find_by_id_or_name(res.name, &pool_state).await.unwrap();
+        assert_eq!(res.name, "test");
+        let res = find_by_id_or_name(res.id.to_string(), &pool_state).await.unwrap();
         assert_eq!(res.name, "test");
 
         // Delete with id

@@ -5,7 +5,7 @@ use serde::{Serialize, Deserialize};
 use crate::models::GitRepositoryCreate;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct GitRepositoryBranch {
+pub struct GitBranch {
   pub(crate) name: String,
 }
 
@@ -15,7 +15,7 @@ pub struct GitDesc {
   pub(crate) path: String,
 }
 
-pub fn parse_git_url(url: &String) -> Result<GitDesc, ParseError> {
+pub fn parse_git_url(url: &str) -> Result<GitDesc, ParseError> {
   let url_parsed = Url::parse(url)?;
 
   let host = match url_parsed.host_str() {
@@ -37,7 +37,7 @@ pub fn parse_git_url(url: &String) -> Result<GitDesc, ParseError> {
 
 pub async fn list_branches(
   item: &GitRepositoryCreate,
-) -> Result<Vec<GitRepositoryBranch>, Box<dyn std::error::Error + 'static>> {
+) -> Result<Vec<GitBranch>, Box<dyn std::error::Error + 'static>> {
   let client = Client::new();
 
   let git_desc = parse_git_url(&item.url)?;
@@ -50,17 +50,14 @@ pub async fn list_branches(
   .set_header("User-Agent", "ntex-client")
   .send()
   .await?;
-  let body = res.json::<Vec<GitRepositoryBranch>>().await?;
+  let body = res.json::<Vec<GitBranch>>().await?;
   Ok(body)
 }
 
 #[cfg(test)]
 mod test_github {
 
-  use crate::models::{
-    GitRepositoryCreate,
-    GitRepositorySourceType,
-  };
+  use crate::models::GitRepositoryCreate;
 
   use super::*;
 

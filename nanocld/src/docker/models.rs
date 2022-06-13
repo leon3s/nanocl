@@ -25,7 +25,6 @@ fn deserialize_nonoptional_map<'de, D: Deserializer<'de>, T: DeserializeOwned>(
     serde::Deserialize::deserialize(d).map(|x: Option<_>| x.unwrap_or(HashMap::new()))
 }
 
-
 /// Address represents an IPv4 or IPv6 IP address.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Address {
