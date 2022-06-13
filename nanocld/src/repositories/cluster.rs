@@ -5,7 +5,12 @@ use diesel::prelude::*;
 use crate::utils::get_pool_conn;
 use crate::controllers::errors::HttpError;
 use crate::repositories::errors::db_blocking_error;
-use crate::models::{ClusterCreate, ClusterItem, Pool};
+use crate::models::{
+    Pool,
+    ClusterItem,
+    ClusterCreate,
+    PgDeleteGeneric,
+};
 
 pub async fn create_for_namespace(
     nsp: String,
@@ -16,7 +21,7 @@ pub async fn create_for_namespace(
     let conn = get_pool_conn(pool)?;
 
     let res = web::block(move || {
-        let genid = nsp.to_owned() + &item.name;
+        let genid = nsp.to_owned() + "-" + &item.name;
         let new_cluster = ClusterItem {
             id: Uuid::new_v4(),
             name: item.name,
@@ -84,6 +89,27 @@ pub async fn find_by_namespace(
     match res {
         Err(err) => Err(db_blocking_error(err)),
         Ok(items) => Ok(items),
+    }
+}
+
+pub async fn delete_for_gen_id(
+    gen_id: String,
+    pool: &web::types::State<Pool>,
+) -> Result<PgDeleteGeneric, HttpError> {
+    use crate::schema::clusters::dsl;
+
+    let conn = get_pool_conn(pool)?;
+    let res = web::block(move || {
+        diesel::delete(dsl::clusters)
+        .filter(dsl::gen_id.eq(gen_id))
+        .execute(&conn)
+    }).await;
+
+    match res {
+        Err(err) => Err(db_blocking_error(err)),
+        Ok(result) => Ok(PgDeleteGeneric {
+            count: result,
+        })
     }
 }
 

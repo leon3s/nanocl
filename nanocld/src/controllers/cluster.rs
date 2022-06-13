@@ -55,12 +55,49 @@ async fn create(
   web::types::Json(json): web::types::Json<ClusterCreate>,
   web::types::Query(qs): web::types::Query<ClusterQuery>,
 ) -> Result<web::HttpResponse, HttpError> {
-  Ok(web::HttpResponse::Ok().into())
+  let nsp = match qs.namespace {
+    None => String::from("default"),
+    Some(namespace) => namespace,
+  };
+  let res = cluster::create_for_namespace(nsp, json, &pool).await?;
+  Ok(web::HttpResponse::Created().json(&res))
+}
+
+#[web::get("/clusters/{id}")]
+async fn find_by_id_or_name(
+  pool: web::types::State<Pool>,
+  id: web::types::Path<String>,
+  web::types::Query(qs): web::types::Query<ClusterQuery>,
+) -> Result<web::HttpResponse, HttpError> {
+  let nsp = match qs.namespace {
+    None => String::from("default"),
+    Some(namespace) => namespace,
+  };
+  let gen_id = nsp.to_owned() + "-" + &id.into_inner();
+  let item = cluster::find_by_gen_id(gen_id, &pool).await?;
+  Ok(web::HttpResponse::Ok().json(&item))
+}
+
+#[web::delete("clusters/{id}")]
+async fn delete_by_id_or_name(
+  pool: web::types::State<Pool>,
+  id: web::types::Path<String>,
+  web::types::Query(qs): web::types::Query<ClusterQuery>,
+) -> Result<web::HttpResponse, HttpError> {
+  let nsp = match qs.namespace {
+    None => String::from("default"),
+    Some(namespace) => namespace,
+  };
+  let gen_id = nsp.to_owned() + "-" + &id.into_inner();
+  let res = cluster::delete_for_gen_id(gen_id, &pool).await?;
+  Ok(web::HttpResponse::Ok().json(&res))
 }
 
 pub fn ntex_config(config: &mut web::ServiceConfig) {
     config.service(list);
     config.service(create);
+    config.service(find_by_id_or_name);
+    config.service(delete_by_id_or_name);
 }
 
 #[cfg(test)]
@@ -90,11 +127,33 @@ mod test_namespace_cluster {
       Ok(())
     }
 
+    async fn test_create(srv: &TestServer) -> TestReturn {
+      let item = ClusterCreate {
+        name: String::from("test_cluster"),
+      };
+      let resp = srv
+      .post("/clusters")
+      .send_json(&item).await?;
+
+      assert!(resp.status().is_success());
+      Ok(())
+    }
+
+    async fn test_delete(srv: &TestServer) -> TestReturn {
+      let resp = srv
+      .delete("/clusters/test_cluster")
+      .send().await?;
+      assert!(resp.status().is_success());
+      Ok(())
+    }
+
     #[ntex::test]
     async fn main() -> TestReturn {
         let srv = generate_server(ntex_config);
         test_list(&srv).await?;
         test_list_with_nsp(&srv).await?;
+        test_create(&srv).await?;
+        test_delete(&srv).await?;
         Ok(())
     }
 }

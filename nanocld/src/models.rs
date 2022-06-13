@@ -4,7 +4,12 @@ use r2d2::PooledConnection;
 use diesel_derive_enum::DbEnum;
 use serde::{Deserialize, Serialize};
 use diesel::{r2d2::ConnectionManager, PgConnection};
-use crate::schema::{clusters, git_repositories, namespaces};
+use crate::schema::{
+    clusters,
+    namespaces,
+    git_repositories,
+    git_repository_branches,
+};
 
 pub type Docker = bollard::Docker;
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
@@ -44,6 +49,20 @@ pub struct GitRepositoryItem {
     pub(crate) url: String,
     pub(crate) token: Option<String>,
     pub(crate) source: GitRepositorySourceType,
+}
+
+#[derive(Debug, Component, Serialize, Deserialize, Queryable, Insertable)]
+#[table_name = "git_repository_branches"]
+pub struct GitRepositoryBranchItem {
+    pub(crate) id: Uuid,
+    pub(crate) name: String,
+    pub(crate) repository_id: Uuid,
+}
+
+#[derive(Component, Serialize, Deserialize)]
+pub struct GitRepositoryBranchCreate {
+    pub(crate) name: String,
+    pub(crate) repository_id: Uuid,
 }
 
 #[derive(Component, Serialize, Deserialize)]

@@ -6,9 +6,8 @@ use ntex::web;
 use serde::{Serialize, Deserialize};
 
 use crate::services::github;
-use crate::repositories::git_repository;
-use crate::models::{Pool, GitRepositoryCreate};
-
+use crate::repositories::{git_repository, git_repository_branch};
+use crate::models::{Pool, GitRepositoryCreate, GitRepositoryBranchCreate};
 
 use super::errors::HttpError;
 
@@ -56,7 +55,7 @@ async fn create(
 
   let res = github::list_branches(&payload).await;
 
-  let _branches = match res {
+  let gitbranches = match res {
     Err(_) => {
       return Err(HttpError {
         status: StatusCode::BAD_REQUEST,
@@ -72,6 +71,15 @@ async fn create(
   ).await?;
 
   // TODO create branches for this git repository
+
+  let branches = gitbranches.into_iter().map(|branch| {
+    GitRepositoryBranchCreate {
+      name: branch.name,
+      repository_id: item.id,
+    }
+  }).collect::<Vec<GitRepositoryBranchCreate>>();
+
+  git_repository_branch::create_many(branches, &pool).await?;
 
   Ok(
     web::HttpResponse::Created()
@@ -99,7 +107,9 @@ async fn delete_by_id_or_name(
 ) -> Result<web::HttpResponse, HttpError> {
   let id = req_path.into_inner();
   println!("git repository id to delete {:?}", id);
-  let res = git_repository::delete_by_id_or_name(id, &pool).await?;
+  let repository = git_repository::find_by_id_or_name(id, &pool).await?;
+  git_repository_branch::delete_by_repository_id(repository.id, &pool).await?;
+  let res = git_repository::delete_by_id_or_name(repository.id.to_string(), &pool).await?;
   Ok(web::HttpResponse::Ok().json(&res))
 }
 
@@ -116,12 +126,11 @@ mod test_namespace_git_repository {
   use crate::models::{
     GitRepositoryItem,
     GitRepositoryCreate,
-    GitRepositorySourceType,
   };
 
   use super::ntex_config;  
 
-  /// Test list route
+  // Test to list git repositories
   async fn test_list(srv: &TestServer) -> TestReturn {
     let resp = srv
     .get("/git_repositories")
@@ -131,6 +140,7 @@ mod test_namespace_git_repository {
     Ok(())
   }
 
+  // test to create git repository from opensource github
   async fn test_create(srv: &TestServer) -> TestReturn {
     let new_repository = GitRepositoryCreate {
         name: String::from("express-test-deploy"),
@@ -145,6 +155,19 @@ mod test_namespace_git_repository {
     Ok(())
   }
 
+  // test to delete previous created repository by it's name
+  async fn test_delete_by_name(srv: &TestServer) -> TestReturn {
+    let mut res = srv
+    .delete("/git_repositories/express-test-deploy")
+    .send().await?;
+    println!("res {:?}", res);
+    let body = res.body().await?;
+    println!("body : {:?}", body);
+    assert!(res.status().is_success());
+    Ok(())
+  }
+
+  // Create and delete by id a repository
   async fn test_delete_by_id(srv: &TestServer) -> TestReturn {
     let new_repository = GitRepositoryCreate {
       token: None,
@@ -155,33 +178,12 @@ mod test_namespace_git_repository {
     .post("/git_repositories")
     .send_json(&new_repository)
     .await?;
-
     let item = res.json::<GitRepositoryItem>().await?;
-
     let mut res = srv.delete(format!("/git_repositories/{id}", id = item.id)).send().await?;
-
     println!("res : {:?}", res);
-
-    let body = res.body().await?;
-
-    println!("body : {:?}", body);
-
-    // assert!(res.status().is_success());
-    Ok(())
-  }
-
-  async fn test_create_fail(srv: &TestServer) -> TestReturn {
-    Ok(())
-  }
-
-  async fn test_delete_by_name(srv: &TestServer) -> TestReturn {
-    let mut res = srv
-    .delete("/git_repositories/express-test-deploy")
-    .send().await?;
-    println!("res {:?}", res);
     let body = res.body().await?;
     println!("body : {:?}", body);
-    // assert!(res.status().is_success());
+    assert!(res.status().is_success());
     Ok(())
   }
 

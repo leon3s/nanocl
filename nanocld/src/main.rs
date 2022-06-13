@@ -1,5 +1,4 @@
-#[macro_use]
-extern crate diesel;
+#[macro_use] extern crate diesel;
 
 use bollard::Docker;
 use ntex::web;
