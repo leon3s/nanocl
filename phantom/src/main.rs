@@ -1,20 +1,17 @@
 use futures::TryStreamExt;
 use bollard::{
   Docker,
-  container::{
-    StatsOptions,
-    Stats,
-  },
+  container::{StatsOptions, Stats},
 };
 
-mod nginx;
 mod deploy;
-mod network;
 mod dnsmasq;
-mod posgresql;
 mod docker_helper;
+mod network;
+mod nginx;
+mod posgresql;
 
-type _Callback = fn (stats: Stats);
+type _Callback = fn(stats: Stats);
 
 async fn _test_stats(docker: &Docker, callback: _Callback) {
   let options = Some(StatsOptions {
@@ -24,15 +21,13 @@ async fn _test_stats(docker: &Docker, callback: _Callback) {
   let mut stream = docker.stats("nanoclq", options);
   let stats = stream.try_next().await;
   match stats {
-    Ok(stats) => {
-      match stats {
-        Some(stats) => {
-          println!("{:?}", stats);
-          callback(stats);
-        },
-        None => {
-          eprintln!("Stats are empty");
-        }
+    Ok(stats) => match stats {
+      Some(stats) => {
+        println!("{:?}", stats);
+        callback(stats);
+      }
+      None => {
+        eprintln!("Stats are empty");
       }
     },
     Err(err) => {

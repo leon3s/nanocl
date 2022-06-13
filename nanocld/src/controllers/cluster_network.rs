@@ -1,11 +1,11 @@
-use ntex::web;
-use uuid::Uuid;
-use serde::{Deserialize, Serialize};
 use bollard::network::ListNetworksOptions;
+use ntex::web;
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::models::{Docker, Pool};
 
-use crate::repositories::{cluster};
+use crate::repositories::cluster;
 
 use super::errors::HttpError;
 
@@ -33,7 +33,7 @@ async fn list_networks(
   docker: web::types::State<Docker>,
   id_or_name: web::types::Path<String>,
   web::types::Query(qs): web::types::Query<ClusterQuery>,
-) -> Result<web::HttpResponse, HttpError>{
+) -> Result<web::HttpResponse, HttpError> {
   let id = id_or_name.into_inner();
   let namespace = match qs.namespace {
     None => String::from("default"),
@@ -41,7 +41,9 @@ async fn list_networks(
   };
 
   let _cluster = match Uuid::parse_str(&id) {
-    Err(_) => cluster::find_by_gen_id(namespace.to_owned() + &id, &pool).await?,
+    Err(_) => {
+      cluster::find_by_gen_id(namespace.to_owned() + &id, &pool).await?
+    }
     Ok(uuid) => cluster::find_by_id(uuid, &pool).await?,
   };
 
@@ -62,14 +64,11 @@ pub fn ntex_config(config: &mut web::ServiceConfig) {
 #[cfg(test)]
 mod test_cluster_network {
   use crate::utils::test::*;
-  
+
   use super::*;
-  
+
   async fn list_networks(srv: &TestServer) -> TestReturn {
-    let mut res = srv
-    .get("/clusters/default/networks")
-    .send()
-    .await?;
+    let mut res = srv.get("/clusters/default/networks").send().await?;
 
     let body = res.body().await;
     Ok(())

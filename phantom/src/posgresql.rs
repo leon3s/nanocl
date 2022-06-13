@@ -2,30 +2,27 @@ use std::collections::HashMap;
 use bollard::{
   Docker,
   errors::Error as DockerError,
-  models::{
-    PortBinding,
-    HostConfig
-  },
-  container::{
-    CreateContainerOptions,
-    Config,
-  }
+  models::{PortBinding, HostConfig},
+  container::{CreateContainerOptions, Config},
 };
 
 use crate::docker_helper::*;
 
 fn gen_postgre_host_conf() -> HostConfig {
-  let mut port_bindings: HashMap<String, Option<Vec<PortBinding>>> = HashMap::new();
+  let mut port_bindings: HashMap<String, Option<Vec<PortBinding>>> =
+    HashMap::new();
   port_bindings.insert(
     String::from("5432/tcp"),
     Some(vec![PortBinding {
       host_ip: None,
       host_port: Some(String::from("5432")),
-    }],
-  ));
+    }]),
+  );
 
   let binds = vec![
-    String::from("/var/lib/nanocl/nginx/sites-enabled:/etc/nginx/sites-enabled"),
+    String::from(
+      "/var/lib/nanocl/nginx/sites-enabled:/etc/nginx/sites-enabled",
+    ),
     String::from("/var/lib/nanocl/postgre/data:/var/lib/postgresql/data"),
   ];
 
@@ -37,25 +34,23 @@ fn gen_postgre_host_conf() -> HostConfig {
   }
 }
 
-async fn create_postgre_container(docker: &Docker, name: &str) -> Result<(), DockerError> {
+async fn create_postgre_container(
+  docker: &Docker,
+  name: &str,
+) -> Result<(), DockerError> {
   let image = Some("postgres:latest");
-  let env = Some(vec![
-    "POSTGRES_USER=root",
-    "POSTGRES_PASSWORD=root",
-  ]);
+  let env = Some(vec!["POSTGRES_USER=root", "POSTGRES_PASSWORD=root"]);
   let labels = Some(gen_label_namespace("nanocl"));
   let host_config = Some(gen_postgre_host_conf());
-  let options = Some(CreateContainerOptions{
-    name,
-  });
+  let options = Some(CreateContainerOptions { name });
   let config = Config {
-      image,
-      env,
-      labels,
-      host_config,
-      hostname: Some(name),
-      domainname: Some(name),
-      ..Default::default()
+    image,
+    env,
+    labels,
+    host_config,
+    hostname: Some(name),
+    domainname: Some(name),
+    ..Default::default()
   };
   docker.create_container(options, config).await?;
   Ok(())

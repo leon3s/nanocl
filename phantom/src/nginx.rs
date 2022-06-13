@@ -1,10 +1,7 @@
 use bollard::{
   Docker,
   errors::Error as DockerError,
-  container::{
-    CreateContainerOptions,
-    Config
-  },
+  container::{CreateContainerOptions, Config},
   models::HostConfig,
 };
 
@@ -12,7 +9,9 @@ use crate::docker_helper::*;
 
 fn gen_nginx_host_conf() -> HostConfig {
   let binds = Some(vec![
-    String::from("/var/lib/nanocl/nginx/sites-enabled:/etc/nginx/sites-enabled"),
+    String::from(
+      "/var/lib/nanocl/nginx/sites-enabled:/etc/nginx/sites-enabled",
+    ),
     String::from("/var/lib/nanocl/nginx/log:/var/log/nginx"),
   ]);
   let network_mode = Some(String::from("host"));
@@ -23,21 +22,22 @@ fn gen_nginx_host_conf() -> HostConfig {
   }
 }
 
-async fn create_nginx_container(docker: &Docker, name: &str) -> Result<(), DockerError>{
+async fn create_nginx_container(
+  docker: &Docker,
+  name: &str,
+) -> Result<(), DockerError> {
   let image = Some("nanocl-proxy-nginx:latest");
   let labels = Some(gen_label_namespace("nanocl"));
   let host_config = Some(gen_nginx_host_conf());
-  let options = Some(CreateContainerOptions{
-    name,
-  });
+  let options = Some(CreateContainerOptions { name });
   let config = Config {
-      image,
-      labels,
-      host_config,
-      tty: Some(true),
-      attach_stdout: Some(true),
-      attach_stderr: Some(true),
-      ..Default::default()
+    image,
+    labels,
+    host_config,
+    tty: Some(true),
+    attach_stdout: Some(true),
+    attach_stderr: Some(true),
+    ..Default::default()
   };
   docker.create_container(options, config).await?;
   Ok(())

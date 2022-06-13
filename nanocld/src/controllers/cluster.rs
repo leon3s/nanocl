@@ -1,8 +1,8 @@
 use ntex::web;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
+use crate::models::{ClusterCreate, Pool};
 use crate::repositories::cluster;
-use crate::models::{Pool, ClusterCreate};
 
 use super::errors::HttpError;
 
@@ -28,13 +28,13 @@ async fn list(
   pool: web::types::State<Pool>,
   web::types::Query(qs): web::types::Query<ClusterQuery>,
 ) -> Result<web::HttpResponse, HttpError> {
-    let nsp = match qs.namespace {
-      None => String::from("default"),
-      Some(namespace) => namespace,
-    };
+  let nsp = match qs.namespace {
+    None => String::from("default"),
+    Some(namespace) => namespace,
+  };
 
-    let items = cluster::find_by_namespace(nsp, &pool).await?;
-    Ok(web::HttpResponse::Ok().json(&items))
+  let items = cluster::find_by_namespace(nsp, &pool).await?;
+  Ok(web::HttpResponse::Ok().json(&items))
 }
 
 #[utoipa::path(
@@ -94,66 +94,61 @@ async fn delete_by_id_or_name(
 }
 
 pub fn ntex_config(config: &mut web::ServiceConfig) {
-    config.service(list);
-    config.service(create);
-    config.service(find_by_id_or_name);
-    config.service(delete_by_id_or_name);
+  config.service(list);
+  config.service(create);
+  config.service(find_by_id_or_name);
+  config.service(delete_by_id_or_name);
 }
 
 #[cfg(test)]
 mod test_namespace_cluster {
-    use crate::utils::test::*;
+  use crate::utils::test::*;
 
-    use super::*;
+  use super::*;
 
-    async fn test_list(srv: &TestServer) -> TestReturn {
-        let resp = srv
-        .get("/clusters")
-        .send()
-        .await?;
+  async fn test_list(srv: &TestServer) -> TestReturn {
+    let resp = srv.get("/clusters").send().await?;
 
-        assert!(resp.status().is_success());
-        Ok(())
-    }
+    assert!(resp.status().is_success());
+    Ok(())
+  }
 
-    async fn test_list_with_nsp(srv: &TestServer) -> TestReturn {
-      let resp = srv
+  async fn test_list_with_nsp(srv: &TestServer) -> TestReturn {
+    let resp = srv
       .get("/clusters")
       .query(&ClusterQuery {
-        namespace: Some(String::from("test"))
-      })?.send().await?;
+        namespace: Some(String::from("test")),
+      })?
+      .send()
+      .await?;
 
-      assert!(resp.status().is_success());
-      Ok(())
-    }
+    assert!(resp.status().is_success());
+    Ok(())
+  }
 
-    async fn test_create(srv: &TestServer) -> TestReturn {
-      let item = ClusterCreate {
-        name: String::from("test_cluster"),
-      };
-      let resp = srv
-      .post("/clusters")
-      .send_json(&item).await?;
+  async fn test_create(srv: &TestServer) -> TestReturn {
+    let item = ClusterCreate {
+      name: String::from("test_cluster"),
+    };
+    let resp = srv.post("/clusters").send_json(&item).await?;
 
-      assert!(resp.status().is_success());
-      Ok(())
-    }
+    assert!(resp.status().is_success());
+    Ok(())
+  }
 
-    async fn test_delete(srv: &TestServer) -> TestReturn {
-      let resp = srv
-      .delete("/clusters/test_cluster")
-      .send().await?;
-      assert!(resp.status().is_success());
-      Ok(())
-    }
+  async fn test_delete(srv: &TestServer) -> TestReturn {
+    let resp = srv.delete("/clusters/test_cluster").send().await?;
+    assert!(resp.status().is_success());
+    Ok(())
+  }
 
-    #[ntex::test]
-    async fn main() -> TestReturn {
-        let srv = generate_server(ntex_config);
-        test_list(&srv).await?;
-        test_list_with_nsp(&srv).await?;
-        test_create(&srv).await?;
-        test_delete(&srv).await?;
-        Ok(())
-    }
+  #[ntex::test]
+  async fn main() -> TestReturn {
+    let srv = generate_server(ntex_config);
+    test_list(&srv).await?;
+    test_list_with_nsp(&srv).await?;
+    test_create(&srv).await?;
+    test_delete(&srv).await?;
+    Ok(())
+  }
 }
