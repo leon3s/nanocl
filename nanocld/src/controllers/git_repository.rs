@@ -1,3 +1,4 @@
+use ntex::http::StatusCode;
 /**
  * HTTP Method to administrate git_repositories
  */
@@ -55,10 +56,22 @@ async fn create(
 
   let res = github::list_branches(&payload).await;
 
+  let _branches = match res {
+    Err(_) => {
+      return Err(HttpError {
+        status: StatusCode::BAD_REQUEST,
+        msg: String::from("unable to list branch for this git repository may token missing ?"),
+      })
+    },
+    Ok(branches) => branches,
+  };
+  
   let item = git_repository::create(
     payload,
     &pool,
   ).await?;
+
+  // TODO create branches for this git repository
 
   Ok(
     web::HttpResponse::Created()
@@ -69,7 +82,7 @@ async fn create(
 /// Endpoint to delete a git repository by it's id or name for given namespace
 #[utoipa::path(
   delete,
-  path = "/git_repositories/{id}*",
+  path = "/git_repositories/{id}",
   params(
     ("id" = String, path, description = "Id or name of git repository"),
   ),

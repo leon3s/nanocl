@@ -42,7 +42,7 @@ pub async fn list_branches(
 
   let git_desc = parse_git_url(&item.url)?;
 
-  let url = "https://api.github.com/repos".to_owned() + &git_desc.path + "/branches";
+  let url = "https://api.".to_owned() + &git_desc.host + "/repos" + &git_desc.path + "/branches";
 
   let mut res = client
   .get(url)
@@ -53,7 +53,6 @@ pub async fn list_branches(
   let body = res.json::<Vec<GitRepositoryBranch>>().await?;
   Ok(body)
 }
-
 
 #[cfg(test)]
 mod test_github {
