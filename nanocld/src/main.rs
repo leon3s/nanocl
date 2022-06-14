@@ -1,20 +1,25 @@
 #[macro_use]
 extern crate diesel;
 
-use bollard::Docker;
 use ntex::web;
+use bollard::Docker;
 use ntex_files as fs;
 
-mod controllers;
+mod utils;
 mod docker;
 mod models;
+mod schema;
 mod openapi;
 mod postgre;
-mod repositories;
-mod schema;
 mod services;
-mod utils;
-
+mod controllers;
+mod repositories;
+/// nanocld is the daemon to manager namespace cluster network and cargos
+///
+/// # Example
+/// ```sh
+/// nanocld --version
+/// ```
 #[ntex::main]
 async fn main() -> std::io::Result<()> {
   env_logger::init();
