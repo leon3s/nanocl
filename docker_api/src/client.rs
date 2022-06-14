@@ -2,7 +2,7 @@ use ntex::rt;
 use std::path::Path;
 use ntex::http::client::{Client, Connector, ClientRequest};
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct HttpClient {
   base_url: String,
   http_client: Client,
