@@ -1,3 +1,10 @@
+//! nanocl daemon
+//!
+//! Provides an api to manage clusters network and containers
+//! there are these advantages:
+//! - Opensource
+//! - [`Easy`]
+//!
 #[macro_use]
 extern crate diesel;
 
@@ -14,6 +21,7 @@ mod postgre;
 mod services;
 mod controllers;
 mod repositories;
+
 /// nanocld is the daemon to manager namespace cluster network and cargos
 ///
 /// # Example
