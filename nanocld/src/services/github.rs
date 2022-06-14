@@ -1,6 +1,6 @@
 use ntex::http::client::Client;
-use serde::{Deserialize, Serialize};
 use url::{ParseError, Url};
+use serde::{Deserialize, Serialize};
 
 use crate::models::GitRepositoryCreate;
 
@@ -58,12 +58,10 @@ pub async fn list_branches(
 
 #[cfg(test)]
 mod test_github {
-
+  use crate::utils::test::*;
   use crate::models::GitRepositoryCreate;
 
   use super::*;
-
-  use crate::utils::test::*;
 
   #[ntex::test]
   async fn list_repository_branches() -> TestReturn {
