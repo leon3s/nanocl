@@ -14,7 +14,7 @@ use std::hash::Hash;
 use chrono::DateTime;
 use chrono::Utc;
 
-use crate::json_helper::{deserialize_nonoptional_vec, deserialize_nonoptional_map};
+use crate::json_helper::deserialize_nonoptional_vec;
 
 /// A test to perform to check that the container is healthy.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]

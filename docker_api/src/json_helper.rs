@@ -8,13 +8,12 @@ pub(crate) fn deserialize_nonoptional_vec<
   serde::Deserialize::deserialize(d).map(|x: Option<_>| x.unwrap_or_default())
 }
 
-pub(crate) fn deserialize_nonoptional_map<
+pub(crate) fn _deserialize_nonoptional_map<
   'de,
   D: serde::Deserializer<'de>,
   T: serde::de::DeserializeOwned,
 >(
   d: D,
 ) -> Result<std::collections::HashMap<String, T>, D::Error> {
-  serde::Deserialize::deserialize(d)
-    .map(|x: Option<_>| x.unwrap_or(std::collections::HashMap::new()))
+  serde::Deserialize::deserialize(d).map(|x: Option<_>| x.unwrap_or_default())
 }
