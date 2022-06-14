@@ -2,9 +2,9 @@ use ntex::web;
 use ntex_files as fs;
 use utoipa::OpenApi;
 
+use crate::models::*;
 use crate::controllers::*;
 use crate::docker::models::{Ipam, IpamConfig, Network, NetworkContainer};
-use crate::models::*;
 
 #[derive(OpenApi)]
 #[openapi(
