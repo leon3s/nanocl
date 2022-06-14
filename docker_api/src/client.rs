@@ -1,25 +1,11 @@
 use ntex::rt;
 use std::path::Path;
 use ntex::http::client::{Client, Connector, ClientRequest};
-use thiserror::Error;
-use ntex::http::client::error::{JsonPayloadError, SendRequestError};
-
-use crate::container::Container;
 
 #[derive(Default)]
 pub struct HttpClient {
   base_url: String,
   http_client: Client,
-}
-
-#[derive(Error, Debug)]
-pub enum DockerClientError {
-  #[error("json parsing error")]
-  JsonPayloadError(JsonPayloadError),
-  #[error("connection error")]
-  SendRequestError(SendRequestError),
-  #[error("urlencode error")]
-  UrlEncodeError(serde_urlencoded::ser::Error),
 }
 
 impl HttpClient {
@@ -57,30 +43,5 @@ impl HttpClient {
   pub fn get(&self, path: impl AsRef<Path>) -> ClientRequest {
     let gen_path = self.gen_path(path);
     self.http_client.get(gen_path)
-  }
-}
-
-#[derive(Default)]
-pub struct DockerClient {
-  pub container: Container,
-}
-
-impl DockerClient {
-  /// Create DockerClient with default settings
-  /// this will try to connect to /var/run/docker.sock
-  pub fn new() -> Self {
-    let client = HttpClient::new(None);
-    let container = Container::new(client);
-    DockerClient { container }
-  }
-}
-
-#[cfg(test)]
-mod test_client {
-  use super::*;
-
-  #[ntex::test]
-  async fn test_new() {
-    DockerClient::new();
   }
 }

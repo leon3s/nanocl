@@ -16,47 +16,6 @@ use chrono::Utc;
 
 use crate::json_helper::deserialize_nonoptional_vec;
 
-/// A test to perform to check that the container is healthy.
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-pub struct HealthConfig {
-  /// The test to perform. Possible values are:  - `[]` inherit healthcheck from image or parent image - `[\"NONE\"]` disable healthcheck - `[\"CMD\", args...]` exec arguments directly - `[\"CMD-SHELL\", command]` run command with system's default shell
-  #[serde(rename = "Test")]
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub test: Option<Vec<String>>,
-
-  /// The time to wait between checks in nanoseconds. It should be 0 or at least 1000000 (1 ms). 0 means inherit.
-  #[serde(rename = "Interval")]
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub interval: Option<i64>,
-
-  /// The time to wait before considering the check to have hung. It should be 0 or at least 1000000 (1 ms). 0 means inherit.
-  #[serde(rename = "Timeout")]
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub timeout: Option<i64>,
-
-  /// The number of consecutive failures needed to consider a container as unhealthy. 0 means inherit.
-  #[serde(rename = "Retries")]
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub retries: Option<i64>,
-
-  /// Start period for the container to initialize before starting health-retries countdown in nanoseconds. It should be 0 or at least 1000000 (1 ms). 0 means inherit.
-  #[serde(rename = "StartPeriod")]
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub start_period: Option<i64>,
-}
-
-/// change item in response to ContainerChanges operation
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-pub struct ContainerChangeResponseItem {
-  /// Path to file that has changed
-  #[serde(rename = "Path")]
-  pub path: String,
-
-  /// Kind of change
-  #[serde(rename = "Kind")]
-  pub kind: i64,
-}
-
 /// Configuration for a container that is portable between hosts.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct ContainerConfig {
@@ -338,15 +297,15 @@ pub struct ContainerSummary {
 )]
 pub enum MountPointTypeEnum {
   #[serde(rename = "")]
-  EMPTY,
+  Empty,
   #[serde(rename = "bind")]
-  BIND,
+  Bind,
   #[serde(rename = "volume")]
-  VOLUME,
+  Volume,
   #[serde(rename = "tmpfs")]
-  TMPFS,
+  Tmpfs,
   #[serde(rename = "npipe")]
-  NPIPE,
+  Npipe,
 }
 
 /// MountPoint represents a mount point configuration inside the container. This is used for reporting the mountpoints in use by a container.
@@ -448,22 +407,22 @@ pub struct Port {
 )]
 pub enum PortTypeEnum {
   #[serde(rename = "")]
-  EMPTY,
+  Empty,
   #[serde(rename = "tcp")]
-  TCP,
+  Tcp,
   #[serde(rename = "udp")]
-  UDP,
+  Udp,
   #[serde(rename = "sctp")]
-  SCTP,
+  Sctp,
 }
 
 impl ::std::fmt::Display for PortTypeEnum {
   fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
     match *self {
-      PortTypeEnum::EMPTY => write!(f, ""),
-      PortTypeEnum::TCP => write!(f, "tcp"),
-      PortTypeEnum::UDP => write!(f, "udp"),
-      PortTypeEnum::SCTP => write!(f, "sctp"),
+      PortTypeEnum::Empty => write!(f, ""),
+      PortTypeEnum::Tcp => write!(f, "tcp"),
+      PortTypeEnum::Udp => write!(f, "udp"),
+      PortTypeEnum::Sctp => write!(f, "sctp"),
     }
   }
 }
@@ -472,10 +431,10 @@ impl ::std::str::FromStr for PortTypeEnum {
   type Err = String;
   fn from_str(s: &str) -> Result<Self, Self::Err> {
     match s {
-      "" => Ok(PortTypeEnum::EMPTY),
-      "tcp" => Ok(PortTypeEnum::TCP),
-      "udp" => Ok(PortTypeEnum::UDP),
-      "sctp" => Ok(PortTypeEnum::SCTP),
+      "" => Ok(PortTypeEnum::Empty),
+      "tcp" => Ok(PortTypeEnum::Tcp),
+      "udp" => Ok(PortTypeEnum::Udp),
+      "sctp" => Ok(PortTypeEnum::Sctp),
       x => Err(format!("Invalid enum type: {}", x)),
     }
   }
@@ -484,10 +443,10 @@ impl ::std::str::FromStr for PortTypeEnum {
 impl ::std::convert::AsRef<str> for PortTypeEnum {
   fn as_ref(&self) -> &str {
     match self {
-      PortTypeEnum::EMPTY => "",
-      PortTypeEnum::TCP => "tcp",
-      PortTypeEnum::UDP => "udp",
-      PortTypeEnum::SCTP => "sctp",
+      PortTypeEnum::Empty => "",
+      PortTypeEnum::Tcp => "tcp",
+      PortTypeEnum::Udp => "udp",
+      PortTypeEnum::Sctp => "sctp",
     }
   }
 }
@@ -572,6 +531,35 @@ pub struct EndpointIpamConfig {
   #[serde(rename = "LinkLocalIPs")]
   #[serde(skip_serializing_if = "Option::is_none")]
   pub link_local_i_ps: Option<Vec<String>>,
+}
+
+/// A test to perform to check that the container is healthy.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct HealthConfig {
+  /// The test to perform. Possible values are:  - `[]` inherit healthcheck from image or parent image - `[\"NONE\"]` disable healthcheck - `[\"CMD\", args...]` exec arguments directly - `[\"CMD-SHELL\", command]` run command with system's default shell
+  #[serde(rename = "Test")]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub test: Option<Vec<String>>,
+
+  /// The time to wait between checks in nanoseconds. It should be 0 or at least 1000000 (1 ms). 0 means inherit.
+  #[serde(rename = "Interval")]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub interval: Option<i64>,
+
+  /// The time to wait before considering the check to have hung. It should be 0 or at least 1000000 (1 ms). 0 means inherit.
+  #[serde(rename = "Timeout")]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub timeout: Option<i64>,
+
+  /// The number of consecutive failures needed to consider a container as unhealthy. 0 means inherit.
+  #[serde(rename = "Retries")]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub retries: Option<i64>,
+
+  /// Start period for the container to initialize before starting health-retries countdown in nanoseconds. It should be 0 or at least 1000000 (1 ms). 0 means inherit.
+  #[serde(rename = "StartPeriod")]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub start_period: Option<i64>,
 }
 
 #[cfg(test)]
