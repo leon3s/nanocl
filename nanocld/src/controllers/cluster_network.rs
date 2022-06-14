@@ -1,11 +1,10 @@
-use bollard::network::ListNetworksOptions;
 use ntex::web;
-use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-
-use crate::models::{Docker, Pool};
+use serde::{Serialize, Deserialize};
+use bollard::network::ListNetworksOptions;
 
 use crate::repositories::cluster;
+use crate::models::{Pool, Docker};
 
 use super::errors::HttpError;
 
