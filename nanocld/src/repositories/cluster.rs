@@ -6,7 +6,7 @@ use diesel::prelude::*;
 use crate::utils::get_pool_conn;
 use crate::controllers::errors::HttpError;
 use crate::repositories::errors::db_blocking_error;
-use crate::models::{Pool, ClusterItem, ClusterCreate, PgDeleteGeneric};
+use crate::models::{Pool, ClusterItem, ClusterPartial, PgDeleteGeneric};
 
 /// Return a fresh cluster with id and gen_id
 ///
@@ -30,7 +30,7 @@ use crate::models::{Pool, ClusterItem, ClusterCreate, PgDeleteGeneric};
 /// ```
 pub async fn create_for_namespace(
   nsp: String,
-  item: ClusterCreate,
+  item: ClusterPartial,
   pool: &web::types::State<Pool>,
 ) -> Result<ClusterItem, HttpError> {
   use crate::schema::clusters::dsl::*;

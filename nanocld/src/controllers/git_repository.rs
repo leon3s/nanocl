@@ -5,7 +5,7 @@ use ntex::http::StatusCode;
 use ntex::web;
 use serde::{Deserialize, Serialize};
 
-use crate::models::{GitRepositoryBranchCreate, GitRepositoryCreate, Pool};
+use crate::models::{GitRepositoryBranchPartial, GitRepositoryPartial, Pool};
 use crate::repositories::{git_repository, git_repository_branch};
 use crate::services::github;
 
@@ -48,7 +48,7 @@ async fn list(
 #[web::post("/git_repositories")]
 async fn create(
   pool: web::types::State<Pool>,
-  web::types::Json(payload): web::types::Json<GitRepositoryCreate>,
+  web::types::Json(payload): web::types::Json<GitRepositoryPartial>,
 ) -> Result<web::HttpResponse, HttpError> {
   let res = github::list_branches(&payload).await;
 
@@ -70,11 +70,11 @@ async fn create(
 
   let branches = gitbranches
     .into_iter()
-    .map(|branch| GitRepositoryBranchCreate {
+    .map(|branch| GitRepositoryBranchPartial {
       name: branch.name,
       repository_id: item.id,
     })
-    .collect::<Vec<GitRepositoryBranchCreate>>();
+    .collect::<Vec<GitRepositoryBranchPartial>>();
 
   git_repository_branch::create_many(branches, &pool).await?;
 
@@ -118,7 +118,7 @@ pub fn ntex_config(config: &mut web::ServiceConfig) {
 
 #[cfg(test)]
 mod test_namespace_git_repository {
-  use crate::models::{GitRepositoryCreate, GitRepositoryItem};
+  use crate::models::{GitRepositoryPartial, GitRepositoryItem};
   use crate::utils::test::*;
 
   use super::ntex_config;
@@ -133,7 +133,7 @@ mod test_namespace_git_repository {
 
   // test to create git repository from opensource github
   async fn test_create(srv: &TestServer) -> TestReturn {
-    let new_repository = GitRepositoryCreate {
+    let new_repository = GitRepositoryPartial {
       name: String::from("express-test-deploy"),
       token: None,
       url: String::from("https://github.com/leon3s/express-test-deploy"),
@@ -161,7 +161,7 @@ mod test_namespace_git_repository {
 
   // Create and delete by id a repository
   async fn test_delete_by_id(srv: &TestServer) -> TestReturn {
-    let new_repository = GitRepositoryCreate {
+    let new_repository = GitRepositoryPartial {
       token: None,
       name: String::from("test-repo2"),
       url: String::from("https://github.com/leon3s/express-test-deploy"),

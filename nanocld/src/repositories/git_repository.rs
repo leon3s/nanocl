@@ -5,7 +5,7 @@ use diesel::prelude::*;
 use crate::utils::get_pool_conn;
 use crate::controllers::errors::HttpError;
 use crate::models::{
-  PgDeleteGeneric, Pool, GitRepositoryCreate, GitRepositoryItem,
+  PgDeleteGeneric, Pool, GitRepositoryPartial, GitRepositoryItem,
   GitRepositorySourceType,
 };
 
@@ -28,7 +28,7 @@ use super::errors::db_blocking_error;
 /// git_repository::create(new_branches, &pool).await;
 /// ```
 pub async fn create(
-  item: GitRepositoryCreate,
+  item: GitRepositoryPartial,
   pool: &web::types::State<Pool>,
 ) -> Result<GitRepositoryItem, HttpError> {
   use crate::schema::git_repositories::dsl;
@@ -186,7 +186,7 @@ mod test_git_repository {
     let pool_state = web::types::State::new(pool);
     // Find
     let _res = list(&pool_state).await.unwrap();
-    let item = GitRepositoryCreate {
+    let item = GitRepositoryPartial {
       token: None,
       name: String::from("test"),
       url: String::from("https://github.com/leon3s/express-test-deploy"),
@@ -208,7 +208,7 @@ mod test_git_repository {
       .await
       .unwrap();
     assert_eq!(res.count, 1);
-    let item = GitRepositoryCreate {
+    let item = GitRepositoryPartial {
       name: String::from("test"),
       token: Some(String::from("test")),
       url: String::from("https://github.com/leon3s/express-test-deploy"),

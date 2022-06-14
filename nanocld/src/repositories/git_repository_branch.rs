@@ -6,7 +6,7 @@ use crate::models::Pool;
 use crate::utils::get_pool_conn;
 use crate::controllers::errors::HttpError;
 use crate::models::{
-  GitRepositoryBranchCreate, GitRepositoryBranchItem, PgDeleteGeneric,
+  GitRepositoryBranchPartial, GitRepositoryBranchItem, PgDeleteGeneric,
 };
 
 use super::errors::db_blocking_error;
@@ -29,7 +29,7 @@ use super::errors::db_blocking_error;
 /// git_repository_branch::create_many(new_branches, pool).await;
 /// ```
 pub async fn create_many(
-  items: Vec<GitRepositoryBranchCreate>,
+  items: Vec<GitRepositoryBranchPartial>,
   pool: &web::types::State<Pool>,
 ) -> Result<Vec<GitRepositoryBranchItem>, HttpError> {
   use crate::schema::git_repository_branches::dsl;
@@ -95,7 +95,7 @@ pub async fn delete_by_repository_id(
 mod test {
   use crate::postgre;
   use crate::repositories::git_repository;
-  use crate::models::{GitRepositoryCreate, GitRepositoryBranchCreate};
+  use crate::models::{GitRepositoryPartial, GitRepositoryBranchPartial};
 
   use crate::utils::test::*;
 
@@ -106,7 +106,7 @@ mod test {
     let pool = postgre::create_pool();
     let pool_state = web::types::State::new(pool);
 
-    let new_repository = GitRepositoryCreate {
+    let new_repository = GitRepositoryPartial {
       name: String::from("test-branch"),
       url: String::from("test"),
       token: None,
@@ -116,7 +116,7 @@ mod test {
       .unwrap();
 
     // Create many branches
-    let items = vec![GitRepositoryBranchCreate {
+    let items = vec![GitRepositoryBranchPartial {
       name: String::from("test-branch"),
       repository_id: res.id.clone(),
     }];

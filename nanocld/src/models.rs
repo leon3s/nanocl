@@ -1,22 +1,26 @@
-use crate::schema::{
-  clusters, git_repositories, git_repository_branches, namespaces,
-};
-use diesel::{r2d2::ConnectionManager, PgConnection};
-use diesel_derive_enum::DbEnum;
-use r2d2::PooledConnection;
-use serde::{Deserialize, Serialize};
-use utoipa::Component;
 use uuid::Uuid;
+use utoipa::Component;
+use r2d2::PooledConnection;
+use diesel_derive_enum::DbEnum;
+use diesel::{r2d2::ConnectionManager, PgConnection};
+use serde::{Deserialize, Serialize};
+
+use crate::schema::{
+  clusters, namespaces, git_repositories, git_repository_branches,
+};
 
 pub type Docker = bollard::Docker;
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
 pub type DBConn = PooledConnection<ConnectionManager<PgConnection>>;
 
+/// Generic postgresql delete response
 #[derive(Component, Serialize, Deserialize)]
 pub struct PgDeleteGeneric {
   pub(crate) count: usize,
 }
 
+/// Namespace to encapsulate clusters
+/// this structure ensure read and write in database
 #[derive(Debug, Component, Serialize, Deserialize, Queryable, Insertable)]
 #[table_name = "namespaces"]
 pub struct NamespaceItem {
@@ -24,11 +28,20 @@ pub struct NamespaceItem {
   pub(crate) name: String,
 }
 
+/// Partial namespace
+/// this structure ensure write in database
 #[derive(Component, Serialize, Deserialize)]
-pub struct NamespaceCreate {
+pub struct NamespacePartial {
   pub(crate) name: String,
 }
 
+/// Git repository source types
+/// # Examples
+/// ```
+/// GitRepositorySourceType::Github; // For github.com
+/// GitRepositorySourceType::Gitlab; // for gitlab.com
+/// GitRepositorySourceType::Local; // for nanocl managed git repository
+/// ```
 #[derive(
   Component, Serialize, Deserialize, Debug, PartialEq, DbEnum, Clone,
 )]
@@ -40,6 +53,9 @@ pub enum GitRepositorySourceType {
   Local,
 }
 
+/// Git repository are used to have project definition to deploy cargo
+/// this structure ensure read and write entity in database
+/// we also support git hooks such as create/delete branch
 #[derive(
   Component, Serialize, Deserialize, Insertable, Queryable, Identifiable,
 )]
@@ -52,6 +68,17 @@ pub struct GitRepositoryItem {
   pub(crate) source: GitRepositorySourceType,
 }
 
+/// Partial Git repository
+/// this structure ensure write entity in database
+#[derive(Component, Serialize, Deserialize)]
+pub struct GitRepositoryPartial {
+  pub(crate) url: String,
+  pub(crate) name: String,
+  pub(crate) token: Option<String>,
+}
+
+/// Git repository branch
+/// this structure ensure read and write entity in database
 #[derive(Debug, Component, Serialize, Deserialize, Queryable, Insertable)]
 #[table_name = "git_repository_branches"]
 pub struct GitRepositoryBranchItem {
@@ -60,19 +87,16 @@ pub struct GitRepositoryBranchItem {
   pub(crate) repository_id: Uuid,
 }
 
+/// Partial git repository branch
+/// this structure ensure write in database
 #[derive(Component, Serialize, Deserialize)]
-pub struct GitRepositoryBranchCreate {
+pub struct GitRepositoryBranchPartial {
   pub(crate) name: String,
   pub(crate) repository_id: Uuid,
 }
 
-#[derive(Component, Serialize, Deserialize)]
-pub struct GitRepositoryCreate {
-  pub(crate) url: String,
-  pub(crate) name: String,
-  pub(crate) token: Option<String>,
-}
-
+/// Cluster used to encapsulate networks
+/// this structure ensure read and write in database
 #[derive(Component, Serialize, Deserialize, Insertable, Queryable)]
 #[table_name = "clusters"]
 pub struct ClusterItem {
@@ -82,11 +106,14 @@ pub struct ClusterItem {
   pub(crate) namespace: String,
 }
 
+/// Partial cluster
+/// this structure ensure write in database
 #[derive(Component, Serialize, Deserialize)]
-pub struct ClusterCreate {
+pub struct ClusterPartial {
   pub(crate) name: String,
 }
 
+/// Rexports postgre enum for schema.rs
 pub mod exports {
   pub use super::Git_repository_source_type;
 }

@@ -1,7 +1,7 @@
 use ntex::web;
 use serde::{Deserialize, Serialize};
 
-use crate::models::{ClusterCreate, Pool};
+use crate::models::{ClusterPartial, Pool};
 use crate::repositories::cluster;
 
 use super::errors::HttpError;
@@ -52,7 +52,7 @@ async fn list(
 #[web::post("/clusters")]
 async fn create(
   pool: web::types::State<Pool>,
-  web::types::Json(json): web::types::Json<ClusterCreate>,
+  web::types::Json(json): web::types::Json<ClusterPartial>,
   web::types::Query(qs): web::types::Query<ClusterQuery>,
 ) -> Result<web::HttpResponse, HttpError> {
   let nsp = match qs.namespace {
@@ -127,7 +127,7 @@ mod test_namespace_cluster {
   }
 
   async fn test_create(srv: &TestServer) -> TestReturn {
-    let item = ClusterCreate {
+    let item = ClusterPartial {
       name: String::from("test_cluster"),
     };
     let resp = srv.post("/clusters").send_json(&item).await?;

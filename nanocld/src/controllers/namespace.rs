@@ -1,6 +1,6 @@
 use ntex::web;
 
-use crate::models::{NamespaceCreate, Pool};
+use crate::models::{NamespacePartial, Pool};
 use crate::repositories::namespace;
 
 use super::errors::HttpError;
@@ -59,7 +59,7 @@ async fn get_by_id_or_name(
 #[web::post("/namespaces")]
 async fn create(
   pool: web::types::State<Pool>,
-  payload: web::types::Json<NamespaceCreate>,
+  payload: web::types::Json<NamespacePartial>,
 ) -> Result<web::HttpResponse, HttpError> {
   let new_namespace = payload.into_inner();
   let item = namespace::create(new_namespace, &pool).await?;
@@ -99,7 +99,7 @@ pub fn ntex_config(config: &mut web::ServiceConfig) {
 mod test_namespace {
   use serde_json::json;
 
-  use crate::models::{NamespaceCreate, PgDeleteGeneric};
+  use crate::models::{NamespacePartial, PgDeleteGeneric};
   use crate::utils::test::*;
 
   use super::ntex_config;
@@ -112,7 +112,7 @@ mod test_namespace {
   }
 
   async fn test_create(srv: &TestServer) -> TestReturn {
-    let new_namespace = NamespaceCreate {
+    let new_namespace = NamespacePartial {
       name: String::from("default"),
     };
 

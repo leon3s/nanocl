@@ -2,7 +2,7 @@ use ntex::http::client::Client;
 use url::{ParseError, Url};
 use serde::{Deserialize, Serialize};
 
-use crate::models::GitRepositoryCreate;
+use crate::models::GitRepositoryPartial;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GitBranch {
@@ -34,7 +34,7 @@ pub fn parse_git_url(url: &str) -> Result<GitDesc, ParseError> {
 }
 
 pub async fn list_branches(
-  item: &GitRepositoryCreate,
+  item: &GitRepositoryPartial,
 ) -> Result<Vec<GitBranch>, Box<dyn std::error::Error + 'static>> {
   let client = Client::new();
 
@@ -59,13 +59,13 @@ pub async fn list_branches(
 #[cfg(test)]
 mod test_github {
   use crate::utils::test::*;
-  use crate::models::GitRepositoryCreate;
+  use crate::models::GitRepositoryPartial;
 
   use super::*;
 
   #[ntex::test]
   async fn list_repository_branches() -> TestReturn {
-    let item = GitRepositoryCreate {
+    let item = GitRepositoryPartial {
       name: String::from("express-test-deploy"),
       token: None,
       url: String::from("https://github.com/leon3s/express-test-deploy"),

@@ -6,7 +6,7 @@ use diesel::prelude::*;
 
 use crate::utils::get_pool_conn;
 use crate::controllers::errors::HttpError;
-use crate::models::{NamespaceCreate, NamespaceItem, PgDeleteGeneric, Pool};
+use crate::models::{NamespacePartial, NamespaceItem, PgDeleteGeneric, Pool};
 
 use super::errors::db_blocking_error;
 
@@ -26,7 +26,7 @@ use super::errors::db_blocking_error;
 /// namespace::create(new_namespace, &pool).await;
 /// ```
 pub async fn create(
-  item: NamespaceCreate,
+  item: NamespacePartial,
   pool: &web::types::State<Pool>,
 ) -> Result<NamespaceItem, HttpError> {
   use crate::schema::namespaces::dsl;
@@ -178,7 +178,7 @@ mod test_namespace {
     let res = list(&pool_state).await?;
     assert!(res.is_empty());
     let namespace_name = String::from("default");
-    let item = NamespaceCreate {
+    let item = NamespacePartial {
       name: namespace_name.clone(),
     };
 
