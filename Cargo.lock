@@ -342,6 +342,7 @@ dependencies = [
  "futures",
  "ntex",
  "serde",
+ "serde_derive",
  "serde_json",
  "serde_urlencoded",
  "serde_with",

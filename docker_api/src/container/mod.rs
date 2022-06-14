@@ -1,8 +1,10 @@
+pub mod models;
+
 use serde::Serialize;
 
 use crate::client::{HttpClient, DockerClientError};
 
-use crate::models::{
+use models::{
   ContainerSummary, ContainerConfig, ContainerCreateResponse,
   CreateContainerOptions, RemoveContainerOptions, StartContainerOptions,
   StopContainerOptions,
