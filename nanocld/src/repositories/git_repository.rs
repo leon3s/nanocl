@@ -1,16 +1,32 @@
-use diesel::prelude::*;
 use ntex::web;
 use uuid::Uuid;
+use diesel::prelude::*;
 
+use crate::utils::get_pool_conn;
 use crate::controllers::errors::HttpError;
 use crate::models::{
-  GitRepositoryCreate, GitRepositoryItem, GitRepositorySourceType,
-  PgDeleteGeneric, Pool,
+  PgDeleteGeneric, Pool, GitRepositoryCreate, GitRepositoryItem,
+  GitRepositorySourceType,
 };
-use crate::repositories::errors::db_blocking_error;
-use crate::utils::get_pool_conn;
 
-/// Create git repository
+use super::errors::db_blocking_error;
+
+/// Create fresh git repository
+///
+/// # Arguments
+///
+/// * `item` - Partial GitRepository
+/// * `pool` - Posgresql database pool
+///
+/// # Examples
+///
+/// ```
+///
+/// use crate::repositories::git_repository;
+/// let new_repository = GitRepositoryItem {}
+///
+/// git_repository::create(new_branches, &pool).await;
+/// ```
 pub async fn create(
   item: GitRepositoryCreate,
   pool: &web::types::State<Pool>,
@@ -40,6 +56,20 @@ pub async fn create(
 }
 
 /// Delete git repository by id or name
+///
+/// # Arguments
+///
+/// * `id` - Id or name of git repository
+/// * `pool` - Posgresql database pool
+///
+/// # Examples
+///
+/// ```
+///
+/// use crate::repositories::git_repository;
+///
+/// git_repository::delete_by_id_or_name(id, &pool).await;
+/// ```
 pub async fn delete_by_id_or_name(
   id: String,
   pool: &web::types::State<Pool>,
@@ -70,6 +100,21 @@ pub async fn delete_by_id_or_name(
   }
 }
 
+/// Find git repository by his id or name
+///
+/// # Arguments
+///
+/// * `id` - Id or name of git repository
+/// * `pool` - Posgresql database pool
+///
+/// # Examples
+///
+/// ```
+///
+/// use crate::repositories::git_repository;
+///
+/// git_repository::find_by_id_or_name(id, &pool).await;
+/// ```
 pub async fn find_by_id_or_name(
   id_or_name: String,
   pool: &web::types::State<Pool>,
@@ -103,6 +148,19 @@ pub async fn find_by_id_or_name(
 }
 
 /// List all git repository
+///
+/// # Arguments
+///
+/// * `pool` - Posgresql database pool
+///
+/// # Examples
+///
+/// ```
+///
+/// use crate::repositories::git_repository;
+///
+/// git_repository::list(id, &pool).await;
+/// ```
 pub async fn list(
   pool: &web::types::State<Pool>,
 ) -> Result<Vec<GitRepositoryItem>, HttpError> {
@@ -145,7 +203,7 @@ mod test_git_repository {
       .unwrap();
     assert_eq!(res.name, "test");
 
-    // Delete with id
+    // Delete with id and name
     let res = delete_by_id_or_name(res.id.to_string(), &pool_state)
       .await
       .unwrap();
