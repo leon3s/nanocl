@@ -23,15 +23,15 @@ use crate::docker::models::{Ipam, IpamConfig, Network, NetworkContainer};
   components(
     PgDeleteGeneric,
     NamespaceItem,
-    NamespaceCreate,
+    NamespacePartial,
     ClusterItem,
     Network,
     Ipam,
     IpamConfig,
     NetworkContainer,
-    ClusterCreate,
+    ClusterPartial,
     GitRepositoryItem,
-    GitRepositoryCreate,
+    GitRepositoryPartial,
     GitRepositorySourceType,
   )
 )]

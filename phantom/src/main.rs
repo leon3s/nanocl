@@ -1,15 +1,16 @@
+use ntex::http::client::Client;
 use futures::TryStreamExt;
 use bollard::{
   Docker,
   container::{StatsOptions, Stats},
 };
 
+mod nginx;
 mod deploy;
 mod dnsmasq;
-mod docker_helper;
 mod network;
-mod nginx;
 mod posgresql;
+mod docker_helper;
 
 type _Callback = fn(stats: Stats);
 
@@ -53,7 +54,10 @@ async fn init_services(docker: &Docker) {
 
 #[ntex::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
-  let docker = Docker::connect_with_socket_defaults()?;
-  init_services(&docker).await;
+  // let docker = Docker::connect_with_socket_defaults()?;
+  // init_services(&docker).await;
+  let client = Client::new();
+
+  client.get("https://github.com").send().await?;
   Ok(())
 }
