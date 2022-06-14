@@ -2,7 +2,8 @@ pub mod models;
 
 use serde::Serialize;
 
-use crate::client::{HttpClient, DockerClientError};
+use crate::client::HttpClient;
+use crate::api::DockerApiError;
 
 use models::{
   ContainerSummary, ContainerConfig, ContainerCreateResponse,
@@ -55,14 +56,14 @@ impl Container {
   ///
   /// docker.container.list(options);
   /// ```
-  pub async fn list(&self) -> Result<Vec<ContainerSummary>, DockerClientError> {
+  pub async fn list(&self) -> Result<Vec<ContainerSummary>, DockerApiError> {
     let mut res = match self.client.get("/containers/json").send().await {
-      Err(err) => return Err(DockerClientError::SendRequestError(err)),
+      Err(err) => return Err(DockerApiError::Errorsendrequest(err)),
       Ok(res) => res,
     };
     println!("res : {:?}", res);
     match res.json::<Vec<ContainerSummary>>().await {
-      Err(err) => Err(DockerClientError::JsonPayloadError(err)),
+      Err(err) => Err(DockerApiError::Errorjsonpayload(err)),
       Ok(containers) => Ok(containers),
     }
   }
@@ -105,21 +106,21 @@ impl Container {
     &self,
     options: Option<CreateContainerOptions<T>>,
     config: ContainerConfig,
-  ) -> Result<ContainerCreateResponse, DockerClientError>
+  ) -> Result<ContainerCreateResponse, DockerApiError>
   where
     T: Into<String> + Serialize,
   {
     let req = match self.client.post("/containers/create").query(&options) {
-      Err(err) => return Err(DockerClientError::UrlEncodeError(err)),
+      Err(err) => return Err(DockerApiError::Errorurlencode(err)),
       Ok(req) => req.send_json(&config).await,
     };
     let mut res = match req {
-      Err(err) => return Err(DockerClientError::SendRequestError(err)),
+      Err(err) => return Err(DockerApiError::Errorsendrequest(err)),
       Ok(res) => res,
     };
     println!("create res : {:?}", res);
     match res.json::<ContainerCreateResponse>().await {
-      Err(err) => Err(DockerClientError::JsonPayloadError(err)),
+      Err(err) => Err(DockerApiError::Errorjsonpayload(err)),
       Ok(body) => Ok(body),
     }
   }
@@ -153,7 +154,7 @@ impl Container {
     &self,
     id: &str,
     options: Option<StartContainerOptions<T>>,
-  ) -> Result<(), DockerClientError>
+  ) -> Result<(), DockerApiError>
   where
     T: Into<String> + Serialize,
   {
@@ -162,12 +163,12 @@ impl Container {
       .post(format!("/containers/{id}/start", id = id))
       .query(&options)
     {
-      Err(err) => return Err(DockerClientError::UrlEncodeError(err)),
+      Err(err) => return Err(DockerApiError::Errorurlencode(err)),
       Ok(req) => req.send().await,
     };
     println!("start req : {:?}", req);
     match req {
-      Err(err) => Err(DockerClientError::SendRequestError(err)),
+      Err(err) => Err(DockerApiError::Errorsendrequest(err)),
       Ok(_) => Ok(()),
     }
   }
@@ -208,18 +209,18 @@ impl Container {
     &self,
     id: &str,
     options: Option<RemoveContainerOptions>,
-  ) -> Result<(), DockerClientError> {
+  ) -> Result<(), DockerApiError> {
     let req = match self
       .client
       .delete(format!("/containers/{id}", id = id))
       .query(&options)
     {
-      Err(err) => return Err(DockerClientError::UrlEncodeError(err)),
+      Err(err) => return Err(DockerApiError::Errorurlencode(err)),
       Ok(req) => req.send().await,
     };
 
     match req {
-      Err(err) => Err(DockerClientError::SendRequestError(err)),
+      Err(err) => Err(DockerApiError::Errorsendrequest(err)),
       Ok(_) => Ok(()),
     }
   }
@@ -256,17 +257,17 @@ impl Container {
     &self,
     id: &str,
     options: Option<StopContainerOptions>,
-  ) -> Result<(), DockerClientError> {
+  ) -> Result<(), DockerApiError> {
     let req = match self
       .client
       .post(format!("/containers/{id}/stop", id = id))
       .query(&options)
     {
-      Err(err) => return Err(DockerClientError::UrlEncodeError(err)),
+      Err(err) => return Err(DockerApiError::Errorurlencode(err)),
       Ok(req) => req.send().await,
     };
     match req {
-      Err(err) => Err(DockerClientError::SendRequestError(err)),
+      Err(err) => Err(DockerApiError::Errorsendrequest(err)),
       Ok(_) => Ok(()),
     }
   }
