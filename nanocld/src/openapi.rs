@@ -4,7 +4,6 @@ use utoipa::OpenApi;
 
 use crate::models::*;
 use crate::controllers::*;
-use crate::docker::models::{Ipam, IpamConfig, Network, NetworkContainer};
 
 #[derive(OpenApi)]
 #[openapi(
@@ -18,17 +17,17 @@ use crate::docker::models::{Ipam, IpamConfig, Network, NetworkContainer};
     git_repository::list,
     git_repository::create,
     git_repository::delete_by_id_or_name,
-    cluster_network::list_networks,
   ),
   components(
     PgDeleteGeneric,
     NamespaceItem,
     NamespacePartial,
     ClusterItem,
-    Network,
-    Ipam,
-    IpamConfig,
-    NetworkContainer,
+    // Docker bindings
+    // Network,
+    // Ipam,
+    // IpamConfig,
+    // NetworkContainer,
     ClusterPartial,
     GitRepositoryItem,
     GitRepositoryPartial,

@@ -23,7 +23,6 @@ pub mod test {
   use ntex::web::*;
 
   use crate::postgre::create_pool;
-  use bollard::Docker;
 
   pub use ntex::web::test::TestServer;
 
@@ -33,12 +32,6 @@ pub mod test {
 
   pub fn generate_server(config: Config) -> test::TestServer {
     let pool = create_pool();
-    let docker = Docker::connect_with_socket_defaults().unwrap();
-    test::server(move || {
-      App::new()
-        .state(docker.clone())
-        .state(pool.clone())
-        .configure(config)
-    })
+    test::server(move || App::new().state(pool.clone()).configure(config))
   }
 }

@@ -132,7 +132,8 @@ mod test_namespace_git_repository {
   }
 
   // test to create git repository from opensource github
-  async fn test_create(srv: &TestServer) -> TestReturn {
+  // and delete it to clean database
+  async fn test_create_and_delete_by_name(srv: &TestServer) -> TestReturn {
     let new_repository = GitRepositoryPartial {
       name: String::from("express-test-deploy"),
       token: None,
@@ -143,11 +144,6 @@ mod test_namespace_git_repository {
       .send_json(&new_repository)
       .await?;
     assert!(res.status().is_success());
-    Ok(())
-  }
-
-  // test to delete previous created repository by it's name
-  async fn test_delete_by_name(srv: &TestServer) -> TestReturn {
     let mut res = srv
       .delete("/git_repositories/express-test-deploy")
       .send()
@@ -160,7 +156,7 @@ mod test_namespace_git_repository {
   }
 
   // Create and delete by id a repository
-  async fn test_delete_by_id(srv: &TestServer) -> TestReturn {
+  async fn test_create_and_delete_by_id(srv: &TestServer) -> TestReturn {
     let new_repository = GitRepositoryPartial {
       token: None,
       name: String::from("test-repo2"),
@@ -187,9 +183,8 @@ mod test_namespace_git_repository {
     let srv = generate_server(ntex_config);
 
     test_list(&srv).await?;
-    test_create(&srv).await?;
-    test_delete_by_name(&srv).await?;
-    test_delete_by_id(&srv).await?;
+    test_create_and_delete_by_id(&srv).await?;
+    test_create_and_delete_by_name(&srv).await?;
     Ok(())
   }
 }
