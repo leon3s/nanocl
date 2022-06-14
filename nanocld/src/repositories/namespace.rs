@@ -1,16 +1,30 @@
-use diesel::prelude::*;
 /// Repository to manage namespaces in database
 /// We can create delete list or inspect a namespace
 use ntex::web;
 use uuid::Uuid;
+use diesel::prelude::*;
 
+use crate::utils::get_pool_conn;
 use crate::controllers::errors::HttpError;
 use crate::models::{NamespaceCreate, NamespaceItem, PgDeleteGeneric, Pool};
-use crate::utils::get_pool_conn;
 
 use super::errors::db_blocking_error;
 
-/// Create a fresh namespace
+/// Create new namespace
+///
+/// # Arguments
+///
+/// * `item` - Partial namespace
+/// * `pool` - Posgresql database pool
+///
+/// # Examples
+///
+/// ```
+///
+/// use crate::repositories::namespace;
+/// let new_namespace = NamespaceCreate {}
+/// namespace::create(new_namespace, &pool).await;
+/// ```
 pub async fn create(
   item: NamespaceCreate,
   pool: &web::types::State<Pool>,
@@ -37,6 +51,18 @@ pub async fn create(
 }
 
 /// List all namespace
+///
+/// # Arguments
+///
+/// * `pool` - Posgresql database pool
+///
+/// # Examples
+///
+/// ```
+///
+/// use crate::repositories::namespace;
+/// namespace::list(&pool).await;
+/// ```
 pub async fn list(
   pool: &web::types::State<Pool>,
 ) -> Result<Vec<NamespaceItem>, HttpError> {
@@ -51,7 +77,20 @@ pub async fn list(
   }
 }
 
-/// Inspect a namespace by it's name or id
+/// Inspect namespace by id or name
+///
+/// # Arguments
+///
+/// * `id_or_name` Id or name of the namespace
+/// * `pool` - Posgresql database pool
+///
+/// # Examples
+///
+/// ```
+///
+/// use crate::repositories::namespace;
+/// namespace::inspect_by_id_or_name(String::from("default"), &pool).await;
+/// ```
 pub async fn inspect_by_id_or_name(
   id_or_name: String,
   pool: &web::types::State<Pool>,
@@ -82,7 +121,20 @@ pub async fn inspect_by_id_or_name(
   }
 }
 
-/// Delete a namespace by it's name or id
+/// Delete namespace by id or name
+///
+/// # Arguments
+///
+/// * `id_or_name` Id or name of the namespace
+/// * `pool` - Posgresql database pool
+///
+/// # Examples
+///
+/// ```
+///
+/// use crate::repositories::namespace;
+/// namespace::delete_by_id_or_name(String::from("default"), &pool).await;
+/// ```
 pub async fn delete_by_id_or_name(
   id_or_name: String,
   pool: &web::types::State<Pool>,
@@ -129,16 +181,20 @@ mod test_namespace {
     let item = NamespaceCreate {
       name: namespace_name.clone(),
     };
+
     // Create namespace
     let res = create(item, &pool_state).await?;
     assert_eq!(res.name, namespace_name.clone());
+
     // Inspect namespace
     let res =
       inspect_by_id_or_name(namespace_name.clone(), &pool_state).await?;
     assert_eq!(res.name, namespace_name.clone());
+
     // Delete namespace
     let res = delete_by_id_or_name(namespace_name.clone(), &pool_state).await?;
     assert_eq!(res.count, 1);
+
     Ok(())
   }
 }
