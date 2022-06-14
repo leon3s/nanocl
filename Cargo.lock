@@ -340,6 +340,8 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "futures",
+ "futures-core",
+ "futures-util",
  "ntex",
  "serde",
  "serde_derive",
@@ -347,6 +349,7 @@ dependencies = [
  "serde_urlencoded",
  "serde_with",
  "thiserror",
+ "tokio-util",
  "utoipa",
 ]
 
