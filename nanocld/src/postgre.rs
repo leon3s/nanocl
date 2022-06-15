@@ -3,7 +3,11 @@ use diesel::r2d2::ConnectionManager;
 
 use crate::models::Pool;
 
-/// Create postgres pool
+/// # Create pool
+/// Create an pool connection to postgres database
+///
+/// # Returns
+/// - [Pool](Pool) R2d2 pool connection for postgres
 ///
 /// # Examples
 /// ```
