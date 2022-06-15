@@ -1,6 +1,4 @@
 use futures::TryStreamExt;
-use ntex::rt;
-use ntex::http::client::{Client, Connector};
 use bollard::{
   Docker,
   container::{StatsOptions, Stats},
@@ -55,27 +53,26 @@ async fn init_services(docker: &Docker) {
 
 #[ntex::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
-  // let docker = Docker::connect_with_socket_defaults()?;
-  // init_services(&docker).await;
-  let client = Client::build()
-    .connector(
-      Connector::default()
-        .connector(ntex::service::fn_service(|_| async {
-          Ok(rt::unix_connect("/var/run/docker.sock").await?)
-        }))
-        .finish(),
-    )
-    .finish();
+  let docker = Docker::connect_with_socket_defaults()?;
+  init_services(&docker).await;
+  // let client = Client::build()
+  //   .connector(
+  //     Connector::default()
+  //       .connector(ntex::service::fn_service(|_| async {
+  //         Ok(rt::unix_connect("/var/run/docker.sock").await?)
+  //       }))
+  //       .finish(),
+  //   )
+  //   .finish();
 
-  let res = client
-    .get("http://localhost/containers/nanocl-db-postgre/stats")
-    .send()
-    .await?;
+  // let res = client
+  //   .get("http://localhost/containers/nanocl-db-postgre/stats")
+  //   .send()
+  //   .await?;
 
-  let mut stream = res.into_stream();
-  while let Some(body) = stream.try_next().await.unwrap() {
-    println!("body : {:?}", body);
-  }
-
+  // let mut stream = res.into_stream();
+  // while let Some(body) = stream.try_next().await.unwrap() {
+  //   println!("body : {:?}", body);
+  // }
   Ok(())
 }

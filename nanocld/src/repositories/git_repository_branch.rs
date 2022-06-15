@@ -57,7 +57,7 @@ pub async fn create_many(
   }
 }
 
-/// Delete all branches for given repository id and return number of deleted entry
+/// - Delete all branches for given repository id and return number of deleted entry
 ///
 /// # Arguments
 ///
@@ -66,8 +66,7 @@ pub async fn create_many(
 ///
 /// # Examples
 ///
-/// ```
-///
+/// ```rust
 /// use crate::repositories::git_repository_branch;
 /// git_repository_branch::delete_by_repository_id(repository_id, pool).await;
 /// ```
@@ -118,7 +117,7 @@ mod test {
     // Create many branches
     let items = vec![GitRepositoryBranchPartial {
       name: String::from("test-branch"),
-      repository_id: res.id.clone(),
+      repository_id: res.id,
     }];
     create_many(items, &pool_state).await.unwrap();
 

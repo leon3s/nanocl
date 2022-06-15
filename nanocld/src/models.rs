@@ -6,7 +6,8 @@ use diesel::{r2d2::ConnectionManager, PgConnection};
 use serde::{Deserialize, Serialize};
 
 use crate::schema::{
-  clusters, namespaces, git_repositories, git_repository_branches,
+  clusters, namespaces, git_repositories, cluster_networks,
+  git_repository_branches,
 };
 
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
@@ -110,6 +111,19 @@ pub struct ClusterItem {
 #[derive(Component, Serialize, Deserialize)]
 pub struct ClusterPartial {
   pub(crate) name: String,
+}
+
+#[derive(Component, Serialize, Deserialize)]
+pub struct ClusterNetworkPartial {
+  pub(crate) name: String,
+}
+
+#[derive(Debug, Component, Serialize, Deserialize, Queryable, Insertable)]
+#[table_name = "cluster_networks"]
+pub struct ClusterNetworkItem {
+  pub(crate) id: Uuid,
+  pub(crate) name: String,
+  pub(crate) cluster_id: Uuid,
 }
 
 /// Rexports postgre enum for schema.rs
