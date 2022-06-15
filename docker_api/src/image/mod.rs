@@ -75,7 +75,13 @@ impl Image {
     &self,
     options: BuildImageOptions<T>,
     tar: Option<Body>,
-  ) -> impl Stream<Item = Result<BuildInfo, DockerApiError>>
+  ) -> std::pin::Pin<
+    std::boxed::Box<
+      dyn futures_util::Stream<
+          Item = std::result::Result<BuildInfo, DockerApiError>,
+        > + std::marker::Send,
+    >,
+  >
   where
     T: Into<String> + Eq + Hash + Serialize,
   {
@@ -100,13 +106,9 @@ impl Image {
     };
 
     let res = stream
-      .map(|chunk| match chunk {
-        Err(err) => Err(DockerApiError::Errorpayload(err)),
-        Ok(byte) => Ok(serde_json::from_slice(&byte).unwrap()),
-      })
+      .map_ok(|chunk| serde_json::from_slice(&chunk).unwrap())
+      .map_err(|err| DockerApiError::Errorpayload(err))
       .into_stream()
-      .collect();
-
-    Box::pin(res)
+      .try_flatten();
   }
 }
