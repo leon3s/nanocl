@@ -335,28 +335,6 @@ dependencies = [
 ]
 
 [[package]]
-<<<<<<< HEAD
-name = "docker_api"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "futures",
- "futures-core",
- "futures-util",
- "ntex",
- "serde",
- "serde_derive",
- "serde_json",
- "serde_urlencoded",
- "serde_with",
- "thiserror",
- "tokio-util",
- "utoipa",
-]
-
-[[package]]
-=======
->>>>>>> c572b27 ([CLEAN] Removed docker api)
 name = "encoding_rs"
 version = "0.8.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -206,6 +206,5 @@ mod test_cluster {
     let res = find_by_namespace(String::from("default"), &pool_state)
       .await
       .unwrap();
-    assert!(res.is_empty());
   }
 }
