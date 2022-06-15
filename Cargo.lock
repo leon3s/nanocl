@@ -814,6 +814,7 @@ dependencies = [
  "r2d2",
  "serde",
  "serde_json",
+ "thiserror",
  "url",
  "utoipa",
  "uuid 0.8.2",

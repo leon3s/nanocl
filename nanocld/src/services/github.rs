@@ -1,3 +1,5 @@
+use thiserror::Error;
+
 use ntex::http::client::Client;
 use url::{ParseError, Url};
 use serde::{Deserialize, Serialize};
@@ -13,6 +15,17 @@ pub struct GitBranch {
 pub struct GitDesc {
   pub(crate) host: String,
   pub(crate) path: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GithubApiError {
+  pub(crate) message: String,
+}
+
+#[derive(Error, Debug)]
+pub enum GithubError {
+  #[error("response error from api")]
+  Errorgithubapi(GithubApiError),
 }
 
 pub fn parse_git_url(url: &str) -> Result<GitDesc, ParseError> {
@@ -49,9 +62,14 @@ pub async fn list_branches(
   let mut res = client
     .get(url)
     .set_header("Accept", "application/vnd.github.v3+json")
-    .set_header("User-Agent", "ntex-client")
+    .set_header("User-Agent", "axios")
     .send()
     .await?;
+  println!("res : {:?}", res);
+  if res.status().is_client_error() {
+    let err = res.json::<GithubApiError>().await?;
+    return Err(Box::new(GithubError::Errorgithubapi(err)));
+  }
   let body = res.json::<Vec<GitBranch>>().await?;
   Ok(body)
 }

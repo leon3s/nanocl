@@ -135,8 +135,8 @@ mod test_namespace_git_repository {
   // and delete it to clean database
   async fn test_create_and_delete_by_name(srv: &TestServer) -> TestReturn {
     let new_repository = GitRepositoryPartial {
-      name: String::from("express-test-deploy"),
       token: None,
+      name: String::from("express-test-deploy"),
       url: String::from("https://github.com/leon3s/express-test-deploy"),
     };
     let res = srv
