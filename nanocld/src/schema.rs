@@ -14,6 +14,7 @@ table! {
     cluster_networks (id) {
         id -> Uuid,
         name -> Varchar,
+        docker_network_id -> Varchar,
         cluster_id -> Uuid,
     }
 }
