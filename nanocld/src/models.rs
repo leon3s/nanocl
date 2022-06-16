@@ -28,7 +28,6 @@ pub struct NamespaceItem {
 }
 
 /// Partial namespace
-/// this structure ensure write in database
 #[derive(Component, Serialize, Deserialize)]
 pub struct NamespacePartial {
   pub(crate) name: String,
