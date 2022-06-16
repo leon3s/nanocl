@@ -1,8 +1,14 @@
-use ntex::{http::StatusCode, web};
+use ntex::web;
+use ntex::http::StatusCode;
 
 use crate::models::{DBConn, Pool};
 use crate::controllers::errors::HttpError;
 
+/// # Get connection from a pool
+///
+/// # Arguments
+/// [pool](web::types::State<Pool>) a pool wrapped in ntex State
+///
 pub fn get_pool_conn(
   pool: &web::types::State<Pool>,
 ) -> Result<DBConn, HttpError> {
