@@ -1,14 +1,22 @@
-use ntex::http::StatusCode;
+//! Custom ntex http error to serialize error as json
 use ntex::web;
+use ntex::http::StatusCode;
 use serde::Serialize;
 use serde_json::{json, to_string_pretty};
 use std::fmt::{Display, Formatter, Result as FmtResult};
+use utoipa::Component;
 
 #[derive(Debug, Serialize)]
 pub struct HttpError {
   pub(crate) msg: String,
   #[serde(skip_serializing)]
   pub(crate) status: StatusCode,
+}
+
+#[derive(Component)]
+pub struct ApiError {
+  #[allow(dead_code)]
+  pub(crate) msg: String,
 }
 
 impl Display for HttpError {
