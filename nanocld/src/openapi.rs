@@ -9,15 +9,16 @@ use crate::controllers::errors::ApiError;
 #[derive(OpenApi)]
 #[openapi(
   handlers(
-    namespace::list,
-    namespace::create,
-    namespace::get_by_id_or_name,
-    namespace::delete_by_id_or_name,
+    namespace::list_namespace,
+    namespace::create_namespace,
+    namespace::delete_namespace_by_name,
+    namespace::inspect_namespace_by_name,
+
     cluster::list,
     cluster::create,
-    git_repository::list,
-    git_repository::create,
-    git_repository::delete_by_id_or_name,
+    git_repository::list_git_repository,
+    git_repository::create_git_repository,
+    git_repository::delete_git_repository_by_name,
   ),
   components(
     ApiError,
