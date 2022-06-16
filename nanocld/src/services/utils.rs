@@ -23,6 +23,7 @@ pub enum NetworkState {
   Ready,
 }
 
+/// # Generate label namespace
 pub fn gen_label_namespace(namespace: &str) -> HashMap<&str, &str> {
   let mut labels: HashMap<&str, &str> = HashMap::new();
   labels.insert("namespace", namespace);

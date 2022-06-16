@@ -127,7 +127,7 @@ mod test_namespace {
 
   async fn test_create(srv: &TestServer) -> TestReturn {
     let new_namespace = NamespacePartial {
-      name: String::from("default"),
+      name: String::from("controller-default"),
     };
 
     let resp = srv.post("/namespaces").send_json(&new_namespace).await?;
@@ -154,7 +154,10 @@ mod test_namespace {
 
   async fn test_inspect_by_id(srv: &TestServer) -> TestReturn {
     let resp = srv
-      .get(format!("/namespaces/{name}/inspect", name = "default"))
+      .get(format!(
+        "/namespaces/{name}/inspect",
+        name = "controller-default"
+      ))
       .send()
       .await?;
 
@@ -164,7 +167,7 @@ mod test_namespace {
 
   async fn test_delete(srv: &TestServer) -> TestReturn {
     let mut resp = srv
-      .delete(format!("/namespaces/{name}", name = "default"))
+      .delete(format!("/namespaces/{name}", name = "controller-default"))
       .send()
       .await?;
 

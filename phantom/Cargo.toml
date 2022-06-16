@@ -1,9 +1,0 @@
-[package]
-name = "phantom"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-futures = "0.3"
-bollard = "0.12"
-ntex = { version = "0.5", features = ["openssl", "rustls", "tokio"] }

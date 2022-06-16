@@ -6,7 +6,7 @@ use bollard::{
   container::{CreateContainerOptions, Config},
 };
 
-use crate::docker_helper::*;
+use super::utils::*;
 
 fn gen_postgre_host_conf() -> HostConfig {
   let mut port_bindings: HashMap<String, Option<Vec<PortBinding>>> =
@@ -56,7 +56,7 @@ async fn create_postgre_container(
   Ok(())
 }
 
-pub async fn ensure_start(docker: &Docker) -> Result<(), DockerError> {
+pub async fn boot(docker: &Docker) -> Result<(), DockerError> {
   let container_name = "nanocl-db-postgre";
   install_service(docker, "postgres:latest").await?;
   let s_state = get_service_state(docker, container_name).await;

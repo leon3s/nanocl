@@ -58,6 +58,8 @@ async fn main() -> std::io::Result<()> {
       )
   });
   server = server.bind("0.0.0.0:8383")?;
-  println!("starting server on http://0.0.0.0:8383");
-  server.run().await
+  println!("running server on http://0.0.0.0:8383");
+  server.run().await?;
+  println!("exiting");
+  Ok(())
 }

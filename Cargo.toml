@@ -1,12 +1,10 @@
 [workspace]
 members = [
   "nanocld",
-  "phantom",
   "nanocli",
 ]
 
 [patch.crates-io]
 nanocld = { path = "nanocld" }
 nanocli = { path = "nanocli" }
-phantom = { path = "phantom" }
 ntex-files = { git = "https://github.com/ntex-rs/ntex-extras.git" }

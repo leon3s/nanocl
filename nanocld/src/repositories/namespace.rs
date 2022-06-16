@@ -86,7 +86,7 @@ pub async fn list(
 ///
 /// # Examples
 ///
-/// ```
+/// ```rust,norun
 ///
 /// use crate::repositories::namespace;
 /// namespace::inspect_by_id_or_name(String::from("default"), &pool).await;
