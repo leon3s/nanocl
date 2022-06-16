@@ -33,7 +33,8 @@ async fn create_default_nsp(
   pool: &web::types::State<Pool>,
 ) -> Result<(), BootError> {
   const NSP_NAME: &str = "default";
-  match repositories::namespace::inspect_name(NSP_NAME.to_string(), pool).await
+  match repositories::namespace::inspect_by_name(NSP_NAME.to_string(), pool)
+    .await
   {
     Err(_err) => {
       let new_nsp = NamespacePartial {
