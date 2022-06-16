@@ -23,7 +23,7 @@ struct GitRepositoryQuery {
   ),
 )]
 #[web::get("/git_repositories")]
-async fn list(
+async fn list_git_repository(
   pool: web::types::State<Pool>,
 ) -> Result<web::HttpResponse, HttpError> {
   let items = git_repository::list(&pool).await?;
@@ -44,7 +44,7 @@ async fn list(
   ),
 )]
 #[web::post("/git_repositories")]
-async fn create(
+async fn create_git_repository(
   pool: web::types::State<Pool>,
   web::types::Json(payload): web::types::Json<GitRepositoryPartial>,
 ) -> Result<web::HttpResponse, HttpError> {
@@ -77,12 +77,12 @@ async fn create(
   Ok(web::HttpResponse::Created().json(&item))
 }
 
-/// Delete git repository by it's id or name
+/// Delete git repository by it's name
 #[utoipa::path(
   delete,
-  path = "/git_repositories/{id}",
+  path = "/git_repositories/{name}",
   params(
-    ("id" = String, path, description = "Id or name of git repository"),
+    ("id" = String, path, description = "Name of git repository"),
   ),
   responses(
     (status = 201, description = "Number of entry deleted", body = PgDeleteGeneric),
@@ -91,7 +91,7 @@ async fn create(
   ),
 )]
 #[web::delete("/git_repositories/{id}")]
-async fn delete_by_id_or_name(
+async fn delete_git_repository_by_name(
   pool: web::types::State<Pool>,
   req_path: web::types::Path<String>,
 ) -> Result<web::HttpResponse, HttpError> {
@@ -107,9 +107,9 @@ async fn delete_by_id_or_name(
 
 /// Configure ntex to bind our routes
 pub fn ntex_config(config: &mut web::ServiceConfig) {
-  config.service(list);
-  config.service(create);
-  config.service(delete_by_id_or_name);
+  config.service(list_git_repository);
+  config.service(create_git_repository);
+  config.service(delete_git_repository_by_name);
 }
 
 #[cfg(test)]
