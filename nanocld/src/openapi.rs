@@ -4,6 +4,7 @@ use utoipa::OpenApi;
 
 use crate::models::*;
 use crate::controllers::*;
+use crate::controllers::errors::ApiError;
 
 #[derive(OpenApi)]
 #[openapi(
@@ -19,19 +20,21 @@ use crate::controllers::*;
     git_repository::delete_by_id_or_name,
   ),
   components(
+    ApiError,
     PgDeleteGeneric,
+
     NamespaceItem,
     NamespacePartial,
     ClusterItem,
+    ClusterPartial,
+    GitRepositoryItem,
+    GitRepositoryPartial,
+    GitRepositorySourceType,
     // Docker bindings
     // Network,
     // Ipam,
     // IpamConfig,
     // NetworkContainer,
-    ClusterPartial,
-    GitRepositoryItem,
-    GitRepositoryPartial,
-    GitRepositorySourceType,
   )
 )]
 struct ApiDoc;
