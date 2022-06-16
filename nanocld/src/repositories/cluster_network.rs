@@ -22,6 +22,7 @@ pub async fn create_for_cluster(
     let item = ClusterNetworkItem {
       id: Uuid::new_v4(),
       name: item.name,
+      docker_network_id: item.docker_network_id,
       cluster_id,
     };
     diesel::insert_into(dsl::cluster_networks)
@@ -103,6 +104,7 @@ pub async fn find_by_id_or_name(
 #[cfg(test)]
 mod cluster_networks {
   use ntex::web;
+  use bollard::network::CreateNetworkOptions;
 
   use crate::postgre;
   use crate::repositories::cluster;
@@ -112,6 +114,8 @@ mod cluster_networks {
 
   #[ntex::test]
   async fn main() {
+    const NET_NAME: &str = "test-cluster-network";
+
     let pool = postgre::create_pool();
     let pool_state = web::types::State::new(pool);
 
@@ -127,17 +131,32 @@ mod cluster_networks {
     .await
     .unwrap();
 
-    // create
+    // create docker network for relationship
+    let docker = bollard::Docker::connect_with_local_defaults().unwrap();
+    let net_config = CreateNetworkOptions {
+      name: NET_NAME,
+      ..Default::default()
+    };
+    let network = docker.create_network(net_config).await.unwrap();
+
+    let id = match network.id {
+      None => panic!("unable to bind network id"),
+      Some(id) => id,
+    };
+
+    // create cluster network
     let new_network = ClusterNetworkPartial {
       name: String::from("test-dev"),
+      docker_network_id: id,
     };
     let network = create_for_cluster(cluster.id, new_network, &pool_state)
       .await
       .unwrap();
-    // find
+
+    // find cluster network
     find_by_id_or_name(network.name, &pool_state).await.unwrap();
 
-    // delete
+    // delete cluster network
     delete_by_id_or_name(network.id.to_string(), &pool_state)
       .await
       .unwrap();
@@ -146,5 +165,8 @@ mod cluster_networks {
     cluster::delete_by_gen_id("default-dev".to_string(), &pool_state)
       .await
       .unwrap();
+
+    // clean docker network
+    docker.remove_network(NET_NAME).await.unwrap();
   }
 }
