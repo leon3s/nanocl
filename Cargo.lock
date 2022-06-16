@@ -804,6 +804,7 @@ dependencies = [
 name = "nanocld"
 version = "0.1.0"
 dependencies = [
+ "bollard",
  "chrono",
  "diesel",
  "diesel-derive-enum",

@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 r2d2 = "0.8"
 futures = "0.3"
+bollard = "0.12"
 chrono = "0.4.19"
 env_logger = "0.8"
 ntex-files = "0.1"
