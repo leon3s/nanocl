@@ -122,7 +122,6 @@ pub struct ClusterPartial {
 #[derive(Component, Serialize, Deserialize)]
 pub struct ClusterNetworkPartial {
   pub(crate) name: String,
-  pub(crate) docker_network_id: String,
 }
 
 #[derive(

@@ -37,8 +37,10 @@ async fn main() -> std::io::Result<()> {
   };
   let mut server = web::HttpServer::new(move || {
     web::App::new()
-      // postgre pool
+      // bind postgre pool to state
       .state(state.pool.clone())
+      // bind docker connection to state
+      .state(state.docker.clone())
       // Default logger middleware
       .wrap(web::middleware::Logger::default())
       // Set Json body max size

@@ -17,6 +17,7 @@ pub enum BootError {
 #[derive(Clone)]
 pub struct DaemonState {
   pub(crate) pool: Pool,
+  pub(crate) docker: bollard::Docker,
 }
 
 /// # Create default namespace
@@ -98,5 +99,8 @@ pub async fn boot() -> Result<DaemonState, BootError> {
   create_default_nsp(&pool).await?;
 
   // Return state
-  Ok(DaemonState { pool: db_pool })
+  Ok(DaemonState {
+    pool: db_pool,
+    docker,
+  })
 }

@@ -9,29 +9,49 @@ use crate::controllers::errors::ApiError;
 #[derive(OpenApi)]
 #[openapi(
   handlers(
+    // Namespace
     namespace::list_namespace,
     namespace::create_namespace,
     namespace::delete_namespace_by_name,
     namespace::inspect_namespace_by_name,
 
-    cluster::list,
-    cluster::create,
+    // Git repository
     git_repository::list_git_repository,
     git_repository::create_git_repository,
     git_repository::delete_git_repository_by_name,
+
+    // Cluster
+    cluster::list_cluster,
+    cluster::create_cluster,
+    cluster::delete_cluster_by_name,
+    cluster::inspect_cluster_by_name,
+
+    // Cluster network
+    cluster_network::list_cluster_network,
+    cluster_network::create_cluster_network,
   ),
   components(
     ApiError,
     PgDeleteGeneric,
 
-    NamespaceItem,
-    NamespacePartial,
-    ClusterItem,
-    ClusterPartial,
+    // Git repository
     GitRepositoryItem,
     GitRepositoryPartial,
     GitRepositorySourceType,
-    // Docker bindings
+
+    // Namespace
+    NamespaceItem,
+    NamespacePartial,
+
+    // Cluster
+    ClusterItem,
+    ClusterPartial,
+
+    // Cluster network
+    ClusterNetworkItem,
+    ClusterNetworkPartial,
+
+    // Todo Docker network struct bindings
     // Network,
     // Ipam,
     // IpamConfig,

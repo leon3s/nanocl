@@ -70,7 +70,7 @@ pub async fn create_for_namespace(
 /// // Find cluster by id
 ///
 /// use crate::repositories::cluster;
-/// cluster::find_by_gen_id(gen_id, &pool).await;
+/// cluster::find_by_key(gen_id, &pool).await;
 /// ```
 pub async fn find_by_key(
   key: String,
@@ -165,11 +165,25 @@ mod test_cluster {
 
   #[ntex::test]
   async fn main() {
+    const NSP_NAME: &str = "default";
+    const CLUSTER_NAME: &str = "test-default-cluster";
+
     let pool = postgre::create_pool();
     let pool_state = web::types::State::new(pool);
 
+    // test list cluster
     let _res = find_by_namespace(String::from("default"), &pool_state)
       .await
       .unwrap();
+    let item = ClusterPartial {
+      name: String::from(CLUSTER_NAME),
+    };
+    // test create cluster
+    create_for_namespace(String::from(NSP_NAME), item, &pool_state)
+      .await
+      .unwrap();
+    let key = NSP_NAME.to_owned() + "-" + CLUSTER_NAME;
+    // test delete cluster
+    delete_by_key(key, &pool_state).await.unwrap();
   }
 }

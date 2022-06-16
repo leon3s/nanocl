@@ -37,10 +37,9 @@ async fn list_namespace(
 #[web::post("/namespaces")]
 async fn create_namespace(
   pool: web::types::State<Pool>,
-  payload: web::types::Json<NamespacePartial>,
+  web::types::Json(payload): web::types::Json<NamespacePartial>,
 ) -> Result<web::HttpResponse, HttpError> {
-  let new_namespace = payload.into_inner();
-  let item = namespace::create(new_namespace, &pool).await?;
+  let item = namespace::create(payload, &pool).await?;
 
   Ok(web::HttpResponse::Created().json(&item))
 }
@@ -58,15 +57,15 @@ async fn create_namespace(
 )]
 #[web::delete("/namespaces/{name}")]
 async fn delete_namespace_by_name(
-  id: web::types::Path<String>,
   pool: web::types::State<Pool>,
+  id: web::types::Path<String>,
 ) -> Result<web::HttpResponse, HttpError> {
   let id_or_name = id.into_inner();
   let res = namespace::delete_by_name(id_or_name, &pool).await?;
   Ok(web::HttpResponse::Ok().json(&res))
 }
 
-/// Inspect namespace by name
+/// Inspect namespace by it's name
 #[utoipa::path(
   get,
   path = "/namespaces/{name}/inspect",

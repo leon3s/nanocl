@@ -13,6 +13,7 @@ use super::errors::db_blocking_error;
 pub async fn create_for_cluster(
   cluster_key: String,
   item: ClusterNetworkPartial,
+  docker_network_id: String,
   pool: &web::types::State<Pool>,
 ) -> Result<ClusterNetworkItem, HttpError> {
   use crate::schema::cluster_networks::dsl;
@@ -23,7 +24,7 @@ pub async fn create_for_cluster(
       key: cluster_key.to_owned() + "-" + &item.name,
       cluster_key,
       name: item.name,
-      docker_network_id: item.docker_network_id,
+      docker_network_id,
     };
     diesel::insert_into(dsl::cluster_networks)
       .values(&item)
@@ -38,30 +39,19 @@ pub async fn create_for_cluster(
   }
 }
 
-pub async fn delete_by_id_or_name(
-  id: String,
+pub async fn delete_by_key(
+  key: String,
   pool: &web::types::State<Pool>,
 ) -> Result<PgDeleteGeneric, HttpError> {
   use crate::schema::cluster_networks::dsl;
   let conn = get_pool_conn(pool)?;
-  let res = match Uuid::parse_str(&id) {
-    Err(_) => {
-      web::block(move || {
-        diesel::delete(dsl::cluster_networks)
-          .filter(dsl::name.eq(id))
-          .execute(&conn)
-      })
-      .await
-    }
-    Ok(uuid) => {
-      web::block(move || {
-        diesel::delete(dsl::cluster_networks)
-          .filter(dsl::key.eq(uuid.to_string()))
-          .execute(&conn)
-      })
-      .await
-    }
-  };
+
+  let res = web::block(move || {
+    diesel::delete(dsl::cluster_networks)
+      .filter(dsl::key.eq(key))
+      .execute(&conn)
+  })
+  .await;
 
   match res {
     Err(err) => Err(db_blocking_error(err)),
@@ -69,31 +59,19 @@ pub async fn delete_by_id_or_name(
   }
 }
 
-pub async fn find_by_id_or_name(
-  id: String,
+pub async fn find_by_key(
+  key: String,
   pool: &web::types::State<Pool>,
 ) -> Result<ClusterNetworkItem, HttpError> {
   use crate::schema::cluster_networks::dsl;
   let conn = get_pool_conn(pool)?;
 
-  let res = match Uuid::parse_str(&id) {
-    Err(_) => {
-      web::block(move || {
-        dsl::cluster_networks
-          .filter(dsl::name.eq(id))
-          .get_result(&conn)
-      })
-      .await
-    }
-    Ok(uuid) => {
-      web::block(move || {
-        dsl::cluster_networks
-          .filter(dsl::key.eq(uuid.to_string()))
-          .get_result(&conn)
-      })
-      .await
-    }
-  };
+  let res = web::block(move || {
+    dsl::cluster_networks
+      .filter(dsl::key.eq(key))
+      .get_result(&conn)
+  })
+  .await;
 
   match res {
     Err(err) => Err(db_blocking_error(err)),
@@ -147,20 +125,19 @@ mod cluster_networks {
     // create cluster network
     let new_network = ClusterNetworkPartial {
       name: String::from("test-dev"),
-      docker_network_id: id,
     };
-    let network = create_for_cluster(cluster.key, new_network, &pool_state)
+    let network = create_for_cluster(cluster.key, new_network, id, &pool_state)
       .await
       .unwrap();
 
     let network_name = network.name.clone();
     // find cluster network
-    find_by_id_or_name(network_name.clone(), &pool_state)
+    find_by_key(network_name.clone(), &pool_state)
       .await
       .unwrap();
 
     // delete cluster network
-    delete_by_id_or_name(network_name.clone(), &pool_state)
+    delete_by_key(network_name.clone(), &pool_state)
       .await
       .unwrap();
 
