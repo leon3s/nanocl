@@ -25,7 +25,7 @@ async fn create_dnsmasq_container(
   name: &str,
 ) -> Result<(), DockerError> {
   let image = Some("nanocl-dns-dnsmasq:latest");
-  let labels = Some(gen_label_namespace("nanocl"));
+  let labels = Some(gen_labels_with_namespace("nanocl"));
   let host_config = Some(gen_dnsmasq_host_conf());
   let options = Some(CreateContainerOptions { name });
   let config = Config {
