@@ -13,7 +13,7 @@ use super::errors::db_blocking_error;
 ///
 /// # Arguments
 ///
-/// * `item` - Partial namespace
+/// * [name](String) - Partial namespace
 /// * `pool` - Posgresql database pool
 ///
 /// # Examples
@@ -88,9 +88,9 @@ pub async fn list(
 /// ```rust,norun
 /// use crate::repositories;
 ///
-/// repositories::namespace::inspect_name(String::from("default"), &pool).await;
+/// repositories::namespace::inspect_by_name(String::from("default"), &pool).await;
 /// ```
-pub async fn inspect_name(
+pub async fn inspect_by_name(
   name: String,
   pool: &web::types::State<Pool>,
 ) -> Result<NamespaceItem, HttpError> {
@@ -163,7 +163,7 @@ mod test_namespace {
     assert_eq!(res.name, namespace_name.clone());
 
     // Inspect namespace
-    let res = inspect_name(namespace_name.clone(), &pool_state).await?;
+    let res = inspect_by_name(namespace_name.clone(), &pool_state).await?;
     assert_eq!(res.name, namespace_name.clone());
 
     // Delete namespace
