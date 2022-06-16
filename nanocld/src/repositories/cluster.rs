@@ -8,13 +8,14 @@ use crate::controllers::errors::HttpError;
 use crate::repositories::errors::db_blocking_error;
 use crate::models::{Pool, ClusterItem, ClusterPartial, PgDeleteGeneric};
 
-/// Return a fresh cluster with id and gen_id
+/// # Create cluster for namespace
+/// Return a fresh cluster with id and gen_id for given namespace
 ///
 /// # Arguments
 ///
-/// * `nsp` - The namespace to add cluster in
-/// * `item` - Cluster to create
-/// * `pool` - Posgresql database pool
+/// - [nsp](String) namespace of the cluster
+/// - [item](ClusterPartial) - Cluster to create without id and other generated data
+/// - [pool](web::types::State<Pool>) - Posgresql database pool
 ///
 /// # Examples
 ///
@@ -203,7 +204,7 @@ mod test_cluster {
     let pool = postgre::create_pool();
     let pool_state = web::types::State::new(pool);
 
-    let res = find_by_namespace(String::from("default"), &pool_state)
+    let _res = find_by_namespace(String::from("default"), &pool_state)
       .await
       .unwrap();
   }
