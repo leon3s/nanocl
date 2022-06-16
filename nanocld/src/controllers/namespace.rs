@@ -1,3 +1,4 @@
+//! File to handle namespace routes
 use ntex::web;
 
 use crate::models::{NamespacePartial, Pool};
@@ -5,7 +6,7 @@ use crate::repositories::namespace;
 
 use super::errors::HttpError;
 
-/// List all namespaces
+/// List all namespace
 #[utoipa::path(
   get,
   path = "/namespaces",
@@ -28,7 +29,7 @@ async fn list(
   path = "/namespaces/{id}/inspect",
   responses(
       (status = 200, description = "Namespace found", body = NamespaceItem),
-      (status = 404, description = "Namespace not found"),
+      (status = 404, description = "Namespace not found", body = ApiError),
   ),
   params(
     ("id" = String, path, description = "id or name of the namespace"),
@@ -45,11 +46,11 @@ async fn get_by_id_or_name(
   Ok(web::HttpResponse::Ok().json(&item))
 }
 
-/// Create a new namespace
+/// Create new namespace
 #[utoipa::path(
   post,
   path = "/namespaces",
-  request_body = NamespaceCreate,
+  request_body = NamespacePartial,
   responses(
     (status = 201, description = "Fresh created namespace", body = NamespaceItem),
     (status = 400, description = "Generic database error"),
@@ -67,7 +68,7 @@ async fn create(
   Ok(web::HttpResponse::Created().json(&item))
 }
 
-/// Delete a namespace
+/// Delete namespace by it's id or name
 #[utoipa::path(
     delete,
     path = "/namespaces/{id}",
@@ -88,6 +89,19 @@ async fn delete_by_id_or_name(
   Ok(web::HttpResponse::Ok().json(&res))
 }
 
+/// # ntex config
+/// Bind namespace routes to ntex http server
+///
+/// # Arguments
+/// [config](web::ServiceConfig) mutable service config
+///
+/// # Examples
+/// ```rust,norun
+/// use ntex::web;
+/// use crate::controllers;
+///
+/// web::App::new().configure(controllers::namespace::ntex_config)
+/// ```
 pub fn ntex_config(config: &mut web::ServiceConfig) {
   config.service(list);
   config.service(create);
