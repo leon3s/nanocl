@@ -177,7 +177,7 @@ mod test_namespace {
     // List namespace
     let res = list(&pool_state).await?;
     assert!(res.is_empty());
-    let namespace_name = String::from("default");
+    let namespace_name = String::from("test-default");
     let item = NamespacePartial {
       name: namespace_name.clone(),
     };
