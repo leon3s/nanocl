@@ -1,3 +1,4 @@
+//! File to handle cluster routes
 use ntex::web;
 use serde::{Deserialize, Serialize};
 
@@ -11,6 +12,7 @@ struct ClusterQuery {
   pub(crate) namespace: Option<String>,
 }
 
+/// List all clusters
 #[utoipa::path(
   get,
   path = "/clusters",
@@ -37,6 +39,7 @@ async fn list(
   Ok(web::HttpResponse::Ok().json(&items))
 }
 
+/// Create new cluster
 #[utoipa::path(
   post,
   path = "/clusters",
@@ -63,6 +66,20 @@ async fn create(
   Ok(web::HttpResponse::Created().json(&res))
 }
 
+/// Get cluster information by it's name or id
+#[utoipa::path(
+  get,
+  path = "/clusters/{id}",
+  params(
+    ("id" = String, path, description = "Id or name of the cluster"),
+    ("namespace" = Option<String>, query, description = "Namespace to add cluster in if empty we use 'default' as value"),
+  ),
+  responses(
+    (status = 200, description = "Fresh created cluster", body = ClusterItem),
+    (status = 400, description = "Generic database error"),
+    (status = 404, description = "id name or namespace name not valid"),
+  ),
+)]
 #[web::get("/clusters/{id}")]
 async fn find_by_id_or_name(
   pool: web::types::State<Pool>,
@@ -78,6 +95,19 @@ async fn find_by_id_or_name(
   Ok(web::HttpResponse::Ok().json(&item))
 }
 
+#[utoipa::path(
+  delete,
+  path = "/clusters/{id}",
+  params(
+    ("id" = String, path, description = "Id or name of the cluster"),
+    ("namespace" = Option<String>, query, description = "Namespace to add cluster in if empty we use 'default' as value"),
+  ),
+  responses(
+    (status = 201, description = "Fresh created cluster", body = ClusterItem),
+    (status = 400, description = "Generic database error"),
+    (status = 404, description = "Namespace name not valid"),
+  ),
+)]
 #[web::delete("clusters/{id}")]
 async fn delete_by_id_or_name(
   pool: web::types::State<Pool>,
