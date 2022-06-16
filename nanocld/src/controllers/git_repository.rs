@@ -1,6 +1,4 @@
-/**
- * HTTP Method to administrate git_repositories
- */
+//! File to handle git repository routes
 use ntex::http::StatusCode;
 use ntex::web;
 use serde::{Deserialize, Serialize};
@@ -16,7 +14,7 @@ struct GitRepositoryQuery {
   namespace: Option<String>,
 }
 
-/// Endpoint to get list of git repositories
+/// List all git repository
 #[utoipa::path(
   get,
   path = "/git_repositories",
@@ -33,11 +31,11 @@ async fn list(
   Ok(web::HttpResponse::Ok().json(&items))
 }
 
-/// Endpoint to create a git repository
+/// Create new git repository
 #[utoipa::path(
   post,
   path = "/git_repositories",
-  request_body = GitRepositoryCreate,
+  request_body = GitRepositoryPartial,
   responses(
     (status = 201, description = "Fresh created git_repository", body = GitRepositoryItem),
     (status = 400, description = "Generic database error"),
@@ -66,8 +64,6 @@ async fn create(
 
   let item = git_repository::create(payload, &pool).await?;
 
-  // TODO create branches for this git repository
-
   let branches = gitbranches
     .into_iter()
     .map(|branch| GitRepositoryBranchPartial {
@@ -81,7 +77,7 @@ async fn create(
   Ok(web::HttpResponse::Created().json(&item))
 }
 
-/// Endpoint to delete a git repository by it's id or name for given namespace
+/// Delete git repository by it's id or name
 #[utoipa::path(
   delete,
   path = "/git_repositories/{id}",
