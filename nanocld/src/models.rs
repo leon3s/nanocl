@@ -116,6 +116,7 @@ pub struct ClusterPartial {
 #[derive(Component, Serialize, Deserialize)]
 pub struct ClusterNetworkPartial {
   pub(crate) name: String,
+  pub(crate) docker_network_id: String,
 }
 
 #[derive(Debug, Component, Serialize, Deserialize, Queryable, Insertable)]
@@ -123,6 +124,7 @@ pub struct ClusterNetworkPartial {
 pub struct ClusterNetworkItem {
   pub(crate) id: Uuid,
   pub(crate) name: String,
+  pub(crate) docker_network_id: String,
   pub(crate) cluster_id: Uuid,
 }
 
