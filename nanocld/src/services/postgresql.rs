@@ -40,7 +40,7 @@ async fn create_postgre_container(
 ) -> Result<(), DockerError> {
   let image = Some("postgres:latest");
   let env = Some(vec!["POSTGRES_USER=root", "POSTGRES_PASSWORD=root"]);
-  let labels = Some(gen_label_namespace("nanocl"));
+  let labels = Some(gen_labels_with_namespace("nanocl"));
   let host_config = Some(gen_postgre_host_conf());
   let options = Some(CreateContainerOptions { name });
   let config = Config {
