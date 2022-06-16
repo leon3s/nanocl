@@ -51,6 +51,8 @@ async fn main() -> std::io::Result<()> {
       .configure(controllers::git_repository::ntex_config)
       // bind controller cluster
       .configure(controllers::cluster::ntex_config)
+      // bin controller cluster network
+      .configure(controllers::cluster_network::ntex_config)
       // TOTO remove it's for test websocket with javascript
       .service(
         fs::Files::new("/websocket", "./static/websocket")

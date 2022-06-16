@@ -1,6 +1,5 @@
 //! Functions to manipulate clusters in database
 use ntex::web;
-use uuid::Uuid;
 use diesel::prelude::*;
 
 use crate::utils::get_pool_conn;
@@ -38,12 +37,11 @@ pub async fn create_for_namespace(
   let conn = get_pool_conn(pool)?;
 
   let res = web::block(move || {
-    let genid = nsp.to_owned() + "-" + &item.name;
+    let k = nsp.to_owned() + "-" + &item.name;
     let new_cluster = ClusterItem {
-      id: Uuid::new_v4(),
-      name: item.name,
-      gen_id: genid,
+      key: k,
       namespace: nsp,
+      name: item.name,
     };
 
     diesel::insert_into(clusters)
@@ -52,38 +50,6 @@ pub async fn create_for_namespace(
     Ok(new_cluster)
   })
   .await;
-
-  match res {
-    Err(err) => Err(db_blocking_error(err)),
-    Ok(item) => Ok(item),
-  }
-}
-
-/// Return found cluster or an error otherwise
-///
-/// # Arguments
-///
-/// * `id` - Id of the cluster
-/// * `pool` - Posgresql database pool
-///
-/// # Examples
-///
-/// ```
-/// // Find cluster by id
-///
-/// use crate::repositories::cluster;
-/// cluster::find_by_id(id, &pool).await;
-/// ```
-pub async fn find_by_id(
-  id: Uuid,
-  pool: &web::types::State<Pool>,
-) -> Result<ClusterItem, HttpError> {
-  use crate::schema::clusters::dsl;
-
-  let conn = get_pool_conn(pool)?;
-  let res =
-    web::block(move || dsl::clusters.filter(dsl::id.eq(id)).get_result(&conn))
-      .await;
 
   match res {
     Err(err) => Err(db_blocking_error(err)),
@@ -106,17 +72,15 @@ pub async fn find_by_id(
 /// use crate::repositories::cluster;
 /// cluster::find_by_gen_id(gen_id, &pool).await;
 /// ```
-pub async fn find_by_gen_id(
-  gen_id: String,
+pub async fn find_by_key(
+  key: String,
   pool: &web::types::State<Pool>,
 ) -> Result<ClusterItem, HttpError> {
   use crate::schema::clusters::dsl;
 
   let conn = get_pool_conn(pool)?;
   let res = web::block(move || {
-    dsl::clusters
-      .filter(dsl::gen_id.eq(gen_id))
-      .get_result(&conn)
+    dsl::clusters.filter(dsl::key.eq(key)).get_result(&conn)
   })
   .await;
 
@@ -171,8 +135,8 @@ pub async fn find_by_namespace(
 /// use crate::repositories::cluster;
 /// cluster::delete_by_gen_id(gen_id, &pool).await;
 /// ```
-pub async fn delete_by_gen_id(
-  gen_id: String,
+pub async fn delete_by_key(
+  key: String,
   pool: &web::types::State<Pool>,
 ) -> Result<PgDeleteGeneric, HttpError> {
   use crate::schema::clusters::dsl;
@@ -180,7 +144,7 @@ pub async fn delete_by_gen_id(
   let conn = get_pool_conn(pool)?;
   let res = web::block(move || {
     diesel::delete(dsl::clusters)
-      .filter(dsl::gen_id.eq(gen_id))
+      .filter(dsl::key.eq(key))
       .execute(&conn)
   })
   .await;

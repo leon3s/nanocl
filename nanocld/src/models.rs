@@ -24,7 +24,6 @@ pub struct PgDeleteGeneric {
 #[derive(Debug, Component, Serialize, Deserialize, Queryable, Insertable)]
 #[table_name = "namespaces"]
 pub struct NamespaceItem {
-  pub(crate) id: Uuid,
   pub(crate) name: String,
 }
 
@@ -97,12 +96,20 @@ pub struct GitRepositoryBranchPartial {
 
 /// Cluster used to encapsulate networks
 /// this structure ensure read and write in database
-#[derive(Component, Serialize, Deserialize, Insertable, Queryable)]
+#[derive(
+  Debug,
+  Component,
+  Serialize,
+  Deserialize,
+  Insertable,
+  Queryable,
+  Associations,
+  AsChangeset,
+)]
 #[table_name = "clusters"]
 pub struct ClusterItem {
-  pub(crate) id: Uuid,
+  pub(crate) key: String,
   pub(crate) name: String,
-  pub(crate) gen_id: String,
   pub(crate) namespace: String,
 }
 
@@ -119,13 +126,23 @@ pub struct ClusterNetworkPartial {
   pub(crate) docker_network_id: String,
 }
 
-#[derive(Debug, Component, Serialize, Deserialize, Queryable, Insertable)]
+#[derive(
+  Debug,
+  Component,
+  Serialize,
+  Deserialize,
+  Queryable,
+  Insertable,
+  Associations,
+  AsChangeset,
+)]
+#[belongs_to(ClusterItem, foreign_key = "key")]
 #[table_name = "cluster_networks"]
 pub struct ClusterNetworkItem {
-  pub(crate) id: Uuid,
+  pub(crate) key: String,
   pub(crate) name: String,
   pub(crate) docker_network_id: String,
-  pub(crate) cluster_id: Uuid,
+  pub(crate) cluster_key: String,
 }
 
 /// Rexports postgre enum for schema.rs

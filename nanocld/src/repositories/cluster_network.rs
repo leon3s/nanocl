@@ -11,7 +11,7 @@ use crate::models::{
 use super::errors::db_blocking_error;
 
 pub async fn create_for_cluster(
-  cluster_id: Uuid,
+  cluster_key: String,
   item: ClusterNetworkPartial,
   pool: &web::types::State<Pool>,
 ) -> Result<ClusterNetworkItem, HttpError> {
@@ -20,10 +20,10 @@ pub async fn create_for_cluster(
 
   let res = web::block(move || {
     let item = ClusterNetworkItem {
-      id: Uuid::new_v4(),
+      key: cluster_key.to_owned() + "-" + &item.name,
+      cluster_key,
       name: item.name,
       docker_network_id: item.docker_network_id,
-      cluster_id,
     };
     diesel::insert_into(dsl::cluster_networks)
       .values(&item)
@@ -56,7 +56,7 @@ pub async fn delete_by_id_or_name(
     Ok(uuid) => {
       web::block(move || {
         diesel::delete(dsl::cluster_networks)
-          .filter(dsl::id.eq(uuid))
+          .filter(dsl::key.eq(uuid.to_string()))
           .execute(&conn)
       })
       .await
@@ -88,7 +88,7 @@ pub async fn find_by_id_or_name(
     Ok(uuid) => {
       web::block(move || {
         dsl::cluster_networks
-          .filter(dsl::id.eq(uuid))
+          .filter(dsl::key.eq(uuid.to_string()))
           .get_result(&conn)
       })
       .await
@@ -149,20 +149,23 @@ mod cluster_networks {
       name: String::from("test-dev"),
       docker_network_id: id,
     };
-    let network = create_for_cluster(cluster.id, new_network, &pool_state)
+    let network = create_for_cluster(cluster.key, new_network, &pool_state)
       .await
       .unwrap();
 
+    let network_name = network.name.clone();
     // find cluster network
-    find_by_id_or_name(network.name, &pool_state).await.unwrap();
+    find_by_id_or_name(network_name.clone(), &pool_state)
+      .await
+      .unwrap();
 
     // delete cluster network
-    delete_by_id_or_name(network.id.to_string(), &pool_state)
+    delete_by_id_or_name(network_name.clone(), &pool_state)
       .await
       .unwrap();
 
     // clean cluster
-    cluster::delete_by_gen_id("default-dev".to_string(), &pool_state)
+    cluster::delete_by_key("default-dev".to_string(), &pool_state)
       .await
       .unwrap();
 

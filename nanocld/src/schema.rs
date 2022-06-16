@@ -13,11 +13,11 @@ table! {
     use diesel::sql_types::*;
     use crate::models::exports::*;
 
-    cluster_networks (id) {
-        id -> Uuid,
+    cluster_networks (key) {
+        key -> Varchar,
         name -> Varchar,
         docker_network_id -> Varchar,
-        cluster_id -> Uuid,
+        cluster_key -> Varchar,
     }
 }
 
@@ -25,11 +25,10 @@ table! {
     use diesel::sql_types::*;
     use crate::models::exports::*;
 
-    clusters (id) {
-        id -> Uuid,
+    clusters (key) {
+        key -> Varchar,
         name -> Varchar,
         namespace -> Varchar,
-        gen_id -> Varchar,
     }
 }
 
@@ -61,8 +60,7 @@ table! {
     use diesel::sql_types::*;
     use crate::models::exports::*;
 
-    namespaces (id) {
-        id -> Uuid,
+    namespaces (name) {
         name -> Varchar,
     }
 }
@@ -77,6 +75,8 @@ table! {
         passwd -> Varchar,
     }
 }
+
+joinable!(cluster_networks -> clusters (cluster_key));
 
 allow_tables_to_appear_in_same_query!(
     cargos,

@@ -1,7 +1,6 @@
-/// Repository to manage namespaces in database
-/// We can create delete list or inspect a namespace
+//! Repository to manage namespaces in database
+//! We can create delete list or inspect a namespace
 use ntex::web;
-use uuid::Uuid;
 use diesel::prelude::*;
 
 use crate::utils::get_pool_conn;
@@ -19,11 +18,14 @@ use super::errors::db_blocking_error;
 ///
 /// # Examples
 ///
-/// ```
+/// ```rust,noerun
 ///
-/// use crate::repositories::namespace;
-/// let new_namespace = NamespaceCreate {}
-/// namespace::create(new_namespace, &pool).await;
+/// use crate::repositories;
+///
+/// let new_namespace = NamespaceCreate {
+///   name: String::from("new-nsp"),
+/// };
+/// repositories::namespace::create(new_namespace, &pool).await;
 /// ```
 pub async fn create(
   item: NamespacePartial,
@@ -33,10 +35,7 @@ pub async fn create(
 
   let conn = get_pool_conn(pool)?;
   let res = web::block(move || {
-    let item = NamespaceItem {
-      id: Uuid::new_v4(),
-      name: item.name,
-    };
+    let item = NamespaceItem { name: item.name };
     diesel::insert_into(dsl::namespaces)
       .values(&item)
       .execute(&conn)?;
@@ -60,8 +59,8 @@ pub async fn create(
 ///
 /// ```
 ///
-/// use crate::repositories::namespace;
-/// namespace::list(&pool).await;
+/// use crate::repositories;
+/// repositories::namespace::list(&pool).await;
 /// ```
 pub async fn list(
   pool: &web::types::State<Pool>,
@@ -87,33 +86,21 @@ pub async fn list(
 /// # Examples
 ///
 /// ```rust,norun
+/// use crate::repositories;
 ///
-/// use crate::repositories::namespace;
-/// namespace::inspect_by_id_or_name(String::from("default"), &pool).await;
+/// repositories::namespace::inspect_name(String::from("default"), &pool).await;
 /// ```
-pub async fn inspect_by_id_or_name(
-  id_or_name: String,
+pub async fn inspect_name(
+  name: String,
   pool: &web::types::State<Pool>,
 ) -> Result<NamespaceItem, HttpError> {
   use crate::schema::namespaces::dsl;
 
   let conn = get_pool_conn(pool)?;
-  let res = match Uuid::parse_str(&id_or_name) {
-    Err(_) => {
-      web::block(move || {
-        dsl::namespaces
-          .filter(dsl::name.eq(id_or_name))
-          .get_result(&conn)
-      })
-      .await
-    }
-    Ok(uuid) => {
-      web::block(move || {
-        dsl::namespaces.filter(dsl::id.eq(uuid)).get_result(&conn)
-      })
-      .await
-    }
-  };
+  let res = web::block(move || {
+    dsl::namespaces.filter(dsl::name.eq(name)).get_result(&conn)
+  })
+  .await;
 
   match res {
     Err(err) => Err(db_blocking_error(err)),
@@ -130,33 +117,22 @@ pub async fn inspect_by_id_or_name(
 ///
 /// # Examples
 ///
-/// ```
+/// ```rust,norun
+/// use crate::repositories;
 ///
-/// use crate::repositories::namespace;
-/// namespace::delete_by_id_or_name(String::from("default"), &pool).await;
+/// repositories::namespace::delete_by_name(String::from("default"), &pool).await;
 /// ```
-pub async fn delete_by_id_or_name(
-  id_or_name: String,
+pub async fn delete_by_name(
+  name: String,
   pool: &web::types::State<Pool>,
 ) -> Result<PgDeleteGeneric, HttpError> {
   use crate::schema::namespaces::dsl;
 
   let conn = get_pool_conn(pool)?;
-  let res = match Uuid::parse_str(&id_or_name) {
-    Err(_) => {
-      web::block(move || {
-        diesel::delete(dsl::namespaces.filter(dsl::name.eq(id_or_name)))
-          .execute(&conn)
-      })
-      .await
-    }
-    Ok(uuid) => {
-      web::block(move || {
-        diesel::delete(dsl::namespaces.filter(dsl::id.eq(uuid))).execute(&conn)
-      })
-      .await
-    }
-  };
+  let res = web::block(move || {
+    diesel::delete(dsl::namespaces.filter(dsl::name.eq(name))).execute(&conn)
+  })
+  .await;
 
   match res {
     Err(err) => Err(db_blocking_error(err)),
@@ -187,12 +163,11 @@ mod test_namespace {
     assert_eq!(res.name, namespace_name.clone());
 
     // Inspect namespace
-    let res =
-      inspect_by_id_or_name(namespace_name.clone(), &pool_state).await?;
+    let res = inspect_name(namespace_name.clone(), &pool_state).await?;
     assert_eq!(res.name, namespace_name.clone());
 
     // Delete namespace
-    let res = delete_by_id_or_name(namespace_name.clone(), &pool_state).await?;
+    let res = delete_by_name(namespace_name.clone(), &pool_state).await?;
     assert_eq!(res.count, 1);
 
     Ok(())

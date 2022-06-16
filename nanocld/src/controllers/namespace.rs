@@ -41,7 +41,7 @@ async fn get_by_id_or_name(
   pool: web::types::State<Pool>,
 ) -> Result<web::HttpResponse, HttpError> {
   let id_or_name = id.into_inner();
-  let item = namespace::inspect_by_id_or_name(id_or_name, &pool).await?;
+  let item = namespace::inspect_name(id_or_name, &pool).await?;
 
   Ok(web::HttpResponse::Ok().json(&item))
 }
@@ -85,7 +85,7 @@ async fn delete_by_id_or_name(
   pool: web::types::State<Pool>,
 ) -> Result<web::HttpResponse, HttpError> {
   let id_or_name = id.into_inner();
-  let res = namespace::delete_by_id_or_name(id_or_name, &pool).await?;
+  let res = namespace::delete_by_name(id_or_name, &pool).await?;
   Ok(web::HttpResponse::Ok().json(&res))
 }
 

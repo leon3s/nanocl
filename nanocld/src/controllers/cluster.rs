@@ -91,7 +91,7 @@ async fn find_by_id_or_name(
     Some(namespace) => namespace,
   };
   let gen_id = nsp.to_owned() + "-" + &id.into_inner();
-  let item = cluster::find_by_gen_id(gen_id, &pool).await?;
+  let item = cluster::find_by_key(gen_id, &pool).await?;
   Ok(web::HttpResponse::Ok().json(&item))
 }
 
@@ -119,7 +119,7 @@ async fn delete_by_id_or_name(
     Some(namespace) => namespace,
   };
   let gen_id = nsp.to_owned() + "-" + &id.into_inner();
-  let res = cluster::delete_by_gen_id(gen_id, &pool).await?;
+  let res = cluster::delete_by_key(gen_id, &pool).await?;
   Ok(web::HttpResponse::Ok().json(&res))
 }
 
