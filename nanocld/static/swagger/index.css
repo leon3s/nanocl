@@ -1,16 +1,43 @@
+@import url("/explorer/themes/theme-muted.css");
+
+.model-box {
+  width: 100%;
+}
+
+table.model {
+  width: 100%;
+}
+
+tr.description {
+  width: 100%;
+}
+
+table.model tr.description {
+  width: 100%;
+}
+
+table.model tr.description .renderedMarkdown {
+  width: 100%;
+  text-align: left;
+}
+
+table.model tr.description .renderedMarkdown p {
+  margin: 0px;
+}
+
 html {
-    box-sizing: border-box;
-    overflow: -moz-scrollbars-vertical;
-    overflow-y: scroll;
+  box-sizing: border-box;
+  overflow: -moz-scrollbars-vertical;
+  overflow-y: scroll;
 }
 
 *,
 *:before,
 *:after {
-    box-sizing: inherit;
+  box-sizing: inherit;
 }
 
 body {
-    margin: 0;
-    background: #fafafa;
+  margin: 0;
+  background: #fafafa;
 }
