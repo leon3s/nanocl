@@ -20,19 +20,21 @@ List of system compatible and tested
 
 ## Installation
 
-### Required dependencies
+### Required dev dependencies
 - Ubuntu:
 ```sh
 sudo apt install -y pkg-config libpq-dev libssl-dev
 ```
 
 ### Recommanded rust devtools
+```sh
 cargo install diesel_cli --no-default-features --features postgres
 rustup component add llvm-tools-preview --toolchain stable-x86_64-unknown-linux-gnu
 cargo install cargo-make
 cargo install cargo-watch
 cargo install cargo-nextest
 cargo install cargo-llvm-cov
+```
 
 ## Note
 
