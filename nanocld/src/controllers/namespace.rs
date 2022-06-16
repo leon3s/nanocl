@@ -1,8 +1,8 @@
-//! File to handle namespace routes
+/// Manage nanocl namespace
 use ntex::web;
 
-use crate::models::{NamespacePartial, Pool};
 use crate::repositories::namespace;
+use crate::models::{NamespacePartial, Pool};
 
 use super::errors::HttpError;
 
@@ -15,35 +15,12 @@ use super::errors::HttpError;
   ),
 )]
 #[web::get("/namespaces")]
-async fn list(
+async fn list_namespace(
   pool: web::types::State<Pool>,
 ) -> Result<web::HttpResponse, HttpError> {
   let items = namespace::list(&pool).await?;
 
   Ok(web::HttpResponse::Ok().json(&items))
-}
-
-/// Inspect namespace by id or name
-#[utoipa::path(
-  get,
-  path = "/namespaces/{id}/inspect",
-  responses(
-      (status = 200, description = "Namespace found", body = NamespaceItem),
-      (status = 404, description = "Namespace not found", body = ApiError),
-  ),
-  params(
-    ("id" = String, path, description = "id or name of the namespace"),
-  )
-)]
-#[web::get("/namespaces/{id}/inspect")]
-async fn get_by_id_or_name(
-  id: web::types::Path<String>,
-  pool: web::types::State<Pool>,
-) -> Result<web::HttpResponse, HttpError> {
-  let id_or_name = id.into_inner();
-  let item = namespace::inspect_name(id_or_name, &pool).await?;
-
-  Ok(web::HttpResponse::Ok().json(&item))
 }
 
 /// Create new namespace
@@ -52,13 +29,13 @@ async fn get_by_id_or_name(
   path = "/namespaces",
   request_body = NamespacePartial,
   responses(
-    (status = 201, description = "Fresh created namespace", body = NamespaceItem),
-    (status = 400, description = "Generic database error"),
-    (status = 422, description = "The provided payload is not valid"),
+    (status = 201, description = "fresh created namespace", body = NamespaceItem),
+    (status = 400, description = "generic database error", body = ApiError),
+    (status = 422, description = "the provided payload is not valid", body = ApiError),
   ),
 )]
 #[web::post("/namespaces")]
-async fn create(
+async fn create_namespace(
   pool: web::types::State<Pool>,
   payload: web::types::Json<NamespacePartial>,
 ) -> Result<web::HttpResponse, HttpError> {
@@ -68,25 +45,48 @@ async fn create(
   Ok(web::HttpResponse::Created().json(&item))
 }
 
-/// Delete namespace by it's id or name
+/// Delete namespace by it's name
 #[utoipa::path(
     delete,
-    path = "/namespaces/{id}",
+    path = "/namespaces/{name}",
     responses(
         (status = 200, description = "database generic delete response", body = PgDeleteGeneric),
     ),
     params(
-        ("id" = String, path, description = "id or name of the namespace"),
+        ("name" = String, path, description = "name of the namespace"),
     )
 )]
-#[web::delete("/namespaces/{id}")]
-async fn delete_by_id_or_name(
+#[web::delete("/namespaces/{name}")]
+async fn delete_namespace_by_name(
   id: web::types::Path<String>,
   pool: web::types::State<Pool>,
 ) -> Result<web::HttpResponse, HttpError> {
   let id_or_name = id.into_inner();
   let res = namespace::delete_by_name(id_or_name, &pool).await?;
   Ok(web::HttpResponse::Ok().json(&res))
+}
+
+/// Inspect namespace by name
+#[utoipa::path(
+  get,
+  path = "/namespaces/{name}/inspect",
+  responses(
+      (status = 200, description = "Namespace found", body = NamespaceItem),
+      (status = 404, description = "Namespace not found", body = ApiError),
+  ),
+  params(
+    ("name" = String, path, description = "name of the namespace"),
+  )
+)]
+#[web::get("/namespaces/{id}/inspect")]
+async fn inspect_namespace_by_name(
+  name: web::types::Path<String>,
+  pool: web::types::State<Pool>,
+) -> Result<web::HttpResponse, HttpError> {
+  let name = name.into_inner();
+  let item = namespace::inspect_by_name(name, &pool).await?;
+
+  Ok(web::HttpResponse::Ok().json(&item))
 }
 
 /// # ntex config
@@ -103,10 +103,10 @@ async fn delete_by_id_or_name(
 /// web::App::new().configure(controllers::namespace::ntex_config)
 /// ```
 pub fn ntex_config(config: &mut web::ServiceConfig) {
-  config.service(list);
-  config.service(create);
-  config.service(get_by_id_or_name);
-  config.service(delete_by_id_or_name);
+  config.service(list_namespace);
+  config.service(create_namespace);
+  config.service(inspect_namespace_by_name);
+  config.service(delete_namespace_by_name);
 }
 
 #[cfg(test)]
