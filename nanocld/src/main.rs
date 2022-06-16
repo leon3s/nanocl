@@ -11,6 +11,7 @@ extern crate diesel;
 use ntex::web;
 use ntex_files as fs;
 
+mod boot;
 mod utils;
 mod models;
 mod schema;
@@ -30,12 +31,14 @@ mod repositories;
 async fn main() -> std::io::Result<()> {
   env_logger::init();
 
-  let pool = postgre::create_pool();
-
+  let state = match boot::boot().await {
+    Err(err) => panic!("daemon boot fail {:?}", err),
+    Ok(state) => state,
+  };
   let mut server = web::HttpServer::new(move || {
     web::App::new()
       // postgre pool
-      .state(pool.clone())
+      .state(state.pool.clone())
       // Default logger middleware
       .wrap(web::middleware::Logger::default())
       // Set Json body max size
