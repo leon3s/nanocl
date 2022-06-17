@@ -1,6 +1,0 @@
--- Your SQL goes here
-CREATE TABLE "users" (
-  "id" UUID NOT NULL UNIQUE PRIMARY KEY,
-  "name" VARCHAR(100) NOT NULL UNIQUE,
-  "passwd" VARCHAR(100) NOT NULL
-);

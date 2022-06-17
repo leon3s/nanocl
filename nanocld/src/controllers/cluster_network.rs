@@ -15,10 +15,10 @@ pub struct ClusterNetworkQuery {
 /// List network for given cluster
 #[utoipa::path(
   get,
-  path = "/clusters/{name}/networks",
+  path = "/clusters/{c_name}/networks",
   params(
-    ("name" = String, path, description = "name of the cluster"),
-    ("namespace" = Option<String>, query, description = "Namespace to add cluster in if empty we use 'default' as value"),
+    ("c_name" = String, path, description = "name of the cluster"),
+    ("namespace" = Option<String>, query, description = "Name of the namespace where the cluster is if empty we use 'default' as value"),
   ),
   responses(
     (status = 201, description = "List of networks", body = [ClusterNetworkItem]),
@@ -26,9 +26,9 @@ pub struct ClusterNetworkQuery {
     (status = 404, description = "Namespace name not valid", body = ApiError),
   ),
 )]
-#[web::get("/clusters/{name}/networks")]
+#[web::get("/clusters/{c_name}/networks")]
 async fn list_cluster_network(
-  name: web::types::Path<String>,
+  c_name: web::types::Path<String>,
   web::types::Query(qs): web::types::Query<ClusterNetworkQuery>,
 ) -> Result<web::HttpResponse, HttpError> {
   let nsp = match qs.namespace {
@@ -44,26 +44,26 @@ async fn list_cluster_network(
 #[utoipa::path(
   post,
   request_body = ClusterNetworkPartial,
-  path = "/clusters/{name}/networks",
+  path = "/clusters/{c_name}/networks",
   params(
-    ("name" = String, path, description = "name of the cluster"),
-    ("namespace" = Option<String>, query, description = "Namespace to add cluster in if empty we use 'default' as value"),
+    ("c_name" = String, path, description = "name of the cluster"),
+    ("namespace" = Option<String>, query, description = "Name of the namespace where the cluster is if empty we use 'default' as value"),
   ),
   responses(
-    (status = 201, description = "List of networks", body = [ClusterNetworkItem]),
+    (status = 201, description = "List of networks", body = ClusterNetworkItem),
     (status = 400, description = "Generic database error", body = ApiError),
     (status = 404, description = "Namespace name not valid", body = ApiError),
   ),
 )]
-#[web::post("/clusters/{name}/networks")]
+#[web::post("/clusters/{c_name}/networks")]
 async fn create_cluster_network(
   pool: web::types::State<Pool>,
   docker: web::types::State<bollard::Docker>,
-  name: web::types::Path<String>,
+  c_name: web::types::Path<String>,
   web::types::Query(qs): web::types::Query<ClusterNetworkQuery>,
   web::types::Json(payload): web::types::Json<ClusterNetworkPartial>,
 ) -> Result<web::HttpResponse, HttpError> {
-  let name = name.into_inner();
+  let name = c_name.into_inner();
   let nsp = match qs.namespace {
     None => String::from("default"),
     Some(nsp) => nsp,
@@ -110,11 +110,92 @@ async fn create_cluster_network(
 
   let new_network =
     cluster_network::create_for_cluster(gen_key, payload, id, &pool).await?;
-  // qs.cluster
   Ok(web::HttpResponse::Created().json(&new_network))
+}
+
+#[derive(Serialize, Deserialize)]
+struct InspectClusterNetworkPath {
+  c_name: String,
+  n_name: String,
+}
+
+/// Inspect network by it's name for given cluster in given namespace
+#[utoipa::path(
+  get,
+  path = "/clusters/{c_name}/networks/{n_name}/inspect",
+  params(
+    ("c_name" = String, path, description = "name of the cluster"),
+    ("n_name" = String, path, description = "name of the network"),
+    ("namespace" = Option<String>, query, description = "Name of the namespace where the cluster is if empty we use 'default' as value"),
+  ),
+  responses(
+    (status = 200, description = "Network item", body = ClusterNetworkItem),
+    (status = 400, description = "Generic database error", body = ApiError),
+    (status = 404, description = "Namespace name not valid", body = ApiError),
+  ),
+)]
+#[web::get("/clusters/{c_name}/networks/{n_name}/inspect")]
+async fn inspect_cluster_network_by_name(
+  pool: web::types::State<Pool>,
+  url_path: web::types::Path<InspectClusterNetworkPath>,
+  web::types::Query(qs): web::types::Query<ClusterNetworkQuery>,
+) -> Result<web::HttpResponse, HttpError> {
+  let c_name = url_path.c_name.to_owned();
+  let n_name = url_path.n_name.to_owned();
+  let nsp = match qs.namespace {
+    None => String::from("default"),
+    Some(nsp) => nsp,
+  };
+  let gen_key = nsp + "-" + &c_name + "-" + &n_name;
+  let network = cluster_network::find_by_key(gen_key, &pool).await?;
+  Ok(web::HttpResponse::Ok().json(&network))
+}
+
+/// Delete network by it's name for given cluster in given namespace
+#[utoipa::path(
+  delete,
+  path = "/clusters/{c_name}/networks/{n_name}",
+  params(
+    ("c_name" = String, path, description = "name of the cluster"),
+    ("n_name" = String, path, description = "name of the network"),
+    ("namespace" = Option<String>, query, description = "Name of the namespace where the cluster is if empty we use 'default' as value"),
+  ),
+  responses(
+    (status = 200, description = "Pg delete response", body = PgDeleteGeneric),
+    (status = 400, description = "Generic database error", body = ApiError),
+    (status = 404, description = "Cluster network not found", body = ApiError),
+  ),
+)]
+#[web::delete("/clusters/{c_name}/networks/{n_name}")]
+async fn delete_cluster_network_by_name(
+  pool: web::types::State<Pool>,
+  docker: web::types::State<bollard::Docker>,
+  url_path: web::types::Path<InspectClusterNetworkPath>,
+  web::types::Query(qs): web::types::Query<ClusterNetworkQuery>,
+) -> Result<web::HttpResponse, HttpError> {
+  let c_name = url_path.c_name.to_owned();
+  let n_name = url_path.n_name.to_owned();
+  let nsp = match qs.namespace {
+    None => String::from("default"),
+    Some(nsp) => nsp,
+  };
+  let gen_key = nsp + "-" + &c_name + "-" + &n_name;
+  let network = cluster_network::find_by_key(gen_key, &pool).await?;
+
+  if let Err(err) = docker.remove_network(&network.docker_network_id).await {
+    return Err(HttpError {
+      status: StatusCode::BAD_REQUEST,
+      msg: format!("Unable to delete network {:?}", err),
+    });
+  }
+
+  let res = cluster_network::delete_by_key(network.key, &pool).await?;
+  Ok(web::HttpResponse::Ok().json(&res))
 }
 
 pub fn ntex_config(config: &mut web::ServiceConfig) {
   config.service(list_cluster_network);
   config.service(create_cluster_network);
+  config.service(inspect_cluster_network_by_name);
+  config.service(delete_cluster_network_by_name);
 }

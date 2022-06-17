@@ -2,8 +2,8 @@
 use ntex::web;
 use serde::{Deserialize, Serialize};
 
-use crate::models::{ClusterPartial, Pool};
-use crate::repositories::cluster;
+use crate::models::{ClusterPartial, Pool, ClusterItemWithRelation};
+use crate::repositories::{cluster, cluster_network};
 
 use super::errors::HttpError;
 
@@ -105,7 +105,7 @@ async fn delete_cluster_by_name(
     ("namespace" = Option<String>, query, description = "Namespace to add cluster in if empty we use 'default' as value"),
   ),
   responses(
-    (status = 200, description = "Cluster information", body = ClusterItem),
+    (status = 200, description = "Cluster information", body = ClusterItemWithRelation),
     (status = 400, description = "Generic database error", body = ApiError),
     (status = 404, description = "id name or namespace name not valid", body = ApiError),
   ),
@@ -116,13 +116,23 @@ async fn inspect_cluster_by_name(
   name: web::types::Path<String>,
   web::types::Query(qs): web::types::Query<ClusterQuery>,
 ) -> Result<web::HttpResponse, HttpError> {
+  let name = name.into_inner();
   let nsp = match qs.namespace {
     None => String::from("default"),
     Some(namespace) => namespace,
   };
-  let gen_key = nsp.to_owned() + "-" + &name.into_inner();
-  let item = cluster::find_by_key(gen_key, &pool).await?;
-  Ok(web::HttpResponse::Ok().json(&item))
+  let gen_key = nsp.to_owned() + "-" + &name;
+  let item = cluster::find_by_key(gen_key.clone(), &pool).await?;
+  let networks = cluster_network::list_for_cluster(item, &pool).await?;
+
+  let res = ClusterItemWithRelation {
+    name,
+    key: gen_key,
+    namespace: nsp,
+    networks: Some(networks),
+  };
+
+  Ok(web::HttpResponse::Ok().json(&res))
 }
 
 /// # ntex config

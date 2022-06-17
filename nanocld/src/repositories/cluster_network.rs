@@ -1,14 +1,29 @@
 use ntex::web;
-use uuid::Uuid;
 use diesel::prelude::*;
 
 use crate::utils::get_pool_conn;
 use crate::controllers::errors::HttpError;
 use crate::models::{
-  Pool, ClusterNetworkPartial, ClusterNetworkItem, PgDeleteGeneric,
+  Pool, ClusterNetworkPartial, ClusterNetworkItem, PgDeleteGeneric, ClusterItem,
 };
 
 use super::errors::db_blocking_error;
+
+// Vec<ClusterNetworkItem>
+pub async fn list_for_cluster(
+  cluster: ClusterItem,
+  pool: &web::types::State<Pool>,
+) -> Result<Vec<ClusterNetworkItem>, HttpError> {
+  let conn = get_pool_conn(pool)?;
+  let res = web::block(move || {
+    ClusterNetworkItem::belonging_to(&cluster).load::<ClusterNetworkItem>(&conn)
+  })
+  .await;
+  match res {
+    Err(err) => Err(db_blocking_error(err)),
+    Ok(items) => Ok(items),
+  }
+}
 
 pub async fn create_for_cluster(
   cluster_key: String,
@@ -130,16 +145,12 @@ mod cluster_networks {
       .await
       .unwrap();
 
-    let network_name = network.name.clone();
+    let n_key = network.key.clone();
     // find cluster network
-    find_by_key(network_name.clone(), &pool_state)
-      .await
-      .unwrap();
+    find_by_key(n_key.clone(), &pool_state).await.unwrap();
 
     // delete cluster network
-    delete_by_key(network_name.clone(), &pool_state)
-      .await
-      .unwrap();
+    delete_by_key(n_key.clone(), &pool_state).await.unwrap();
 
     // clean cluster
     cluster::delete_by_key("default-dev".to_string(), &pool_state)

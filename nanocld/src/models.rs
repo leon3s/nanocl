@@ -100,16 +100,26 @@ pub struct GitRepositoryBranchPartial {
   Component,
   Serialize,
   Deserialize,
+  Identifiable,
   Insertable,
   Queryable,
   Associations,
   AsChangeset,
 )]
+#[primary_key(key)]
 #[table_name = "clusters"]
 pub struct ClusterItem {
   pub(crate) key: String,
   pub(crate) name: String,
   pub(crate) namespace: String,
+}
+
+#[derive(Component, Serialize, Deserialize)]
+pub struct ClusterItemWithRelation {
+  pub(crate) key: String,
+  pub(crate) name: String,
+  pub(crate) namespace: String,
+  pub(crate) networks: Option<Vec<ClusterNetworkItem>>,
 }
 
 /// Partial cluster
@@ -130,11 +140,13 @@ pub struct ClusterNetworkPartial {
   Serialize,
   Deserialize,
   Queryable,
+  Identifiable,
   Insertable,
   Associations,
   AsChangeset,
 )]
-#[belongs_to(ClusterItem, foreign_key = "key")]
+#[primary_key(key)]
+#[belongs_to(ClusterItem, foreign_key = "cluster_key")]
 #[table_name = "cluster_networks"]
 pub struct ClusterNetworkItem {
   pub(crate) key: String,

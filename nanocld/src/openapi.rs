@@ -29,6 +29,8 @@ use crate::controllers::errors::ApiError;
     // Cluster network
     cluster_network::list_cluster_network,
     cluster_network::create_cluster_network,
+    cluster_network::delete_cluster_network_by_name,
+    cluster_network::inspect_cluster_network_by_name,
   ),
   components(
     ApiError,
@@ -50,6 +52,7 @@ use crate::controllers::errors::ApiError;
     // Cluster network
     ClusterNetworkItem,
     ClusterNetworkPartial,
+    ClusterItemWithRelation,
 
     // Todo Docker network struct bindings
     // Network,
