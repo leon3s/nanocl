@@ -16,7 +16,7 @@ pub async fn list_for_cluster(
 ) -> Result<Vec<ClusterNetworkItem>, HttpError> {
   let conn = get_pool_conn(pool)?;
   let res = web::block(move || {
-    ClusterNetworkItem::belonging_to(&cluster).load::<ClusterNetworkItem>(&conn)
+    ClusterNetworkItem::belonging_to(&cluster).load(&conn)
   })
   .await;
   match res {

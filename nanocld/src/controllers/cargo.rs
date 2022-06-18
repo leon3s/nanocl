@@ -3,7 +3,7 @@ use futures::StreamExt;
 use ntex::http::StatusCode;
 use serde::{Deserialize, Serialize};
 
-use crate::repositories::cargo;
+use crate::repositories::{cargo, namespace};
 use crate::models::{Pool, CargoPartial};
 
 use super::errors::HttpError;
@@ -36,6 +36,7 @@ pub async fn list_cargo(
     Some(nsp) => nsp,
   };
 
+  let nsp = namespace::find_by_name(nsp, &pool).await?;
   let items = cargo::find_by_namespace(nsp, &pool).await?;
   Ok(web::HttpResponse::Ok().json(&items))
 }
@@ -128,7 +129,7 @@ pub async fn start_cargo_by_name(
   let gen_key = nsp + "-" + &name.into_inner();
   let item = cargo::find_by_key(gen_key.clone(), &pool).await?;
   let image_name = item.image_name.clone();
-  let container_name = gen_key.to_owned() + "-" + &image_name;
+  let container_name = gen_key.to_owned() + "-" + &image_name.replace(':', "-");
 
   println!("item found {:?}", item);
   if !&item.image_name.is_empty() {

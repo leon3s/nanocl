@@ -22,7 +22,14 @@ pub struct PgDeleteGeneric {
 /// Namespace to encapsulate clusters
 /// this structure ensure read and write in database
 #[derive(
-  Debug, Component, Serialize, Deserialize, Queryable, Insertable, Identifiable,
+  Debug,
+  Component,
+  Serialize,
+  Deserialize,
+  Identifiable,
+  Insertable,
+  Queryable,
+  Associations,
 )]
 #[primary_key(name)]
 #[table_name = "namespaces"]
@@ -186,15 +193,15 @@ pub struct CargoPartial {
   Associations,
   AsChangeset,
 )]
-#[table_name = "cargos"]
-#[belongs_to(NamespaceItem, foreign_key = "namespace")]
 #[primary_key(key)]
+#[belongs_to(NamespaceItem, foreign_key = "namespace_name")]
+#[table_name = "cargos"]
 pub struct CargoItem {
   pub(crate) key: String,
   pub(crate) name: String,
-  pub(crate) namespace: String,
   pub(crate) image_name: String,
   pub(crate) network_name: String,
+  pub(crate) namespace_name: String,
   pub(crate) repository_name: String,
 }
 

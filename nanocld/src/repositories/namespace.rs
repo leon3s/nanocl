@@ -140,6 +140,24 @@ pub async fn delete_by_name(
   }
 }
 
+pub async fn find_by_name(
+  name: String,
+  pool: &web::types::State<Pool>,
+) -> Result<NamespaceItem, HttpError> {
+  use crate::schema::namespaces::dsl;
+
+  let conn = get_pool_conn(pool)?;
+  let res = web::block(move || {
+    dsl::namespaces.filter(dsl::name.eq(name)).get_result(&conn)
+  })
+  .await;
+
+  match res {
+    Err(err) => Err(db_blocking_error(err)),
+    Ok(item) => Ok(item),
+  }
+}
+
 #[cfg(test)]
 mod test_namespace {
   use super::*;

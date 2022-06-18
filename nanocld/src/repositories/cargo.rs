@@ -3,21 +3,18 @@ use diesel::prelude::*;
 
 use crate::utils::get_pool_conn;
 use crate::controllers::errors::HttpError;
-use crate::models::{Pool, CargoItem, CargoPartial, PgDeleteGeneric};
+use crate::models::{Pool, CargoItem, CargoPartial, PgDeleteGeneric, NamespaceItem};
 
 use super::errors::db_blocking_error;
 
 pub async fn find_by_namespace(
-  nsp: String,
+  nsp: NamespaceItem,
   pool: &web::types::State<Pool>,
 ) -> Result<Vec<CargoItem>, HttpError> {
-  use crate::schema::cargos::dsl;
-
   let conn = get_pool_conn(pool)?;
+
   let res = web::block(move || {
-    dsl::cargos
-      .filter(dsl::namespace.eq(nsp))
-      .load::<CargoItem>(&conn)
+    CargoItem::belonging_to(&nsp).load(&conn)
   })
   .await;
   match res {
@@ -38,7 +35,7 @@ pub async fn create(
     let new_item = CargoItem {
       key: nsp.to_owned() + "-" + &item.name,
       name: item.name.clone(),
-      namespace: nsp,
+      namespace_name: nsp,
       network_name: item.network_name.clone(),
       image_name: item.image_name.unwrap_or_else(|| String::from("")),
       repository_name: item.repository_name.unwrap_or_else(|| String::from("")),

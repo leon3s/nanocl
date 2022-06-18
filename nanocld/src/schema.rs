@@ -7,8 +7,8 @@ table! {
         name -> Varchar,
         image_name -> Varchar,
         network_name -> Varchar,
-        namespace -> Varchar,
         repository_name -> Varchar,
+        namespace_name -> Varchar,
     }
 }
 
@@ -68,7 +68,7 @@ table! {
     }
 }
 
-joinable!(cargos -> namespaces (namespace));
+joinable!(cargos -> namespaces (namespace_name));
 joinable!(cluster_networks -> clusters (cluster_key));
 
 allow_tables_to_appear_in_same_query!(
