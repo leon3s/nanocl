@@ -17,7 +17,7 @@ clusters:
           - development
 
 networks:
-  - name: "{cluster.name}-docktron-backend"
+  - name: docktron-backend
   - name: docktron-frontend
 
 cargos:
