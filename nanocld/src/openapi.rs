@@ -15,6 +15,12 @@ use crate::controllers::errors::ApiError;
     namespace::delete_namespace_by_name,
     namespace::inspect_namespace_by_name,
 
+    // Cargo
+    cargo::list_cargo,
+    cargo::create_cargo,
+    cargo::start_cargo_by_name,
+    cargo::delete_cargo_by_name,
+
     // Git repository
     git_repository::list_git_repository,
     git_repository::create_git_repository,
@@ -44,6 +50,10 @@ use crate::controllers::errors::ApiError;
     // Namespace
     NamespaceItem,
     NamespacePartial,
+
+    // Cargo
+    CargoItem,
+    CargoPartial,
 
     // Cluster
     ClusterItem,

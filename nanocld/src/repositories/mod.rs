@@ -3,6 +3,8 @@ pub mod errors;
 
 pub mod namespace;
 
+pub mod cargo;
+
 pub mod cluster;
 pub mod cluster_network;
 

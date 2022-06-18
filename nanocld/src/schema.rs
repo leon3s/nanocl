@@ -2,6 +2,20 @@ table! {
     use diesel::sql_types::*;
     use crate::models::exports::*;
 
+    cargos (key) {
+        key -> Varchar,
+        name -> Varchar,
+        image_name -> Varchar,
+        network_name -> Varchar,
+        namespace -> Varchar,
+        repository_name -> Varchar,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use crate::models::exports::*;
+
     cluster_networks (key) {
         key -> Varchar,
         name -> Varchar,
@@ -54,24 +68,14 @@ table! {
     }
 }
 
-table! {
-    use diesel::sql_types::*;
-    use crate::models::exports::*;
-
-    users (id) {
-        id -> Uuid,
-        name -> Varchar,
-        passwd -> Varchar,
-    }
-}
-
+joinable!(cargos -> namespaces (namespace));
 joinable!(cluster_networks -> clusters (cluster_key));
 
 allow_tables_to_appear_in_same_query!(
-  cluster_networks,
-  clusters,
-  git_repositories,
-  git_repository_branches,
-  namespaces,
-  users,
+    cargos,
+    cluster_networks,
+    clusters,
+    git_repositories,
+    git_repository_branches,
+    namespaces,
 );

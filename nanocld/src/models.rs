@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::schema::{
   clusters, namespaces, git_repositories, cluster_networks,
-  git_repository_branches,
+  git_repository_branches, cargos,
 };
 
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
@@ -21,7 +21,10 @@ pub struct PgDeleteGeneric {
 
 /// Namespace to encapsulate clusters
 /// this structure ensure read and write in database
-#[derive(Debug, Component, Serialize, Deserialize, Queryable, Insertable)]
+#[derive(
+  Debug, Component, Serialize, Deserialize, Queryable, Insertable, Identifiable,
+)]
+#[primary_key(name)]
 #[table_name = "namespaces"]
 pub struct NamespaceItem {
   pub(crate) name: String,
@@ -93,6 +96,13 @@ pub struct GitRepositoryBranchPartial {
   pub(crate) repository_id: Uuid,
 }
 
+/// Partial cluster
+/// this structure ensure write in database
+#[derive(Component, Serialize, Deserialize)]
+pub struct ClusterPartial {
+  pub(crate) name: String,
+}
+
 /// Cluster used to encapsulate networks
 /// this structure ensure read and write in database
 #[derive(
@@ -114,6 +124,7 @@ pub struct ClusterItem {
   pub(crate) namespace: String,
 }
 
+/// Cluster item with his relations
 #[derive(Component, Serialize, Deserialize)]
 pub struct ClusterItemWithRelation {
   pub(crate) key: String,
@@ -122,18 +133,15 @@ pub struct ClusterItemWithRelation {
   pub(crate) networks: Option<Vec<ClusterNetworkItem>>,
 }
 
-/// Partial cluster
+/// Cluster network partial
 /// this structure ensure write in database
-#[derive(Component, Serialize, Deserialize)]
-pub struct ClusterPartial {
-  pub(crate) name: String,
-}
-
 #[derive(Component, Serialize, Deserialize)]
 pub struct ClusterNetworkPartial {
   pub(crate) name: String,
 }
 
+/// Cluster network item
+/// this structure ensure read and write in database
 #[derive(
   Debug,
   Component,
@@ -153,6 +161,41 @@ pub struct ClusterNetworkItem {
   pub(crate) name: String,
   pub(crate) docker_network_id: String,
   pub(crate) cluster_key: String,
+}
+
+/// Cargo partial
+/// this structure ensure write in database
+#[derive(Component, Serialize, Deserialize)]
+pub struct CargoPartial {
+  pub(crate) name: String,
+  pub(crate) network_name: String,
+  pub(crate) image_name: Option<String>,
+  pub(crate) repository_name: Option<String>,
+}
+
+/// Cargo item is an definition to container create image and start them
+/// this structure ensure read and write in database
+#[derive(
+  Debug,
+  Component,
+  Serialize,
+  Deserialize,
+  Queryable,
+  Identifiable,
+  Insertable,
+  Associations,
+  AsChangeset,
+)]
+#[table_name = "cargos"]
+#[belongs_to(NamespaceItem, foreign_key = "namespace")]
+#[primary_key(key)]
+pub struct CargoItem {
+  pub(crate) key: String,
+  pub(crate) name: String,
+  pub(crate) namespace: String,
+  pub(crate) image_name: String,
+  pub(crate) network_name: String,
+  pub(crate) repository_name: String,
 }
 
 /// Rexports postgre enum for schema.rs
