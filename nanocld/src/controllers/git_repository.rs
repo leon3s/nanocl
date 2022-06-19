@@ -1,11 +1,13 @@
 //! File to handle git repository routes
 
+use ntex::http::StatusCode;
 use ntex::web;
 use serde::{Deserialize, Serialize};
 
 use crate::services::docker::build_git_repository;
 use crate::repositories::{git_repository, git_repository_branch};
-use crate::models::{Pool, GitRepositoryPartial};
+use crate::models::{Pool, GitRepositoryPartial, GitRepositoryBranchPartial};
+use crate::services::github;
 
 use super::errors::HttpError;
 
@@ -48,31 +50,31 @@ async fn create_git_repository(
   pool: web::types::State<Pool>,
   web::types::Json(payload): web::types::Json<GitRepositoryPartial>,
 ) -> Result<web::HttpResponse, HttpError> {
-  // let res = github::list_branches(&payload).await;
+  let res = github::list_branches(&payload).await;
 
-  // let gitbranches = match res {
-  //   Err(_) => {
-  //     return Err(HttpError {
-  //       status: StatusCode::BAD_REQUEST,
-  //       msg: String::from(
-  //         "unable to list branch for this git repository may token missing ?",
-  //       ),
-  //     })
-  //   }
-  //   Ok(branches) => branches,
-  // };
+  let gitbranches = match res {
+    Err(_) => {
+      return Err(HttpError {
+        status: StatusCode::BAD_REQUEST,
+        msg: String::from(
+          "unable to list branch for this git repository may token missing ?",
+        ),
+      })
+    }
+    Ok(branches) => branches,
+  };
 
   let item = git_repository::create(payload, &pool).await?;
 
-  // let branches = gitbranches
-  //   .into_iter()
-  //   .map(|branch| GitRepositoryBranchPartial {
-  //     name: branch.name,
-  //     repository_id: item.id,
-  //   })
-  //   .collect::<Vec<GitRepositoryBranchPartial>>();
+  let branches = gitbranches
+    .into_iter()
+    .map(|branch| GitRepositoryBranchPartial {
+      name: branch.name,
+      repository_id: item.id,
+    })
+    .collect::<Vec<GitRepositoryBranchPartial>>();
 
-  // git_repository_branch::create_many(branches, &pool).await?;
+  git_repository_branch::create_many(branches, &pool).await?;
 
   Ok(web::HttpResponse::Created().json(&item))
 }
@@ -96,7 +98,6 @@ async fn delete_git_repository_by_name(
   req_path: web::types::Path<String>,
 ) -> Result<web::HttpResponse, HttpError> {
   let id = req_path.into_inner();
-  println!("git repository id to delete {:?}", id);
   let repository = git_repository::find_by_id_or_name(id, &pool).await?;
   git_repository_branch::delete_by_repository_id(repository.id, &pool).await?;
   let res =
@@ -179,9 +180,7 @@ mod test_namespace_git_repository {
       .delete("/git_repositories/express-test-deploy")
       .send()
       .await?;
-    println!("res {:?}", res);
     let body = res.body().await?;
-    println!("body : {:?}", body);
     assert!(res.status().is_success());
     Ok(())
   }
@@ -202,9 +201,7 @@ mod test_namespace_git_repository {
       .delete(format!("/git_repositories/{id}", id = item.id))
       .send()
       .await?;
-    println!("res : {:?}", res);
     let body = res.body().await?;
-    println!("body : {:?}", body);
     assert!(res.status().is_success());
     Ok(())
   }
@@ -228,21 +225,16 @@ mod test_namespace_git_repository {
       .post("/git_repositories/express-test/build")
       .send()
       .await?;
-    println!("res to stream {:?}", res);
     let mut stream = res.into_stream();
     while let Some(result) = stream.next().await {
       if let Err(err) = result {
         panic!("got stream error {:?}", err);
       }
-      println!("byte response: {:?}", result);
       let s = String::from_utf8(result.unwrap().to_vec()).unwrap();
       let _json: serde_json::value::Value = serde_json::from_str(&s).unwrap();
-      println!("json response : {:?}", json);
     }
     let mut res = srv.delete("/git_repositories/express-test").send().await?;
-    println!("res {:?}", res);
     let body = res.body().await?;
-    println!("\nbody : {:?}\n", body);
     assert!(res.status().is_success());
     Ok(())
   }

@@ -66,7 +66,7 @@ pub async fn boot(docker: &Docker) -> Result<(), DockerError> {
   }
   if s_state != ServiceState::Running {
     if let Err(err) = start_service(docker, container_name).await {
-      eprintln!("error while starting {} {}", container_name, err);
+      log::error!("error while starting {} {}", container_name, err);
     }
   }
   Ok(())

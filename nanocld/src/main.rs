@@ -29,12 +29,33 @@ mod repositories;
 /// ```
 #[ntex::main]
 async fn main() -> std::io::Result<()> {
-  env_logger::init();
+  // building env logger
+  if std::env::var("LOG_LEVEL").is_err() {
+    std::env::set_var("LOG_LEVEL", "nanocld=info,warn,error");
+  }
+  env_logger::Builder::new().parse_env("LOG_LEVEL").init();
 
+  // Ensuring GITHUB_ACCOUNT value so we can unwrap safelly
+  if std::env::var("GITHUB_ACCOUNT").is_err() {
+    log::error!("Error while trying to boot : GITHUB_ACCOUNT env variable is missing.");
+    std::process::exit(1);
+  }
+  // Ensuring GITHUB_TOKEN value so we can unwrap safelly
+  if std::env::var("GITHUB_TOKEN").is_err() {
+    log::error!("Error while trying to boot : GITHUB_TOKEN is missing");
+    std::process::exit(1);
+  }
+
+  log::info!("booting...");
   let state = match boot::boot().await {
-    Err(err) => panic!("daemon boot fail {:?}", err),
+    Err(err) => {
+      log::error!("Error while trying to boot : {:?}", err);
+      std::process::exit(1);
+    },
     Ok(state) => state,
   };
+  log::info!("booted");
+  log::info!("starting http");
   let mut server = web::HttpServer::new(move || {
     web::App::new()
       // bind postgre pool to state
@@ -64,8 +85,9 @@ async fn main() -> std::io::Result<()> {
       )
   });
   server = server.bind("0.0.0.0:8383")?;
-  println!("running server on http://0.0.0.0:8383");
+  log::info!("http started on http://0.0.0.0:8383");
   server.run().await?;
-  println!("exiting");
+  log::info!("kill received existing.");
   Ok(())
 }
+ 

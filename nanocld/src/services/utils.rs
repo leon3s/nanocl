@@ -238,7 +238,6 @@ pub async fn get_service_state(
 ) -> ServiceState {
   let resp = docker.inspect_container(container_name, None).await;
   if let Err(err) = resp {
-    println!("error : {:?}", err);
     return ServiceState::Uninstalled;
   }
   let body = resp.expect("ContainerInspectResponse");

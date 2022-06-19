@@ -43,7 +43,6 @@ pub async fn create(
     let res = diesel::insert_into(dsl::cargos)
       .values(&new_item)
       .execute(&conn)?;
-    println!("create response : {:?}", res);
     Ok(new_item)
   })
   .await;

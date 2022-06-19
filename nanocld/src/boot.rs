@@ -64,19 +64,23 @@ pub async fn create_default_network(
 async fn boot_docker_services(
   docker: &bollard::Docker,
 ) -> Result<(), BootError> {
+  log::info!("ensuring nanocl network");
   create_default_network(docker)
     .await
     .map_err(BootError::Errordocker)?;
+  log::info!("ensuring postgresql boot");
   // Boot postgresql service to ensure database connection
   services::postgresql::boot(docker)
     .await
     .map_err(BootError::Errordocker)?;
 
+  log::info!("ensuring dnsmasq boot");
   // Boot dnsmasq service to manage domain names
   services::dnsmasq::boot(docker)
     .await
     .map_err(BootError::Errordocker)?;
 
+  log::info!("ensuring nginx boot");
   // Boot nginx service to manage proxy
   services::nginx::boot(docker)
     .await
@@ -87,6 +91,7 @@ async fn boot_docker_services(
 /// Boot function called before server start to initialize his state
 pub async fn boot() -> Result<DaemonState, BootError> {
   // Boot services
+  log::info!("connecting to docker on /run/nanocl/docker.sock");
   let docker = bollard::Docker::connect_with_unix(
     "/run/nanocl/docker.sock",
     120,
@@ -96,10 +101,13 @@ pub async fn boot() -> Result<DaemonState, BootError> {
   boot_docker_services(&docker).await?;
 
   // Connect to postgresql
+  log::info!("creating a pool connection to postgresql server");
   let db_pool = postgre::create_pool();
+  
+  // wrap into state to create default namespace using repository function
   let pool = web::types::State::new(db_pool.clone());
-
   // Create default namesapce
+  log::info!("ensuring namespace 'default' presence");
   create_default_nsp(&pool).await?;
 
   // Return state

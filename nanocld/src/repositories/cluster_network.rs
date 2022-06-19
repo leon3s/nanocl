@@ -125,7 +125,7 @@ mod cluster_networks {
     .unwrap();
 
     // create docker network for relationship
-    let docker = bollard::Docker::connect_with_local_defaults().unwrap();
+    let docker = bollard::Docker::connect_with_unix("/run/nanocl/docker.sock", 120, bollard::API_DEFAULT_VERSION).unwrap();
     let net_config = CreateNetworkOptions {
       name: NET_NAME,
       ..Default::default()

@@ -810,6 +810,7 @@ dependencies = [
  "diesel-derive-enum",
  "env_logger",
  "futures",
+ "log",
  "ntex",
  "ntex-files",
  "r2d2",

@@ -201,9 +201,9 @@ pub async fn start_cargo_by_name(
   let image_name = item.image_name.clone();
   let container_name = gen_key.to_owned() + "-" + &image_name.replace(':', "-");
 
-  println!("item found {:?}", item);
+  log::debug!("item found {:?}", item);
   if !&item.image_name.is_empty() {
-    println!("image name not empty {:?}", image_name.clone());
+    log::debug!("image name not empty {:?}", image_name.clone());
     if docker.inspect_image(&item.image_name).await.is_err() {
       return Err(HttpError {
         msg: String::from("you need to build cargo before run it."),

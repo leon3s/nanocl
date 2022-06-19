@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-use ntex::{web, http::StatusCode};
+use ntex::web;
+use ntex::http::StatusCode;
 use serde::{Serialize, Deserialize};
 
 use super::errors::HttpError;
@@ -28,10 +29,11 @@ pub struct ClusterNetworkQuery {
 )]
 #[web::get("/clusters/{c_name}/networks")]
 async fn list_cluster_network(
-  c_name: web::types::Path<String>,
+  _c_name: web::types::Path<String>,
   web::types::Query(qs): web::types::Query<ClusterNetworkQuery>,
 ) -> Result<web::HttpResponse, HttpError> {
-  let nsp = match qs.namespace {
+  // TODO list cluster networks
+  let _nsp = match qs.namespace {
     None => String::from("default"),
     Some(nsp) => nsp,
   };

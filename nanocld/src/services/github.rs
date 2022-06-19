@@ -50,7 +50,8 @@ pub async fn list_branches(
   item: &GitRepositoryPartial,
 ) -> Result<Vec<GitBranch>, Box<dyn std::error::Error + 'static>> {
   let client = Client::new();
-
+  let username = std::env::var("GITHUB_ACCOUNT").unwrap();
+  let password = std::env::var("GITHUB_TOKEN").unwrap();
   let git_desc = parse_git_url(&item.url)?;
 
   let url = "https://api.".to_owned()
@@ -61,11 +62,11 @@ pub async fn list_branches(
 
   let mut res = client
     .get(url)
+    .basic_auth(&username, Some(&password))
     .set_header("Accept", "application/vnd.github.v3+json")
     .set_header("User-Agent", "axios")
     .send()
     .await?;
-  println!("res : {:?}", res);
   if res.status().is_client_error() {
     let err = res.json::<GithubApiError>().await?;
     return Err(Box::new(GithubError::Errorgithubapi(err)));
@@ -88,8 +89,7 @@ mod test_github {
       token: None,
       url: String::from("https://github.com/leon3s/express-test-deploy"),
     };
-    let branches = list_branches(&item).await?;
-    println!("branches : {:?}", branches);
+    let _branches = list_branches(&item).await?;
     Ok(())
   }
 }

@@ -23,8 +23,4 @@ args = ["nextest", "run"]
 command = "cargo"
 args = ["test", "--", "--nocapture"]
 
-[tasks.my-flow]
-dependencies = [
-    "build",
-    "test"
-]
+[tasks.release]

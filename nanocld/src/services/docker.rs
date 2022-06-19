@@ -23,7 +23,6 @@ pub async fn build_git_repository(
   rt::spawn(async move {
     let mut stream = docker.build_image(options, None, None);
     while let Some(result) = stream.next().await {
-      println!("docker result {:?}", result);
       match result {
         Err(err) => {
           let err = ntex::web::Error::new(web::error::InternalError::default(
