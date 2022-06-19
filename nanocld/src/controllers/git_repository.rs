@@ -234,7 +234,10 @@ mod test_namespace_git_repository {
       if let Err(err) = result {
         panic!("got stream error {:?}", err);
       }
-      println!("{:?}", result);
+      println!("byte response: {:?}", result);
+      let s = String::from_utf8(result.unwrap().to_vec()).unwrap();
+      let _json: serde_json::value::Value = serde_json::from_str(&s).unwrap();
+      println!("json response : {:?}", json);
     }
     let mut res = srv.delete("/git_repositories/express-test").send().await?;
     println!("res {:?}", res);

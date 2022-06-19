@@ -18,6 +18,7 @@ use crate::controllers::errors::ApiError;
     // Cargo
     cargo::list_cargo,
     cargo::create_cargo,
+    cargo::build_cargo_by_name,
     cargo::start_cargo_by_name,
     cargo::delete_cargo_by_name,
 

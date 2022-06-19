@@ -1,10 +1,10 @@
-use ntex::{web, rt};
+use ntex::web;
 use futures::StreamExt;
 use ntex::http::StatusCode;
 use serde::{Deserialize, Serialize};
-use utoipa::openapi::security::Http;
 
-use crate::repositories::{cargo, namespace};
+use crate::services::docker::{build_image, build_git_repository};
+use crate::repositories::{cargo, namespace, git_repository};
 use crate::models::{Pool, CargoPartial};
 
 use super::errors::HttpError;
@@ -118,6 +118,21 @@ pub async fn delete_cargo_by_name(
   Ok(web::HttpResponse::Ok().json(&res))
 }
 
+/// Build a cargo by it's name
+#[utoipa::path(
+  post,
+  path = "/cargos/{name}/build",
+  params(
+    ("name" = String, path, description = "Name of the cargo"),
+    ("namespace" = Option<String>, query, description = "Name of the namespace where the cargo is stored"),
+  ),
+  responses(
+    (status = 200, description = "Generic delete", body = String, content_type = "nanocl/streaming-v1"),
+    (status = 400, description = "Generic database error", body = ApiError),
+    (status = 404, description = "Namespace name not valid", body = ApiError),
+  ),
+)]
+#[web::post("/cargos/{name}/build")]
 pub async fn build_cargo_by_name(
   pool: web::types::State<Pool>,
   docker: web::types::State<bollard::Docker>,
@@ -131,7 +146,28 @@ pub async fn build_cargo_by_name(
   let gen_key = nsp + "-" + &name.into_inner();
   let item = cargo::find_by_key(gen_key, &pool).await?;
 
-  Ok(web::HttpResponse::Ok().into())
+  if !item.image_name.is_empty() {
+    let stream = build_image(item.image_name, docker).await?;
+    return Ok(
+      web::HttpResponse::Ok()
+        .content_type("nanocl/streaming-v1")
+        .streaming(stream),
+    );
+  }
+  if item.repository_name.is_empty() {
+    return Err(HttpError {
+      msg: String::from("cargo datastructure error image_name and repository_name cannot be both empty."),
+      status: StatusCode::INTERNAL_SERVER_ERROR,
+    });
+  }
+  let git =
+    git_repository::find_by_id_or_name(item.repository_name, &pool).await?;
+  let stream = build_git_repository(docker, git).await?;
+  Ok(
+    web::HttpResponse::Ok()
+      .content_type("nanocl/streaming-v1")
+      .streaming(stream),
+  )
 }
 
 /// Start cargo by it's name
@@ -169,23 +205,10 @@ pub async fn start_cargo_by_name(
   if !&item.image_name.is_empty() {
     println!("image name not empty {:?}", image_name.clone());
     if docker.inspect_image(&item.image_name).await.is_err() {
-      println!("image not found {:?}", image_name.clone());
-      let mut stream = docker.create_image(
-        Some(bollard::image::CreateImageOptions {
-          from_image: item.image_name,
-          ..Default::default()
-        }),
-        None,
-        None,
-      );
-      while let Some(result) = stream.next().await {
-        if let Err(err) = result {
-          return Err(HttpError {
-            msg: format!("unable to install image {:?}", err),
-            status: StatusCode::BAD_REQUEST,
-          });
-        }
-      }
+      return Err(HttpError {
+        msg: String::from("you need to build cargo before run it."),
+        status: StatusCode::BAD_REQUEST,
+      });
     }
     let image = Some(image_name.clone());
     let options = Some(bollard::container::CreateContainerOptions {
@@ -224,6 +247,7 @@ pub async fn start_cargo_by_name(
 pub fn ntex_config(config: &mut web::ServiceConfig) {
   config.service(list_cargo);
   config.service(create_cargo);
+  config.service(build_cargo_by_name);
   config.service(delete_cargo_by_name);
   config.service(start_cargo_by_name);
 }

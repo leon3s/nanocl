@@ -42,3 +42,11 @@ cargo install cargo-llvm-cov
 ## Note
 
 must read /sys/class/net and /proc/net to get network informations
+
+you may start a custom docker service to in case of existing docker setups
+that will be done at the installation after
+
+```sh
+sudo containerd --config fate_path/etc/nanocl/containerd.conf
+sudo dockerd --config-file fake_path/etc/nanocl/daemon.json
+```

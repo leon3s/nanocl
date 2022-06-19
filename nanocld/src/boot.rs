@@ -87,8 +87,12 @@ async fn boot_docker_services(
 /// Boot function called before server start to initialize his state
 pub async fn boot() -> Result<DaemonState, BootError> {
   // Boot services
-  let docker = bollard::Docker::connect_with_local_defaults()
-    .map_err(BootError::Errordocker)?;
+  let docker = bollard::Docker::connect_with_unix(
+    "/run/nanocl/docker.sock",
+    120,
+    bollard::API_DEFAULT_VERSION,
+  )
+  .map_err(BootError::Errordocker)?;
   boot_docker_services(&docker).await?;
 
   // Connect to postgresql

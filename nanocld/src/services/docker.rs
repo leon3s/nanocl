@@ -42,3 +42,36 @@ pub async fn build_git_repository(
 
   Ok(rx_body)
 }
+
+pub async fn build_image(
+  image_name: String,
+  docker: web::types::State<bollard::Docker>,
+) -> Result<Receiver<Result<Bytes, web::error::Error>>, HttpError> {
+  let (tx, rx_body) = mpsc::channel();
+  rt::spawn(async move {
+    let mut stream = docker.create_image(
+      Some(bollard::image::CreateImageOptions {
+        from_image: image_name,
+        ..Default::default()
+      }),
+      None,
+      None,
+    );
+    while let Some(result) = stream.next().await {
+      match result {
+        Err(err) => {
+          let err = ntex::web::Error::new(web::error::InternalError::default(
+            format!("{:?}", err),
+            StatusCode::INTERNAL_SERVER_ERROR,
+          ));
+          let _ = tx.send(Err::<_, web::error::Error>(err));
+        }
+        Ok(result) => {
+          let data = serde_json::to_string(&result).unwrap();
+          let _ = tx.send(Ok::<_, web::error::Error>(Bytes::from(data)));
+        }
+      }
+    }
+  });
+  Ok(rx_body)
+}
