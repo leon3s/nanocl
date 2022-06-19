@@ -24,6 +24,29 @@ pub fn get_pool_conn(
   Ok(conn)
 }
 
+pub fn get_free_port() -> Result<u16, HttpError> {
+  let socket = match std::net::UdpSocket::bind("127.0.0.1:0") {
+    Err(err) => {
+      return Err(HttpError {
+        msg: format!("unable to find a free port {:?}", err),
+        status: StatusCode::INTERNAL_SERVER_ERROR,
+      })
+    }
+    Ok(socket) => socket,
+  };
+  let port = match socket.local_addr() {
+    Err(err) => {
+      return Err(HttpError {
+        msg: format!("unable to find a free port {:?}", err),
+        status: StatusCode::INTERNAL_SERVER_ERROR,
+      })
+    }
+    Ok(local_addr) => local_addr.port(),
+  };
+  drop(socket);
+  Ok(port)
+}
+
 #[cfg(test)]
 pub mod test {
   use ntex::web::*;
@@ -37,7 +60,13 @@ pub mod test {
   type Config = fn(&mut ServiceConfig);
 
   pub fn generate_server(config: Config) -> test::TestServer {
+    let docker = bollard::Docker::connect_with_local_defaults().unwrap();
     let pool = create_pool();
-    test::server(move || App::new().state(pool.clone()).configure(config))
+    test::server(move || {
+      App::new()
+        .state(pool.clone())
+        .state(docker.clone())
+        .configure(config)
+    })
   }
 }

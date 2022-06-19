@@ -24,6 +24,7 @@ use crate::controllers::errors::ApiError;
     // Git repository
     git_repository::list_git_repository,
     git_repository::create_git_repository,
+    git_repository::build_git_repository_by_name,
     git_repository::delete_git_repository_by_name,
 
     // Cluster

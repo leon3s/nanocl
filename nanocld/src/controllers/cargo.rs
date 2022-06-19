@@ -2,6 +2,7 @@ use ntex::web;
 use futures::StreamExt;
 use ntex::http::StatusCode;
 use serde::{Deserialize, Serialize};
+use utoipa::openapi::security::Http;
 
 use crate::repositories::{cargo, namespace};
 use crate::models::{Pool, CargoPartial};
@@ -87,6 +88,7 @@ pub async fn create_cargo(
 #[web::delete("/cargos/{name}")]
 pub async fn delete_cargo_by_name(
   pool: web::types::State<Pool>,
+  docker: web::types::State<bollard::Docker>,
   name: web::types::Path<String>,
   web::types::Query(qs): web::types::Query<CargoQuery>,
 ) -> Result<web::HttpResponse, HttpError> {
@@ -96,7 +98,23 @@ pub async fn delete_cargo_by_name(
   };
 
   let gen_key = nsp + "-" + &name.into_inner();
-  let res = cargo::delete_by_key(gen_key, &pool).await?;
+  let item = cargo::find_by_key(gen_key.clone(), &pool).await?;
+  let container_name =
+    gen_key.to_owned() + "-" + &item.image_name.replace(':', "-");
+
+  let options = Some(bollard::container::RemoveContainerOptions {
+    force: true,
+    ..Default::default()
+  });
+  let res = docker.remove_container(&container_name, options).await;
+  if let Err(err) = res {
+    return Err(HttpError {
+      msg: format!("unable to remove container {:?}", err),
+      status: StatusCode::INTERNAL_SERVER_ERROR,
+    });
+  }
+
+  let res = cargo::delete_by_key(gen_key.clone(), &pool).await?;
   Ok(web::HttpResponse::Ok().json(&res))
 }
 
