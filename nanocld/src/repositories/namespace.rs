@@ -169,7 +169,7 @@ mod test_namespace {
     let pool_state = web::types::State::new(pool);
 
     // List namespace
-    let res = list(&pool_state).await?;
+    let _res = list(&pool_state).await?;
     let namespace_name = String::from("test-default");
     let item = NamespacePartial {
       name: namespace_name.clone(),

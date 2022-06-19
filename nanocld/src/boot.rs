@@ -116,3 +116,15 @@ pub async fn boot() -> Result<DaemonState, BootError> {
     docker,
   })
 }
+
+
+#[cfg(test)]
+mod test_boot {
+
+  use super::boot;
+
+  #[ntex::test]
+  async fn test_boot() {
+    boot().await.unwrap();
+  }
+}

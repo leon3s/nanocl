@@ -1,5 +1,4 @@
 use ntex::web;
-use futures::StreamExt;
 use ntex::http::StatusCode;
 use serde::{Deserialize, Serialize};
 
@@ -92,6 +91,7 @@ pub async fn delete_cargo_by_name(
   name: web::types::Path<String>,
   web::types::Query(qs): web::types::Query<CargoQuery>,
 ) -> Result<web::HttpResponse, HttpError> {
+  log::debug!("requiring cargo deletion");
   let nsp = match qs.namespace {
     None => String::from("default"),
     Some(nsp) => nsp,
@@ -106,12 +106,17 @@ pub async fn delete_cargo_by_name(
     force: true,
     ..Default::default()
   });
-  let res = docker.remove_container(&container_name, options).await;
-  if let Err(err) = res {
-    return Err(HttpError {
-      msg: format!("unable to remove container {:?}", err),
-      status: StatusCode::INTERNAL_SERVER_ERROR,
-    });
+
+  let res = docker.inspect_container(&container_name, None).await;
+
+  if res.is_ok() {
+    let res = docker.remove_container(&container_name, options).await;
+    if let Err(err) = res {
+      return Err(HttpError {
+        msg: format!("unable to remove container {:?}", err),
+        status: StatusCode::INTERNAL_SERVER_ERROR,
+      });
+    }
   }
 
   let res = cargo::delete_by_key(gen_key.clone(), &pool).await?;
@@ -250,4 +255,54 @@ pub fn ntex_config(config: &mut web::ServiceConfig) {
   config.service(build_cargo_by_name);
   config.service(delete_cargo_by_name);
   config.service(start_cargo_by_name);
+}
+
+#[cfg(test)]
+mod test_cargo {
+  use futures::{TryStreamExt, StreamExt};
+use ntex::http::HttpMessage;
+
+  use crate::utils::test::*;
+
+  use crate::models::CargoPartial;
+
+  use super::ntex_config;
+
+  #[ntex::test]
+  async fn test_list() -> TestReturn {
+    let srv = generate_server(ntex_config);
+    let mut res = srv.get("/cargos").send().await?;
+    println!("body {:?}", res.body().await);
+    assert!(res.status().is_success());
+    Ok(())
+  }
+
+  #[ntex::test]
+  async fn test_start_nginx() -> TestReturn {
+    const CARGO_NAME: &str = "nginx-test";
+    let srv = generate_server(ntex_config);
+
+    let res = srv.post("/cargos").send_json(&CargoPartial {
+        name: String::from(CARGO_NAME),
+        network_name: String::from("none"),
+        image_name: Some(String::from("nginx:latest")),
+        repository_name: None,
+    }).await?;
+    assert!(res.status().is_success());
+
+    let res = srv.post(format!("/cargos/{name}/build", name = CARGO_NAME)).send().await?;
+    assert!(res.status().is_success());
+    assert_eq!(res.content_type(), "nanocl/streaming-v1");
+    let mut stream = res.into_stream();
+    while let Some(result) = stream.next().await {
+      println!("result {:?}", result);
+    }
+
+    let res = srv.post(format!("/cargos/{name}/start", name = CARGO_NAME)).send().await?;
+    assert!(res.status().is_success());
+
+    let res = srv.delete(format!("/cargos/{name}", name = CARGO_NAME)).send().await?;
+    assert!(res.status().is_success());
+    Ok(())
+  }
 }

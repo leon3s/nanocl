@@ -4,7 +4,7 @@ use ntex::http::client::Client;
 use url::{ParseError, Url};
 use serde::{Deserialize, Serialize};
 
-use crate::models::{GitRepositoryPartial, GitRepositoryItem};
+use crate::models::GitRepositoryPartial;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GitBranch {
@@ -50,8 +50,8 @@ pub async fn list_branches(
   item: &GitRepositoryPartial,
 ) -> Result<Vec<GitBranch>, Box<dyn std::error::Error + 'static>> {
   let client = Client::new();
-  let username = std::env::var("GITHUB_ACCOUNT").unwrap();
-  let password = std::env::var("GITHUB_TOKEN").unwrap();
+  let username = std::env::var("GITHUB_ACCOUNT").unwrap_or_default();
+  let password = std::env::var("GITHUB_TOKEN").unwrap_or_default();
   let git_desc = parse_git_url(&item.url)?;
 
   let url = "https://api.".to_owned()

@@ -40,7 +40,7 @@ pub async fn create(
       image_name: item.image_name.unwrap_or_else(|| String::from("")),
       repository_name: item.repository_name.unwrap_or_else(|| String::from("")),
     };
-    let res = diesel::insert_into(dsl::cargos)
+    diesel::insert_into(dsl::cargos)
       .values(&new_item)
       .execute(&conn)?;
     Ok(new_item)

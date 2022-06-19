@@ -37,13 +37,11 @@ async fn main() -> std::io::Result<()> {
 
   // Ensuring GITHUB_ACCOUNT value so we can unwrap safelly
   if std::env::var("GITHUB_ACCOUNT").is_err() {
-    log::error!("Error while trying to boot : GITHUB_ACCOUNT env variable is missing.");
-    std::process::exit(1);
+    log::warn!("GITHUB_ACCOUNT env variable is missing you may face api rate limit");
   }
   // Ensuring GITHUB_TOKEN value so we can unwrap safelly
   if std::env::var("GITHUB_TOKEN").is_err() {
-    log::error!("Error while trying to boot : GITHUB_TOKEN is missing");
-    std::process::exit(1);
+    log::warn!("GITHUB_TOKEN is missing env variable is missing you may face api rate limit");
   }
 
   log::info!("booting...");

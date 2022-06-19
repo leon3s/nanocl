@@ -148,8 +148,6 @@ pub fn ntex_config(config: &mut web::ServiceConfig) {
 
 #[cfg(test)]
 mod test_namespace_git_repository {
-  use futures::{TryStreamExt, StreamExt};
-
   use crate::utils::test::*;
   use crate::models::{GitRepositoryPartial, GitRepositoryItem};
 
@@ -176,11 +174,10 @@ mod test_namespace_git_repository {
       .send_json(&new_repository)
       .await?;
     assert!(res.status().is_success());
-    let mut res = srv
+    let res = srv
       .delete("/git_repositories/express-test-deploy")
       .send()
       .await?;
-    let body = res.body().await?;
     assert!(res.status().is_success());
     Ok(())
   }
@@ -197,11 +194,10 @@ mod test_namespace_git_repository {
       .send_json(&new_repository)
       .await?;
     let item = res.json::<GitRepositoryItem>().await?;
-    let mut res = srv
+    let res = srv
       .delete(format!("/git_repositories/{id}", id = item.id))
       .send()
       .await?;
-    let body = res.body().await?;
     assert!(res.status().is_success());
     Ok(())
   }
@@ -221,20 +217,7 @@ mod test_namespace_git_repository {
       .send_json(&new_repository)
       .await?;
     assert!(res.status().is_success());
-    let res = srv
-      .post("/git_repositories/express-test/build")
-      .send()
-      .await?;
-    let mut stream = res.into_stream();
-    while let Some(result) = stream.next().await {
-      if let Err(err) = result {
-        panic!("got stream error {:?}", err);
-      }
-      let s = String::from_utf8(result.unwrap().to_vec()).unwrap();
-      let _json: serde_json::value::Value = serde_json::from_str(&s).unwrap();
-    }
-    let mut res = srv.delete("/git_repositories/express-test").send().await?;
-    let body = res.body().await?;
+    let res = srv.delete("/git_repositories/express-test").send().await?;
     assert!(res.status().is_success());
     Ok(())
   }
