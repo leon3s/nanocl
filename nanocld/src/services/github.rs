@@ -4,7 +4,7 @@ use ntex::http::client::Client;
 use url::{ParseError, Url};
 use serde::{Deserialize, Serialize};
 
-use crate::models::GitRepositoryPartial;
+use crate::models::{GitRepositoryPartial, GitRepositoryItem};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GitBranch {

@@ -1,15 +1,11 @@
 //! File to handle git repository routes
 
-use futures::StreamExt;
-use ntex::channel::mpsc;
-use ntex::http::StatusCode;
-use ntex::util::Bytes;
-use ntex::{web, rt};
+use ntex::web;
 use serde::{Deserialize, Serialize};
 
-use crate::models::{GitRepositoryBranchPartial, GitRepositoryPartial, Pool};
+use crate::services::docker::build_git_repository;
 use crate::repositories::{git_repository, git_repository_branch};
-use crate::services::github;
+use crate::models::{Pool, GitRepositoryPartial};
 
 use super::errors::HttpError;
 
@@ -132,28 +128,7 @@ async fn build_git_repository_by_name(
 
   let item = git_repository::find_by_id_or_name(name, &pool).await?;
 
-  let image_name = item.name.to_owned();
-  let image_url = item.url + ".git#development";
-  let options = bollard::image::BuildImageOptions::<String> {
-    dockerfile: String::from("Dockerfile"),
-    t: image_name,
-    remote: image_url,
-    ..Default::default()
-  };
-  println!("sending options {:?}", options);
-
-  let (tx, rx_body) = mpsc::channel();
-  rt::spawn(async move {
-    let mut stream = docker.build_image(options, None, None);
-    while let Some(result) = stream.next().await {
-      println!("docker result {:?}", result);
-      let _ =
-        tx.send(Ok::<_, web::Error>(Bytes::from(format!("{:?}", result))));
-    }
-    // let _ = tx.send(Ok::<_, web::Error>(Bytes::new()));
-    println!("done");
-    // tx.close();
-  });
+  let rx_body = build_git_repository(docker, item).await?;
 
   Ok(
     web::HttpResponse::Ok()
@@ -172,10 +147,10 @@ pub fn ntex_config(config: &mut web::ServiceConfig) {
 
 #[cfg(test)]
 mod test_namespace_git_repository {
-  use futures::{TryStreamExt, StreamExt, FutureExt};
+  use futures::{TryStreamExt, StreamExt};
 
-  use crate::models::{GitRepositoryPartial, GitRepositoryItem};
   use crate::utils::test::*;
+  use crate::models::{GitRepositoryPartial, GitRepositoryItem};
 
   use super::ntex_config;
 
@@ -249,7 +224,7 @@ mod test_namespace_git_repository {
       .send_json(&new_repository)
       .await?;
     assert!(res.status().is_success());
-    let mut res = srv
+    let res = srv
       .post("/git_repositories/express-test/build")
       .send()
       .await?;

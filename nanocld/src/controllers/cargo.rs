@@ -1,4 +1,4 @@
-use ntex::web;
+use ntex::{web, rt};
 use futures::StreamExt;
 use ntex::http::StatusCode;
 use serde::{Deserialize, Serialize};
@@ -116,6 +116,22 @@ pub async fn delete_cargo_by_name(
 
   let res = cargo::delete_by_key(gen_key.clone(), &pool).await?;
   Ok(web::HttpResponse::Ok().json(&res))
+}
+
+pub async fn build_cargo_by_name(
+  pool: web::types::State<Pool>,
+  docker: web::types::State<bollard::Docker>,
+  name: web::types::Path<String>,
+  web::types::Query(qs): web::types::Query<CargoQuery>,
+) -> Result<web::HttpResponse, HttpError> {
+  let nsp = match qs.namespace {
+    None => String::from("default"),
+    Some(nsp) => nsp,
+  };
+  let gen_key = nsp + "-" + &name.into_inner();
+  let item = cargo::find_by_key(gen_key, &pool).await?;
+
+  Ok(web::HttpResponse::Ok().into())
 }
 
 /// Start cargo by it's name
