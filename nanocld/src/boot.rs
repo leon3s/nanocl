@@ -17,7 +17,7 @@ pub enum BootError {
 #[derive(Clone)]
 pub struct DaemonState {
   pub(crate) pool: Pool,
-  pub(crate) docker: bollard::Docker,
+  pub(crate) docker_api: bollard::Docker,
 }
 
 /// # Create default namespace
@@ -33,7 +33,7 @@ pub struct DaemonState {
 async fn create_default_nsp(
   pool: &web::types::State<Pool>,
 ) -> Result<(), BootError> {
-  const NSP_NAME: &str = "default";
+  const NSP_NAME: &str = "global";
   match repositories::namespace::inspect_by_name(NSP_NAME.to_string(), pool)
     .await
   {
@@ -92,18 +92,18 @@ async fn boot_docker_services(
 pub async fn boot() -> Result<DaemonState, BootError> {
   // Boot services
   log::info!("connecting to docker on /run/nanocl/docker.sock");
-  let docker = bollard::Docker::connect_with_unix(
+  let docker_api = bollard::Docker::connect_with_unix(
     "/run/nanocl/docker.sock",
     120,
     bollard::API_DEFAULT_VERSION,
   )
   .map_err(BootError::Errordocker)?;
-  boot_docker_services(&docker).await?;
+  boot_docker_services(&docker_api).await?;
 
   // Connect to postgresql
   log::info!("creating a pool connection to postgresql server");
   let db_pool = postgre::create_pool();
-  
+
   // wrap into state to create default namespace using repository function
   let pool = web::types::State::new(db_pool.clone());
   // Create default namesapce
@@ -113,10 +113,9 @@ pub async fn boot() -> Result<DaemonState, BootError> {
   // Return state
   Ok(DaemonState {
     pool: db_pool,
-    docker,
+    docker_api,
   })
 }
-
 
 #[cfg(test)]
 mod test_boot {

@@ -8,11 +8,11 @@ use crate::models::GitRepositoryItem;
 use crate::controllers::errors::HttpError;
 
 pub async fn build_git_repository(
-  docker: web::types::State<bollard::Docker>,
+  docker_api: web::types::State<bollard::Docker>,
   item: GitRepositoryItem,
 ) -> Result<Receiver<Result<Bytes, web::error::Error>>, HttpError> {
   let image_name = item.name.to_owned();
-  let image_url = item.url + ".git#development";
+  let image_url = item.url + ".git#" + &item.default_branch;
   let options = bollard::image::BuildImageOptions::<String> {
     dockerfile: String::from("Dockerfile"),
     t: image_name,
@@ -21,7 +21,7 @@ pub async fn build_git_repository(
   };
   let (tx, rx_body) = mpsc::channel();
   rt::spawn(async move {
-    let mut stream = docker.build_image(options, None, None);
+    let mut stream = docker_api.build_image(options, None, None);
     while let Some(result) = stream.next().await {
       match result {
         Err(err) => {
@@ -44,11 +44,11 @@ pub async fn build_git_repository(
 
 pub async fn build_image(
   image_name: String,
-  docker: web::types::State<bollard::Docker>,
+  docker_api: web::types::State<bollard::Docker>,
 ) -> Result<Receiver<Result<Bytes, web::error::Error>>, HttpError> {
   let (tx, rx_body) = mpsc::channel();
   rt::spawn(async move {
-    let mut stream = docker.create_image(
+    let mut stream = docker_api.create_image(
       Some(bollard::image::CreateImageOptions {
         from_image: image_name,
         ..Default::default()

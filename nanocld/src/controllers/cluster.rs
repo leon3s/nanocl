@@ -31,7 +31,7 @@ async fn list_cluster(
   web::types::Query(qs): web::types::Query<ClusterQuery>,
 ) -> Result<web::HttpResponse, HttpError> {
   let nsp = match qs.namespace {
-    None => String::from("default"),
+    None => String::from("global"),
     Some(namespace) => namespace,
   };
 
@@ -60,7 +60,7 @@ async fn create_cluster(
   web::types::Json(json): web::types::Json<ClusterPartial>,
 ) -> Result<web::HttpResponse, HttpError> {
   let nsp = match qs.namespace {
-    None => String::from("default"),
+    None => String::from("global"),
     Some(namespace) => namespace,
   };
   let res = cluster::create_for_namespace(nsp, json, &pool).await?;
@@ -88,7 +88,7 @@ async fn delete_cluster_by_name(
   web::types::Query(qs): web::types::Query<ClusterQuery>,
 ) -> Result<web::HttpResponse, HttpError> {
   let nsp = match qs.namespace {
-    None => String::from("default"),
+    None => String::from("global"),
     Some(namespace) => namespace,
   };
   let gen_key = nsp.to_owned() + "-" + &name.into_inner();
@@ -118,7 +118,7 @@ async fn inspect_cluster_by_name(
 ) -> Result<web::HttpResponse, HttpError> {
   let name = name.into_inner();
   let nsp = match qs.namespace {
-    None => String::from("default"),
+    None => String::from("global"),
     Some(namespace) => namespace,
   };
   let gen_key = nsp.to_owned() + "-" + &name;

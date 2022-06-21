@@ -1,5 +1,4 @@
 use ntex::web;
-use uuid::Uuid;
 use diesel::prelude::*;
 
 use crate::models::Pool;
@@ -39,9 +38,8 @@ pub async fn create_many(
     let branches = items
       .into_iter()
       .map(|item| GitRepositoryBranchItem {
-        id: Uuid::new_v4(),
         name: item.name,
-        repository_id: item.repository_id,
+        repository_name: item.repository_name,
       })
       .collect::<Vec<GitRepositoryBranchItem>>();
     diesel::insert_into(dsl::git_repository_branches)
@@ -71,7 +69,7 @@ pub async fn create_many(
 /// git_repository_branch::delete_by_repository_id(repository_id, pool).await;
 /// ```
 pub async fn delete_by_repository_id(
-  repository_id: Uuid,
+  repository_name: String,
   pool: &web::types::State<Pool>,
 ) -> Result<PgDeleteGeneric, HttpError> {
   use crate::schema::git_repository_branches::dsl;
@@ -79,7 +77,7 @@ pub async fn delete_by_repository_id(
   let conn = get_pool_conn(pool)?;
   let res = web::block(move || {
     diesel::delete(dsl::git_repository_branches)
-      .filter(dsl::repository_id.eq(repository_id))
+      .filter(dsl::repository_name.eq(repository_name))
       .execute(&conn)
   })
   .await;
@@ -108,28 +106,30 @@ mod test {
     let new_repository = GitRepositoryPartial {
       name: String::from("test-branch"),
       url: String::from("test"),
-      token: None,
     };
-    let res = git_repository::create(new_repository, &pool_state)
-      .await
-      .unwrap();
-
-    // Create many branches
-    let items = vec![GitRepositoryBranchPartial {
-      name: String::from("test-branch"),
-      repository_id: res.id,
-    }];
-    create_many(items, &pool_state).await.unwrap();
-
-    // Delete branch by repository id
-    delete_by_repository_id(res.id, &pool_state).await.unwrap();
-
-    git_repository::delete_by_id_or_name(
-      String::from("test-branch"),
+    let res = git_repository::create(
+      new_repository,
+      String::from("master"),
       &pool_state,
     )
     .await
     .unwrap();
+
+    // Create many branches
+    let items = vec![GitRepositoryBranchPartial {
+      name: String::from("test-branch"),
+      repository_name: res.name.to_owned(),
+    }];
+    create_many(items, &pool_state).await.unwrap();
+
+    // Delete branch by repository id
+    delete_by_repository_id(res.name.to_owned(), &pool_state)
+      .await
+      .unwrap();
+
+    git_repository::delete_by_name(String::from("test-branch"), &pool_state)
+      .await
+      .unwrap();
     // todo
     Ok(())
   }

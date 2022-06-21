@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::schema::{
   clusters, namespaces, git_repositories, cluster_networks,
-  git_repository_branches, cargos,
+  git_repository_branches, cargos, cargo_ports,
 };
 
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
@@ -67,12 +67,12 @@ pub enum GitRepositorySourceType {
 #[derive(
   Component, Serialize, Deserialize, Insertable, Queryable, Identifiable,
 )]
+#[primary_key(name)]
 #[table_name = "git_repositories"]
 pub struct GitRepositoryItem {
-  pub(crate) id: Uuid,
   pub(crate) name: String,
   pub(crate) url: String,
-  pub(crate) token: Option<String>,
+  pub(crate) default_branch: String,
   pub(crate) source: GitRepositorySourceType,
 }
 
@@ -82,17 +82,18 @@ pub struct GitRepositoryItem {
 pub struct GitRepositoryPartial {
   pub(crate) url: String,
   pub(crate) name: String,
-  pub(crate) token: Option<String>,
 }
 
 /// Git repository branch
 /// this structure ensure read and write entity in database
-#[derive(Debug, Component, Serialize, Deserialize, Queryable, Insertable)]
+#[derive(
+  Debug, Component, Serialize, Deserialize, Queryable, Identifiable, Insertable,
+)]
+#[primary_key(name)]
 #[table_name = "git_repository_branches"]
 pub struct GitRepositoryBranchItem {
-  pub(crate) id: Uuid,
   pub(crate) name: String,
-  pub(crate) repository_id: Uuid,
+  pub(crate) repository_name: String,
 }
 
 /// Partial git repository branch
@@ -100,7 +101,7 @@ pub struct GitRepositoryBranchItem {
 #[derive(Component, Serialize, Deserialize)]
 pub struct GitRepositoryBranchPartial {
   pub(crate) name: String,
-  pub(crate) repository_id: Uuid,
+  pub(crate) repository_name: String,
 }
 
 /// Partial cluster
@@ -175,15 +176,16 @@ pub struct ClusterNetworkItem {
 #[derive(Component, Serialize, Deserialize)]
 pub struct CargoPartial {
   pub(crate) name: String,
-  pub(crate) network_name: String,
-  pub(crate) image_name: Option<String>,
-  pub(crate) repository_name: Option<String>,
+  pub(crate) image_name: String,
+  pub(crate) network_name: Option<String>,
+  pub(crate) ports: Option<Vec<String>>,
 }
 
 /// Cargo item is an definition to container create image and start them
 /// this structure ensure read and write in database
 #[derive(
   Debug,
+  Clone,
   Component,
   Serialize,
   Deserialize,
@@ -202,7 +204,32 @@ pub struct CargoItem {
   pub(crate) image_name: String,
   pub(crate) network_name: String,
   pub(crate) namespace_name: String,
-  pub(crate) repository_name: String,
+}
+
+#[derive(
+  Debug,
+  Serialize,
+  Deserialize,
+  Queryable,
+  Identifiable,
+  Insertable,
+  Associations,
+  AsChangeset,
+)]
+#[primary_key(key)]
+#[belongs_to(CargoItem, foreign_key = "cargo_key")]
+#[table_name = "cargo_ports"]
+pub struct CargoPortItem {
+  pub(crate) key: String,
+  pub(crate) cargo_key: String,
+  pub(crate) from: i32,
+  pub(crate) to: i32,
+}
+
+#[derive(Debug)]
+pub struct CargoPortPartial {
+  pub(crate) from: i32,
+  pub(crate) to: i32,
 }
 
 /// Rexports postgre enum for schema.rs

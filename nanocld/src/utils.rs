@@ -24,7 +24,7 @@ pub fn get_pool_conn(
   Ok(conn)
 }
 
-pub fn _get_free_port() -> Result<u16, HttpError> {
+pub fn get_free_port() -> Result<u16, HttpError> {
   let socket = match std::net::UdpSocket::bind("127.0.0.1:0") {
     Err(err) => {
       return Err(HttpError {
@@ -60,7 +60,12 @@ pub mod test {
   type Config = fn(&mut ServiceConfig);
 
   pub fn generate_server(config: Config) -> test::TestServer {
-    let docker = bollard::Docker::connect_with_unix("/run/nanocl/docker.sock", 120, bollard::API_DEFAULT_VERSION).unwrap();
+    let docker = bollard::Docker::connect_with_unix(
+      "/run/nanocl/docker.sock",
+      120,
+      bollard::API_DEFAULT_VERSION,
+    )
+    .unwrap();
     let pool = create_pool();
     test::server(move || {
       App::new()

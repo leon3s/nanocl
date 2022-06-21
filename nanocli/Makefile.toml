@@ -1,0 +1,26 @@
+[tasks.format]
+install_crate = "rustfmt"
+command = "cargo"
+args = ["fmt"]
+
+[tasks.clean]
+command = "cargo"
+args = ["clean"]
+
+[tasks.run]
+command = "cargo"
+args = ["run"]
+
+[tasks.cov]
+command = "cargo"
+args = ["llvm-cov", "nextest"]
+
+[tasks.test]
+command = "cargo"
+args = ["nextest", "run"]
+
+[tasks.test-debug]
+command = "cargo"
+args = ["test", "--", "--nocapture"]
+
+[tasks.release]

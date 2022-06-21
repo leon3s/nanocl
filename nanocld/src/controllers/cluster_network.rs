@@ -29,17 +29,20 @@ pub struct ClusterNetworkQuery {
 )]
 #[web::get("/clusters/{c_name}/networks")]
 async fn list_cluster_network(
-  _c_name: web::types::Path<String>,
+  pool: web::types::State<Pool>,
+  c_name: web::types::Path<String>,
   web::types::Query(qs): web::types::Query<ClusterNetworkQuery>,
 ) -> Result<web::HttpResponse, HttpError> {
-  // TODO list cluster networks
-  let _nsp = match qs.namespace {
-    None => String::from("default"),
+  let nsp = match qs.namespace {
+    None => String::from("global"),
     Some(nsp) => nsp,
   };
 
-  // qs.cluster
-  Ok(web::HttpResponse::Ok().into())
+  let gen_key = nsp + "-" + &c_name.into_inner();
+  let item = cluster::find_by_key(gen_key, &pool).await?;
+  let items = cluster_network::list_for_cluster(item, &pool).await?;
+
+  Ok(web::HttpResponse::Ok().json(&items))
 }
 
 /// Create a network for given cluster
@@ -60,14 +63,14 @@ async fn list_cluster_network(
 #[web::post("/clusters/{c_name}/networks")]
 async fn create_cluster_network(
   pool: web::types::State<Pool>,
-  docker: web::types::State<bollard::Docker>,
+  docker_api: web::types::State<bollard::Docker>,
   c_name: web::types::Path<String>,
   web::types::Query(qs): web::types::Query<ClusterNetworkQuery>,
   web::types::Json(payload): web::types::Json<ClusterNetworkPartial>,
 ) -> Result<web::HttpResponse, HttpError> {
   let name = c_name.into_inner();
   let nsp = match qs.namespace {
-    None => String::from("default"),
+    None => String::from("global"),
     Some(nsp) => nsp,
   };
   let gen_key = nsp + "-" + &name;
@@ -91,7 +94,7 @@ async fn create_cluster_network(
     labels,
     ..Default::default()
   };
-  let id = match docker.create_network(config).await {
+  let id = match docker_api.create_network(config).await {
     Err(_) => {
       return Err(HttpError {
         status: StatusCode::BAD_REQUEST,
@@ -145,7 +148,7 @@ async fn inspect_cluster_network_by_name(
   let c_name = url_path.c_name.to_owned();
   let n_name = url_path.n_name.to_owned();
   let nsp = match qs.namespace {
-    None => String::from("default"),
+    None => String::from("global"),
     Some(nsp) => nsp,
   };
   let gen_key = nsp + "-" + &c_name + "-" + &n_name;
@@ -171,20 +174,21 @@ async fn inspect_cluster_network_by_name(
 #[web::delete("/clusters/{c_name}/networks/{n_name}")]
 async fn delete_cluster_network_by_name(
   pool: web::types::State<Pool>,
-  docker: web::types::State<bollard::Docker>,
+  docker_api: web::types::State<bollard::Docker>,
   url_path: web::types::Path<InspectClusterNetworkPath>,
   web::types::Query(qs): web::types::Query<ClusterNetworkQuery>,
 ) -> Result<web::HttpResponse, HttpError> {
   let c_name = url_path.c_name.to_owned();
   let n_name = url_path.n_name.to_owned();
   let nsp = match qs.namespace {
-    None => String::from("default"),
+    None => String::from("global"),
     Some(nsp) => nsp,
   };
   let gen_key = nsp + "-" + &c_name + "-" + &n_name;
   let network = cluster_network::find_by_key(gen_key, &pool).await?;
 
-  if let Err(err) = docker.remove_network(&network.docker_network_id).await {
+  if let Err(err) = docker_api.remove_network(&network.docker_network_id).await
+  {
     return Err(HttpError {
       status: StatusCode::BAD_REQUEST,
       msg: format!("Unable to delete network {:?}", err),

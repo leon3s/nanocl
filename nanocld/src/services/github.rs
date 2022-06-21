@@ -1,14 +1,29 @@
-use thiserror::Error;
+use std::sync::{Arc, Mutex};
 
-use ntex::http::client::Client;
+use thiserror::Error;
 use url::{ParseError, Url};
 use serde::{Deserialize, Serialize};
+use ntex::http::client::{Client, ClientRequest};
 
-use crate::models::GitRepositoryPartial;
+use crate::models::{GitRepositoryPartial, GitRepositoryItem};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct GitBranch {
+pub struct GithubRepoBranchCommit {
+  pub(crate) sha: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GithubRepoBranch {
   pub(crate) name: String,
+  pub(crate) commit: GithubRepoBranchCommit,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GithubRepo {
+  pub(crate) name: String,
+  pub(crate) private: bool,
+  pub(crate) full_name: String,
+  pub(crate) default_branch: String,
 }
 
 #[derive(Debug)]
@@ -46,33 +61,114 @@ pub fn parse_git_url(url: &str) -> Result<GitDesc, ParseError> {
   Ok(result)
 }
 
-pub async fn list_branches(
-  item: &GitRepositoryPartial,
-) -> Result<Vec<GitBranch>, Box<dyn std::error::Error + 'static>> {
-  let client = Client::new();
-  let username = std::env::var("GITHUB_ACCOUNT").unwrap_or_default();
-  let password = std::env::var("GITHUB_TOKEN").unwrap_or_default();
-  let git_desc = parse_git_url(&item.url)?;
+#[derive(Serialize, Deserialize)]
+pub struct BasicCredential {
+  pub(crate) username: String,
+  pub(crate) password: String,
+}
 
-  let url = "https://api.".to_owned()
-    + &git_desc.host
-    + "/repos"
-    + &git_desc.path
-    + "/branches";
+#[derive(Clone)]
+pub struct GithubApi {
+  client: Client,
+  base_url: String,
+}
 
-  let mut res = client
-    .get(url)
-    .basic_auth(&username, Some(&password))
-    .set_header("Accept", "application/vnd.github.v3+json")
-    .set_header("User-Agent", "axios")
-    .send()
-    .await?;
-  if res.status().is_client_error() {
-    let err = res.json::<GithubApiError>().await?;
-    return Err(Box::new(GithubError::Errorgithubapi(err)));
+impl GithubApi {
+  pub fn new() -> Self {
+    log::info!("creating github api");
+    // Ensuring GITHUB_ACCOUNT value so we can unwrap safelly
+    let github_password = std::env::var("GITHUB_ACCOUNT");
+    if let Err(ref _err) = github_password {
+      log::warn!(
+        "GITHUB_ACCOUNT env variable is missing you may face api rate limit"
+      );
+    }
+    // Ensuring GITHUB_TOKEN value so we can unwrap safelly
+    let github_token = std::env::var("GITHUB_TOKEN");
+    if let Err(ref _err) = github_token {
+      log::warn!("GITHUB_TOKEN is missing env variable is missing you may face api rate limit");
+    }
+    let credential = BasicCredential {
+      username: github_token.unwrap_or_else(|_| String::from("")),
+      password: github_password.unwrap_or_else(|_| String::from("")),
+    };
+    let client = Client::build()
+      .basic_auth(credential.username, Some(&credential.password))
+      .header("Accept", "application/vnd.github.v3+json")
+      .header("User-Agent", "nanocl")
+      .finish();
+    GithubApi {
+      client,
+      base_url: String::from("https://api.github.com"),
+    }
   }
-  let body = res.json::<Vec<GitBranch>>().await?;
-  Ok(body)
+
+  fn gen_url(&self, url: String) -> String {
+    self.base_url.to_owned() + &url
+  }
+
+  pub fn get(&self, url: String) -> ClientRequest {
+    self.client.get(self.gen_url(url))
+  }
+
+  pub fn post(&self, url: String) -> ClientRequest {
+    self.client.post(self.gen_url(url))
+  }
+
+  pub async fn sync_repo(
+    &self,
+    item: &GitRepositoryPartial,
+  ) -> Result<GithubRepo, Box<dyn std::error::Error + 'static>> {
+    let git_desc = parse_git_url(&item.url)?;
+    let url = "/repos".to_owned() + &git_desc.path;
+
+    let mut res = self.get(url).send().await?;
+
+    if res.status().is_client_error() || res.status().is_server_error() {
+      let err = res.json::<GithubApiError>().await?;
+      return Err(Box::new(GithubError::Errorgithubapi(err)));
+    }
+
+    let repo = res.json::<GithubRepo>().await.unwrap();
+
+    Ok(repo)
+  }
+
+  pub async fn list_branches(
+    &self,
+    item: &GitRepositoryPartial,
+  ) -> Result<Vec<GithubRepoBranch>, Box<dyn std::error::Error + 'static>> {
+    let git_desc = parse_git_url(&item.url)?;
+
+    let url = "/repos".to_owned() + &git_desc.path + "/branches";
+
+    let mut res = self.get(url).send().await?;
+
+    if res.status().is_client_error() {
+      let err = res.json::<GithubApiError>().await?;
+      return Err(Box::new(GithubError::Errorgithubapi(err)));
+    }
+
+    let body = res.json::<Vec<GithubRepoBranch>>().await?;
+    Ok(body)
+  }
+
+  pub async fn inspect_branch(
+    &self,
+    item: &GitRepositoryItem,
+    branch: String,
+  ) -> Result<GithubRepoBranch, Box<dyn std::error::Error + 'static>> {
+    let git_desc = parse_git_url(&item.url)?;
+
+    let url = "/repos".to_owned() + &git_desc.path + "/branches/" + &branch;
+    let mut res = self.get(url).send().await?;
+    if res.status().is_client_error() {
+      let err = res.json::<GithubApiError>().await?;
+      return Err(Box::new(GithubError::Errorgithubapi(err)));
+    }
+    let body = res.json::<GithubRepoBranch>().await?;
+    Ok(body)
+  }
 }
 
 #[cfg(test)]
@@ -84,12 +180,13 @@ mod test_github {
 
   #[ntex::test]
   async fn list_repository_branches() -> TestReturn {
+    let github_api = GithubApi::new();
     let item = GitRepositoryPartial {
       name: String::from("express-test-deploy"),
-      token: None,
       url: String::from("https://github.com/leon3s/express-test-deploy"),
     };
-    let _branches = list_branches(&item).await?;
+    let _branches = github_api.list_branches(&item).await?;
+    let _ = github_api.sync_repo(&item).await?;
     Ok(())
   }
 }

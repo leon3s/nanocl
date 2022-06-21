@@ -2,12 +2,23 @@ table! {
     use diesel::sql_types::*;
     use crate::models::exports::*;
 
+    cargo_ports (key) {
+        key -> Varchar,
+        cargo_key -> Varchar,
+        from -> Int4,
+        to -> Int4,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use crate::models::exports::*;
+
     cargos (key) {
         key -> Varchar,
         name -> Varchar,
         image_name -> Varchar,
         network_name -> Varchar,
-        repository_name -> Varchar,
         namespace_name -> Varchar,
     }
 }
@@ -39,11 +50,10 @@ table! {
     use diesel::sql_types::*;
     use crate::models::exports::*;
 
-    git_repositories (id) {
-        id -> Uuid,
+    git_repositories (name) {
         name -> Varchar,
         url -> Varchar,
-        token -> Nullable<Varchar>,
+        default_branch -> Varchar,
         source -> Git_repository_source_type,
     }
 }
@@ -52,10 +62,9 @@ table! {
     use diesel::sql_types::*;
     use crate::models::exports::*;
 
-    git_repository_branches (id) {
-        id -> Uuid,
+    git_repository_branches (name) {
         name -> Varchar,
-        repository_id -> Uuid,
+        repository_name -> Varchar,
     }
 }
 
@@ -72,6 +81,7 @@ joinable!(cargos -> namespaces (namespace_name));
 joinable!(cluster_networks -> clusters (cluster_key));
 
 allow_tables_to_appear_in_same_query!(
+    cargo_ports,
     cargos,
     cluster_networks,
     clusters,

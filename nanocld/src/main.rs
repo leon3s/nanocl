@@ -8,8 +8,12 @@
 #[macro_use]
 extern crate diesel;
 
+use std::sync::Arc;
+
 use ntex::web;
 use ntex_files as fs;
+
+use crate::services::github::GithubApi;
 
 mod boot;
 mod utils;
@@ -35,21 +39,12 @@ async fn main() -> std::io::Result<()> {
   }
   env_logger::Builder::new().parse_env("LOG_LEVEL").init();
 
-  // Ensuring GITHUB_ACCOUNT value so we can unwrap safelly
-  if std::env::var("GITHUB_ACCOUNT").is_err() {
-    log::warn!("GITHUB_ACCOUNT env variable is missing you may face api rate limit");
-  }
-  // Ensuring GITHUB_TOKEN value so we can unwrap safelly
-  if std::env::var("GITHUB_TOKEN").is_err() {
-    log::warn!("GITHUB_TOKEN is missing env variable is missing you may face api rate limit");
-  }
-
   log::info!("booting...");
   let state = match boot::boot().await {
     Err(err) => {
       log::error!("Error while trying to boot : {:?}", err);
       std::process::exit(1);
-    },
+    }
     Ok(state) => state,
   };
   log::info!("booted");
@@ -59,7 +54,8 @@ async fn main() -> std::io::Result<()> {
       // bind postgre pool to state
       .state(state.pool.clone())
       // bind docker connection to state
-      .state(state.docker.clone())
+      .state(state.docker_api.clone())
+      // bind docker api
       // Default logger middleware
       .wrap(web::middleware::Logger::default())
       // Set Json body max size
@@ -82,10 +78,10 @@ async fn main() -> std::io::Result<()> {
           .index_file("index.html"),
       )
   });
+  server = server.bind_uds("/run/nanocl/nanocl.sock")?;
   server = server.bind("0.0.0.0:8383")?;
   log::info!("http started on http://0.0.0.0:8383");
   server.run().await?;
   log::info!("kill received existing.");
   Ok(())
 }
- 

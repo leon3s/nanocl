@@ -1,10 +1,13 @@
+use std::collections::HashMap;
+
 use ntex::web;
 use ntex::http::StatusCode;
 use serde::{Deserialize, Serialize};
 
-use crate::services::docker::{build_image, build_git_repository};
-use crate::repositories::{cargo, namespace, git_repository};
-use crate::models::{Pool, CargoPartial};
+use crate::services::docker::build_image;
+use crate::repositories::{cargo, namespace, cargo_ports};
+use crate::models::{Pool, CargoPartial, CargoPortPartial};
+use crate::utils::get_free_port;
 
 use super::errors::HttpError;
 
@@ -32,7 +35,7 @@ pub async fn list_cargo(
   web::types::Query(qs): web::types::Query<CargoQuery>,
 ) -> Result<web::HttpResponse, HttpError> {
   let nsp = match qs.namespace {
-    None => String::from("default"),
+    None => String::from("global"),
     Some(nsp) => nsp,
   };
 
@@ -62,11 +65,22 @@ pub async fn create_cargo(
   web::types::Json(payload): web::types::Json<CargoPartial>,
 ) -> Result<web::HttpResponse, HttpError> {
   let nsp = match qs.namespace {
-    None => String::from("default"),
+    None => String::from("global"),
     Some(nsp) => nsp,
   };
-
+  let ports = payload.ports.clone();
   let item = cargo::create(nsp, payload, &pool).await?;
+  if let Some(ports) = ports {
+    let ports = ports
+      .into_iter()
+      .map(|port| CargoPortPartial {
+        from: 0,
+        to: port.parse::<i32>().unwrap_or(0),
+      })
+      .collect::<Vec<CargoPortPartial>>();
+    cargo_ports::create_many_for_cargo(item.key.to_owned(), ports, &pool)
+      .await?;
+  }
   Ok(web::HttpResponse::Created().json(&item))
 }
 
@@ -87,13 +101,13 @@ pub async fn create_cargo(
 #[web::delete("/cargos/{name}")]
 pub async fn delete_cargo_by_name(
   pool: web::types::State<Pool>,
-  docker: web::types::State<bollard::Docker>,
+  docker_api: web::types::State<bollard::Docker>,
   name: web::types::Path<String>,
   web::types::Query(qs): web::types::Query<CargoQuery>,
 ) -> Result<web::HttpResponse, HttpError> {
   log::debug!("requiring cargo deletion");
   let nsp = match qs.namespace {
-    None => String::from("default"),
+    None => String::from("global"),
     Some(nsp) => nsp,
   };
 
@@ -107,10 +121,10 @@ pub async fn delete_cargo_by_name(
     ..Default::default()
   });
 
-  let res = docker.inspect_container(&container_name, None).await;
+  let res = docker_api.inspect_container(&container_name, None).await;
 
   if res.is_ok() {
-    let res = docker.remove_container(&container_name, options).await;
+    let res = docker_api.remove_container(&container_name, options).await;
     if let Err(err) = res {
       return Err(HttpError {
         msg: format!("unable to remove container {:?}", err),
@@ -121,58 +135,6 @@ pub async fn delete_cargo_by_name(
 
   let res = cargo::delete_by_key(gen_key.clone(), &pool).await?;
   Ok(web::HttpResponse::Ok().json(&res))
-}
-
-/// Build a cargo by it's name
-#[utoipa::path(
-  post,
-  path = "/cargos/{name}/build",
-  params(
-    ("name" = String, path, description = "Name of the cargo"),
-    ("namespace" = Option<String>, query, description = "Name of the namespace where the cargo is stored"),
-  ),
-  responses(
-    (status = 200, description = "Generic delete", body = String, content_type = "nanocl/streaming-v1"),
-    (status = 400, description = "Generic database error", body = ApiError),
-    (status = 404, description = "Namespace name not valid", body = ApiError),
-  ),
-)]
-#[web::post("/cargos/{name}/build")]
-pub async fn build_cargo_by_name(
-  pool: web::types::State<Pool>,
-  docker: web::types::State<bollard::Docker>,
-  name: web::types::Path<String>,
-  web::types::Query(qs): web::types::Query<CargoQuery>,
-) -> Result<web::HttpResponse, HttpError> {
-  let nsp = match qs.namespace {
-    None => String::from("default"),
-    Some(nsp) => nsp,
-  };
-  let gen_key = nsp + "-" + &name.into_inner();
-  let item = cargo::find_by_key(gen_key, &pool).await?;
-
-  if !item.image_name.is_empty() {
-    let stream = build_image(item.image_name, docker).await?;
-    return Ok(
-      web::HttpResponse::Ok()
-        .content_type("nanocl/streaming-v1")
-        .streaming(stream),
-    );
-  }
-  if item.repository_name.is_empty() {
-    return Err(HttpError {
-      msg: String::from("cargo datastructure error image_name and repository_name cannot be both empty."),
-      status: StatusCode::INTERNAL_SERVER_ERROR,
-    });
-  }
-  let git =
-    git_repository::find_by_id_or_name(item.repository_name, &pool).await?;
-  let stream = build_git_repository(docker, git).await?;
-  Ok(
-    web::HttpResponse::Ok()
-      .content_type("nanocl/streaming-v1")
-      .streaming(stream),
-  )
 }
 
 /// Start cargo by it's name
@@ -192,12 +154,12 @@ pub async fn build_cargo_by_name(
 #[web::post("/cargos/{name}/start")]
 pub async fn start_cargo_by_name(
   pool: web::types::State<Pool>,
-  docker: web::types::State<bollard::Docker>,
+  docker_api: web::types::State<bollard::Docker>,
   name: web::types::Path<String>,
   web::types::Query(qs): web::types::Query<CargoQuery>,
 ) -> Result<web::HttpResponse, HttpError> {
   let nsp = match qs.namespace {
-    None => String::from("default"),
+    None => String::from("global"),
     Some(nsp) => nsp,
   };
 
@@ -206,35 +168,53 @@ pub async fn start_cargo_by_name(
   let image_name = item.image_name.clone();
   let container_name = gen_key.to_owned() + "-" + &image_name.replace(':', "-");
 
+  let ports = cargo_ports::list_for_cargo(item.to_owned(), &pool).await?;
+
   log::debug!("item found {:?}", item);
-  if !&item.image_name.is_empty() {
-    log::debug!("image name not empty {:?}", image_name.clone());
-    if docker.inspect_image(&item.image_name).await.is_err() {
-      return Err(HttpError {
-        msg: String::from("you need to build cargo before run it."),
-        status: StatusCode::BAD_REQUEST,
-      });
-    }
-    let image = Some(image_name.clone());
-    let options = Some(bollard::container::CreateContainerOptions {
-      name: container_name.clone(),
+  log::debug!("image name not empty {:?}", image_name.clone());
+  if docker_api.inspect_image(&item.image_name).await.is_err() {
+    return Err(HttpError {
+      msg: String::from("you need to build cargo before run it."),
+      status: StatusCode::BAD_REQUEST,
     });
-    let config = bollard::container::Config {
-      image,
-      tty: Some(true),
-      attach_stdout: Some(true),
-      attach_stderr: Some(true),
+  }
+  let image = Some(image_name.clone());
+  let options = Some(bollard::container::CreateContainerOptions {
+    name: container_name.clone(),
+  });
+  let mut port_bindings: HashMap<
+    String,
+    Option<Vec<bollard::models::PortBinding>>,
+  > = HashMap::new();
+  ports.into_iter().for_each(|port| {
+    let new_port = get_free_port().unwrap();
+    port_bindings.insert(
+      port.to.to_string() + "/tcp",
+      Some(vec![bollard::models::PortBinding {
+        host_ip: None,
+        host_port: Some(new_port.to_string()),
+      }]),
+    );
+  });
+  let config = bollard::container::Config {
+    image,
+    tty: Some(true),
+    host_config: Some(bollard::models::HostConfig {
+      port_bindings: Some(port_bindings),
       ..Default::default()
-    };
-    if let Err(err) = docker.create_container(options, config).await {
-      return Err(HttpError {
-        msg: format!("unable to create container {:?}", err),
-        status: StatusCode::BAD_REQUEST,
-      });
-    }
+    }),
+    attach_stdout: Some(true),
+    attach_stderr: Some(true),
+    ..Default::default()
+  };
+  if let Err(err) = docker_api.create_container(options, config).await {
+    return Err(HttpError {
+      msg: format!("unable to create container {:?}", err),
+      status: StatusCode::BAD_REQUEST,
+    });
   }
 
-  if let Err(err) = docker
+  if let Err(err) = docker_api
     .start_container(
       &container_name,
       None::<bollard::container::StartContainerOptions<String>>,
@@ -252,16 +232,13 @@ pub async fn start_cargo_by_name(
 pub fn ntex_config(config: &mut web::ServiceConfig) {
   config.service(list_cargo);
   config.service(create_cargo);
-  config.service(build_cargo_by_name);
+  // config.service(build_cargo_by_name);
   config.service(delete_cargo_by_name);
   config.service(start_cargo_by_name);
 }
 
 #[cfg(test)]
 mod test_cargo {
-  use futures::{TryStreamExt, StreamExt};
-use ntex::http::HttpMessage;
-
   use crate::utils::test::*;
 
   use crate::models::CargoPartial;
@@ -282,26 +259,26 @@ use ntex::http::HttpMessage;
     const CARGO_NAME: &str = "nginx-test";
     let srv = generate_server(ntex_config);
 
-    let res = srv.post("/cargos").send_json(&CargoPartial {
+    let res = srv
+      .post("/cargos")
+      .send_json(&CargoPartial {
         name: String::from(CARGO_NAME),
-        network_name: String::from("none"),
-        image_name: Some(String::from("nginx:latest")),
-        repository_name: None,
-    }).await?;
+        network_name: None,
+        image_name: String::from("nginx:latest"),
+      })
+      .await?;
     assert!(res.status().is_success());
 
-    let res = srv.post(format!("/cargos/{name}/build", name = CARGO_NAME)).send().await?;
-    assert!(res.status().is_success());
-    assert_eq!(res.content_type(), "nanocl/streaming-v1");
-    let mut stream = res.into_stream();
-    while let Some(result) = stream.next().await {
-      println!("result {:?}", result);
-    }
-
-    let res = srv.post(format!("/cargos/{name}/start", name = CARGO_NAME)).send().await?;
+    let res = srv
+      .post(format!("/cargos/{name}/start", name = CARGO_NAME))
+      .send()
+      .await?;
     assert!(res.status().is_success());
 
-    let res = srv.delete(format!("/cargos/{name}", name = CARGO_NAME)).send().await?;
+    let res = srv
+      .delete(format!("/cargos/{name}", name = CARGO_NAME))
+      .send()
+      .await?;
     assert!(res.status().is_success());
     Ok(())
   }

@@ -13,10 +13,7 @@ pub async fn find_by_namespace(
 ) -> Result<Vec<CargoItem>, HttpError> {
   let conn = get_pool_conn(pool)?;
 
-  let res = web::block(move || {
-    CargoItem::belonging_to(&nsp).load(&conn)
-  })
-  .await;
+  let res = web::block(move || CargoItem::belonging_to(&nsp).load(&conn)).await;
   match res {
     Err(err) => Err(db_blocking_error(err)),
     Ok(items) => Ok(items),
@@ -36,9 +33,8 @@ pub async fn create(
       key: nsp.to_owned() + "-" + &item.name,
       name: item.name.clone(),
       namespace_name: nsp,
-      network_name: item.network_name.clone(),
-      image_name: item.image_name.unwrap_or_else(|| String::from("")),
-      repository_name: item.repository_name.unwrap_or_else(|| String::from("")),
+      image_name: item.image_name,
+      network_name: item.network_name.unwrap_or_else(|| String::from("")),
     };
     diesel::insert_into(dsl::cargos)
       .values(&new_item)

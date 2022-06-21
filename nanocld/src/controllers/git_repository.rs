@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::services::docker::build_git_repository;
 use crate::repositories::{git_repository, git_repository_branch};
 use crate::models::{Pool, GitRepositoryPartial, GitRepositoryBranchPartial};
-use crate::services::github;
+use crate::services::github::{self, GithubApi};
 
 use super::errors::HttpError;
 
@@ -50,27 +50,31 @@ async fn create_git_repository(
   pool: web::types::State<Pool>,
   web::types::Json(payload): web::types::Json<GitRepositoryPartial>,
 ) -> Result<web::HttpResponse, HttpError> {
-  let res = github::list_branches(&payload).await;
-
-  let gitbranches = match res {
-    Err(_) => {
-      return Err(HttpError {
+  let github_api = GithubApi::new();
+  let repo = github_api
+    .sync_repo(&payload)
+    .await
+    .map_err(|err| HttpError {
+      msg: format!("{:?}", err),
+      status: StatusCode::BAD_REQUEST,
+    })?;
+  let branches =
+    github_api
+      .list_branches(&payload)
+      .await
+      .map_err(|err| HttpError {
+        msg: format!("{:?}", err),
         status: StatusCode::BAD_REQUEST,
-        msg: String::from(
-          "unable to list branch for this git repository may token missing ?",
-        ),
-      })
-    }
-    Ok(branches) => branches,
-  };
+      })?;
 
-  let item = git_repository::create(payload, &pool).await?;
+  let item =
+    git_repository::create(payload, repo.default_branch, &pool).await?;
 
-  let branches = gitbranches
+  let branches = branches
     .into_iter()
     .map(|branch| GitRepositoryBranchPartial {
       name: branch.name,
-      repository_id: item.id,
+      repository_name: item.name.clone(),
     })
     .collect::<Vec<GitRepositoryBranchPartial>>();
 
@@ -98,12 +102,19 @@ async fn delete_git_repository_by_name(
   req_path: web::types::Path<String>,
 ) -> Result<web::HttpResponse, HttpError> {
   let id = req_path.into_inner();
-  let repository = git_repository::find_by_id_or_name(id, &pool).await?;
-  git_repository_branch::delete_by_repository_id(repository.id, &pool).await?;
+  let repository = git_repository::find_by_name(id, &pool).await?;
+  git_repository_branch::delete_by_repository_id(
+    repository.name.to_owned(),
+    &pool,
+  )
+  .await?;
   let res =
-    git_repository::delete_by_id_or_name(repository.id.to_string(), &pool)
-      .await?;
+    git_repository::delete_by_name(repository.name.to_string(), &pool).await?;
   Ok(web::HttpResponse::Ok().json(&res))
+}
+
+pub struct GitRepositoryBuildQuery {
+  branch: Option<String>,
 }
 
 /// Build docker image for given git repository name
@@ -122,14 +133,26 @@ async fn delete_git_repository_by_name(
 #[web::post("/git_repositories/{name}/build")]
 async fn build_git_repository_by_name(
   pool: web::types::State<Pool>,
-  docker: web::types::State<bollard::Docker>,
+  docker_api: web::types::State<bollard::Docker>,
   name: web::types::Path<String>,
 ) -> Result<web::HttpResponse, HttpError> {
   let name = name.into_inner();
 
-  let item = git_repository::find_by_id_or_name(name, &pool).await?;
+  let github_api = GithubApi::new();
 
-  let rx_body = build_git_repository(docker, item).await?;
+  let item = git_repository::find_by_name(name, &pool).await?;
+
+  let branch = github_api
+    .inspect_branch(&item, item.default_branch.to_owned())
+    .await
+    .map_err(|err| HttpError {
+      msg: format!("{:?}", err),
+      status: StatusCode::INTERNAL_SERVER_ERROR,
+    })?;
+
+  println!("{:?}", branch);
+
+  let rx_body = build_git_repository(docker_api, item).await?;
 
   Ok(
     web::HttpResponse::Ok()
@@ -165,7 +188,6 @@ mod test_namespace_git_repository {
   // and delete it to clean database
   async fn test_create_and_delete_by_name(srv: &TestServer) -> TestReturn {
     let new_repository = GitRepositoryPartial {
-      token: None,
       name: String::from("express-test-deploy"),
       url: String::from("https://github.com/leon3s/express-test-deploy"),
     };
@@ -185,7 +207,6 @@ mod test_namespace_git_repository {
   // Create and delete by id a repository
   async fn test_create_and_delete_by_id(srv: &TestServer) -> TestReturn {
     let new_repository = GitRepositoryPartial {
-      token: None,
       name: String::from("test-repo2"),
       url: String::from("https://github.com/leon3s/express-test-deploy"),
     };
@@ -195,7 +216,7 @@ mod test_namespace_git_repository {
       .await?;
     let item = res.json::<GitRepositoryItem>().await?;
     let res = srv
-      .delete(format!("/git_repositories/{id}", id = item.id))
+      .delete(format!("/git_repositories/{id}", id = item.name))
       .send()
       .await?;
     assert!(res.status().is_success());
@@ -208,7 +229,6 @@ mod test_namespace_git_repository {
     srv: &TestServer,
   ) -> TestReturn {
     let new_repository = GitRepositoryPartial {
-      token: None,
       name: String::from("express-test"),
       url: String::from("https://github.com/leon3s/express-test-deploy"),
     };
