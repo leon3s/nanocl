@@ -119,6 +119,7 @@ impl GithubApi {
     &self,
     item: &GitRepositoryPartial,
   ) -> Result<GithubRepo, Box<dyn std::error::Error + 'static>> {
+    log::info!("syncing github repository {} {}", item.name, item.url);
     let git_desc = parse_git_url(&item.url)?;
     let url = "/repos".to_owned() + &git_desc.path;
 

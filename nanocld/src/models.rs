@@ -65,7 +65,7 @@ pub enum GitRepositorySourceType {
 /// this structure ensure read and write entity in database
 /// we also support git hooks such as create/delete branch
 #[derive(
-  Component, Serialize, Deserialize, Insertable, Queryable, Identifiable,
+  Component, Clone, Serialize, Deserialize, Insertable, Queryable, Identifiable,
 )]
 #[primary_key(name)]
 #[table_name = "git_repositories"]
@@ -87,12 +87,21 @@ pub struct GitRepositoryPartial {
 /// Git repository branch
 /// this structure ensure read and write entity in database
 #[derive(
-  Debug, Component, Serialize, Deserialize, Queryable, Identifiable, Insertable,
+  Debug,
+  Clone,
+  Component,
+  Serialize,
+  Deserialize,
+  Queryable,
+  Identifiable,
+  Insertable,
 )]
-#[primary_key(name)]
+#[primary_key(key)]
 #[table_name = "git_repository_branches"]
 pub struct GitRepositoryBranchItem {
+  pub(crate) key: String,
   pub(crate) name: String,
+  pub(crate) last_commit_sha: String,
   pub(crate) repository_name: String,
 }
 
@@ -101,6 +110,7 @@ pub struct GitRepositoryBranchItem {
 #[derive(Component, Serialize, Deserialize)]
 pub struct GitRepositoryBranchPartial {
   pub(crate) name: String,
+  pub(crate) last_commit_sha: String,
   pub(crate) repository_name: String,
 }
 
@@ -235,4 +245,5 @@ pub struct CargoPortPartial {
 /// Rexports postgre enum for schema.rs
 pub mod exports {
   pub use super::Git_repository_source_type;
+  pub use diesel::sql_types::*;
 }

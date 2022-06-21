@@ -1,13 +1,19 @@
 //! File to handle git repository routes
 
+use std::sync::Arc;
+
+use futures::StreamExt;
 use ntex::http::StatusCode;
-use ntex::web;
+use ntex::{web, rt};
 use serde::{Deserialize, Serialize};
 
 use crate::services::docker::build_git_repository;
 use crate::repositories::{git_repository, git_repository_branch};
-use crate::models::{Pool, GitRepositoryPartial, GitRepositoryBranchPartial};
-use crate::services::github::{self, GithubApi};
+use crate::models::{
+  Pool, GitRepositoryPartial, GitRepositoryBranchPartial,
+  GitRepositoryBranchItem,
+};
+use crate::services::github::GithubApi;
 
 use super::errors::HttpError;
 
@@ -74,6 +80,7 @@ async fn create_git_repository(
     .into_iter()
     .map(|branch| GitRepositoryBranchPartial {
       name: branch.name,
+      last_commit_sha: branch.commit.sha,
       repository_name: item.name.clone(),
     })
     .collect::<Vec<GitRepositoryBranchPartial>>();
@@ -113,6 +120,7 @@ async fn delete_git_repository_by_name(
   Ok(web::HttpResponse::Ok().json(&res))
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct GitRepositoryBuildQuery {
   branch: Option<String>,
 }
@@ -126,8 +134,9 @@ pub struct GitRepositoryBuildQuery {
   ),
   responses(
     (status = 200, description = "Stream of building process", body = String, content_type = "nanocl/streaming-v1"),
+    (status = 304, description = "Content is up to date with selected branch"),
     (status = 400, description = "Generic database error"),
-    (status = 404, description = "Namespace name not valid"),
+    (status = 404, description = "Namespace name or git repository name not valid"),
   ),
 )]
 #[web::post("/git_repositories/{name}/build")]
@@ -137,12 +146,11 @@ async fn build_git_repository_by_name(
   name: web::types::Path<String>,
 ) -> Result<web::HttpResponse, HttpError> {
   let name = name.into_inner();
-
   let github_api = GithubApi::new();
-
-  let item = git_repository::find_by_name(name, &pool).await?;
-
-  let branch = github_api
+  log::info!("requesting build git repository {}", name.to_owned());
+  // we find the repository by it's unique name
+  let item = git_repository::find_by_name(name.to_owned(), &pool).await?;
+  let live_branch = github_api
     .inspect_branch(&item, item.default_branch.to_owned())
     .await
     .map_err(|err| HttpError {
@@ -150,15 +158,118 @@ async fn build_git_repository_by_name(
       status: StatusCode::INTERNAL_SERVER_ERROR,
     })?;
 
-  println!("{:?}", branch);
-
-  let rx_body = build_git_repository(docker_api, item).await?;
-
-  Ok(
-    web::HttpResponse::Ok()
-      .content_type("nanocl/streaming-v1")
-      .streaming(rx_body),
-  )
+  let gen_key = item.name.to_owned() + "-" + &item.default_branch;
+  let stored_branch = git_repository_branch::get_by_key(gen_key, &pool).await?;
+  let image_name = item.name.to_owned() + ":" + &live_branch.name;
+  let image_exist = docker_api.inspect_image(&image_name).await;
+  let new_branch = GitRepositoryBranchItem {
+    last_commit_sha: live_branch.commit.sha,
+    ..stored_branch
+  };
+  // We update stored_branch if it's not the lasted stored commit
+  if new_branch.last_commit_sha == stored_branch.last_commit_sha {
+    git_repository_branch::update_item(new_branch.to_owned(), &pool).await?;
+  }
+  match image_exist {
+    // Image not exist so we build it
+    Err(_) => {
+      log::info!("it's first build");
+      let rx_body = build_git_repository(
+        image_name.to_owned(),
+        item,
+        new_branch.to_owned(),
+        docker_api,
+      )
+      .await?;
+      Ok(
+        web::HttpResponse::Ok()
+          .content_type("nanocl/streaming-v1")
+          .streaming(rx_body),
+      )
+    }
+    Ok(res) => {
+      log::info!("we found an image");
+      let image_id = res
+        .id
+        .ok_or_else(|| HttpError {
+          msg: String::from("Image is found but we cannot read his id"),
+          status: StatusCode::INTERNAL_SERVER_ERROR,
+        })?
+        .replace("sha256:", "");
+      let config = res.config.ok_or_else(|| HttpError {
+        msg: String::from("Image is found but we cannot read his config"),
+        status: StatusCode::INTERNAL_SERVER_ERROR,
+      })?;
+      let labels = config.labels.ok_or_else(|| HttpError {
+        msg: String::from("Image is found but we cannot read his labels"),
+        status: StatusCode::INTERNAL_SERVER_ERROR,
+      })?;
+      let commit = labels.get("commit").ok_or_else(|| HttpError {
+        msg: String::from("Image is found but we cannot get his commit"),
+        status: StatusCode::INTERNAL_SERVER_ERROR,
+      })?;
+      // if image have the latest commit we are up to date.
+      // ps i love pointers
+      if *commit == new_branch.last_commit_sha {
+        log::info!("seems we are up to date!");
+        return Ok(web::HttpResponse::NotModified().into());
+      }
+      let backup_image_name = image_name.to_owned() + "-backup";
+      let backup_image_exist =
+        docker_api.inspect_image(&backup_image_name).await;
+      match backup_image_exist {
+        // No backup image so we tag current one has backup
+        Err(_) => {
+          log::info!("tagging existing image has backup {}", &image_id);
+          let tag_options = Some(bollard::image::TagImageOptions {
+            tag: new_branch.name.to_owned() + "-backup",
+            repo: item.name.to_owned(),
+          });
+          docker_api.tag_image(&image_id, tag_options).await.map_err(
+            |err| HttpError {
+              msg: format!("tag error {:?}", err),
+              status: StatusCode::INTERNAL_SERVER_ERROR,
+            },
+          )?;
+        }
+        Ok(_) => {
+          // if it exist we delete the older one
+          log::info!("a backup exist deleting it");
+          docker_api
+            .remove_image(&backup_image_name, None, None)
+            .await
+            .map_err(|err| HttpError {
+              msg: format!("unable to remove image {:?}", err),
+              status: StatusCode::INTERNAL_SERVER_ERROR,
+            })?;
+          log::info!("tagging existing image has backup");
+          let tag_options = Some(bollard::image::TagImageOptions {
+            tag: new_branch.name.to_owned() + "-backup",
+            repo: item.name.to_owned(),
+          });
+          docker_api.tag_image(&image_id, tag_options).await.map_err(
+            |err| HttpError {
+              msg: format!("Unable to tag image {:?}", err),
+              status: StatusCode::INTERNAL_SERVER_ERROR,
+            },
+          )?;
+        }
+      }
+      // unless we build the image :O
+      let rx_body = build_git_repository(
+        image_name.to_owned(),
+        item,
+        new_branch.to_owned(),
+        docker_api,
+      )
+      .await?;
+      Ok(
+        web::HttpResponse::Ok()
+          .content_type("nanocl/streaming-v1")
+          .streaming(rx_body),
+      )
+    }
+  }
 }
 
 /// Configure ntex to bind our routes

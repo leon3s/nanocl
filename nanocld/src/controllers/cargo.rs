@@ -4,11 +4,9 @@ use ntex::web;
 use ntex::http::StatusCode;
 use serde::{Deserialize, Serialize};
 
-use crate::services::docker::build_image;
 use crate::repositories::{cargo, namespace, cargo_ports};
-use crate::models::{Pool, CargoPartial, CargoPortPartial};
+use crate::models::{Pool, CargoPartial, CargoPortPartial, CargoPortItem};
 use crate::utils::get_free_port;
-
 use super::errors::HttpError;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -174,7 +172,7 @@ pub async fn start_cargo_by_name(
   log::debug!("image name not empty {:?}", image_name.clone());
   if docker_api.inspect_image(&item.image_name).await.is_err() {
     return Err(HttpError {
-      msg: String::from("you need to build cargo before run it."),
+      msg: String::from("image name is not valid"),
       status: StatusCode::BAD_REQUEST,
     });
   }
@@ -186,16 +184,28 @@ pub async fn start_cargo_by_name(
     String,
     Option<Vec<bollard::models::PortBinding>>,
   > = HashMap::new();
-  ports.into_iter().for_each(|port| {
-    let new_port = get_free_port().unwrap();
-    port_bindings.insert(
-      port.to.to_string() + "/tcp",
-      Some(vec![bollard::models::PortBinding {
-        host_ip: None,
-        host_port: Some(new_port.to_string()),
-      }]),
-    );
-  });
+  let updated_ports = ports
+    .into_iter()
+    .map(|port| -> Result<CargoPortItem, HttpError> {
+      let new_port = get_free_port()?;
+      port_bindings.insert(
+        port.to.to_string() + "/tcp",
+        Some(vec![bollard::models::PortBinding {
+          host_ip: None,
+          host_port: Some(new_port.to_string()),
+        }]),
+      );
+      let item = CargoPortItem {
+        key: port.key,
+        cargo_key: port.cargo_key,
+        to: port.to,
+        from: new_port as i32,
+      };
+      Ok(item)
+    })
+    .collect::<Result<Vec<CargoPortItem>, HttpError>>()?;
+
+  cargo_ports::update_many(updated_ports, &pool).await?;
   let config = bollard::container::Config {
     image,
     tty: Some(true),
@@ -208,10 +218,19 @@ pub async fn start_cargo_by_name(
     ..Default::default()
   };
   if let Err(err) = docker_api.create_container(options, config).await {
-    return Err(HttpError {
-      msg: format!("unable to create container {:?}", err),
-      status: StatusCode::BAD_REQUEST,
-    });
+    return match err {
+      bollard::errors::Error::DockerResponseServerError {
+        message,
+        status_code,
+      } => Err(HttpError {
+        msg: message,
+        status: StatusCode::from_u16(status_code).unwrap(),
+      }),
+      _ => Err(HttpError {
+        msg: format!("unable to create container {:?}", err),
+        status: StatusCode::BAD_REQUEST,
+      }),
+    };
   }
 
   if let Err(err) = docker_api
@@ -264,6 +283,7 @@ mod test_cargo {
       .send_json(&CargoPartial {
         name: String::from(CARGO_NAME),
         network_name: None,
+        ports: Some(vec![String::from("80")]),
         image_name: String::from("nginx:latest"),
       })
       .await?;

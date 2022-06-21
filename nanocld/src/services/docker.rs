@@ -1,21 +1,27 @@
+use std::collections::HashMap;
+
 use ntex::{web, rt};
 use ntex::util::Bytes;
 use ntex::channel::mpsc::{self, Receiver};
 use ntex::http::StatusCode;
 use futures::StreamExt;
 
-use crate::models::GitRepositoryItem;
+use crate::models::{GitRepositoryItem, GitRepositoryBranchItem};
 use crate::controllers::errors::HttpError;
 
 pub async fn build_git_repository(
-  docker_api: web::types::State<bollard::Docker>,
+  image_name: String,
   item: GitRepositoryItem,
+  branch: GitRepositoryBranchItem,
+  docker_api: web::types::State<bollard::Docker>,
 ) -> Result<Receiver<Result<Bytes, web::error::Error>>, HttpError> {
-  let image_name = item.name.to_owned();
-  let image_url = item.url + ".git#" + &item.default_branch;
+  let image_url = item.url + ".git#" + &branch.name;
+  let mut labels: HashMap<String, String> = HashMap::new();
+  labels.insert(String::from("commit"), branch.last_commit_sha);
   let options = bollard::image::BuildImageOptions::<String> {
     dockerfile: String::from("Dockerfile"),
     t: image_name,
+    labels,
     remote: image_url,
     ..Default::default()
   };

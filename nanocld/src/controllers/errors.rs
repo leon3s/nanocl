@@ -28,6 +28,7 @@ impl Display for HttpError {
 impl web::WebResponseError for HttpError {
   // builds the actual response to send back when an error occurs
   fn error_response(&self, _: &web::HttpRequest) -> web::HttpResponse {
+    log::error!("[{}] {}", self.status, self.msg);
     let err_json = json!({ "msg": self.msg });
     web::HttpResponse::build(self.status).json(&err_json)
   }

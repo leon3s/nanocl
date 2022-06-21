@@ -83,3 +83,10 @@ pub async fn find_by_key(
     Ok(item) => Ok(item),
   }
 }
+
+// pub async fn list_by_image_name(
+//   image_name: String,
+//   pool: &web::types::State<Pool>,
+// ) -> Result<Vec<CargoItem>, HttpError> {
+
+// }

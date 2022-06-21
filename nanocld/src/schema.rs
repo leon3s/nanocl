@@ -1,5 +1,4 @@
 table! {
-    use diesel::sql_types::*;
     use crate::models::exports::*;
 
     cargo_ports (key) {
@@ -11,7 +10,6 @@ table! {
 }
 
 table! {
-    use diesel::sql_types::*;
     use crate::models::exports::*;
 
     cargos (key) {
@@ -24,7 +22,6 @@ table! {
 }
 
 table! {
-    use diesel::sql_types::*;
     use crate::models::exports::*;
 
     cluster_networks (key) {
@@ -36,7 +33,6 @@ table! {
 }
 
 table! {
-    use diesel::sql_types::*;
     use crate::models::exports::*;
 
     clusters (key) {
@@ -47,7 +43,6 @@ table! {
 }
 
 table! {
-    use diesel::sql_types::*;
     use crate::models::exports::*;
 
     git_repositories (name) {
@@ -59,17 +54,17 @@ table! {
 }
 
 table! {
-    use diesel::sql_types::*;
     use crate::models::exports::*;
 
-    git_repository_branches (name) {
+    git_repository_branches (key) {
+        key -> Varchar,
         name -> Varchar,
+        last_commit_sha -> Varchar,
         repository_name -> Varchar,
     }
 }
 
 table! {
-    use diesel::sql_types::*;
     use crate::models::exports::*;
 
     namespaces (name) {

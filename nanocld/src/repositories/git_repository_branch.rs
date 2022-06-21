@@ -38,7 +38,9 @@ pub async fn create_many(
     let branches = items
       .into_iter()
       .map(|item| GitRepositoryBranchItem {
+        key: item.repository_name.to_owned() + "-" + &item.name,
         name: item.name,
+        last_commit_sha: item.last_commit_sha,
         repository_name: item.repository_name,
       })
       .collect::<Vec<GitRepositoryBranchItem>>();
@@ -85,6 +87,46 @@ pub async fn delete_by_repository_id(
   match res {
     Err(err) => Err(db_blocking_error(err)),
     Ok(result) => Ok(PgDeleteGeneric { count: result }),
+  }
+}
+
+pub async fn get_by_key(
+  key: String,
+  pool: &web::types::State<Pool>,
+) -> Result<GitRepositoryBranchItem, HttpError> {
+  use crate::schema::git_repository_branches::dsl;
+
+  let conn = get_pool_conn(pool)?;
+  let res = web::block(move || {
+    dsl::git_repository_branches
+      .filter(dsl::key.eq(key))
+      .get_result(&conn)
+  })
+  .await;
+
+  match res {
+    Err(err) => Err(db_blocking_error(err)),
+    Ok(item) => Ok(item),
+  }
+}
+
+pub async fn update_item(
+  item: GitRepositoryBranchItem,
+  pool: &web::types::State<Pool>,
+) -> Result<(), HttpError> {
+  use crate::schema::git_repository_branches::dsl;
+
+  let conn = get_pool_conn(pool)?;
+  let res = web::block(move || {
+    diesel::update(dsl::git_repository_branches.filter(dsl::key.eq(item.key)))
+      .set(dsl::last_commit_sha.eq(item.last_commit_sha))
+      .execute(&conn)
+  })
+  .await;
+
+  match res {
+    Err(err) => Err(db_blocking_error(err)),
+    Ok(_) => Ok(()),
   }
 }
 

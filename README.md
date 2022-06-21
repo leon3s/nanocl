@@ -47,6 +47,6 @@ you may start a custom docker service to in case of existing docker setups
 that will be done at the installation after
 
 ```sh
-sudo containerd --config fate_path/etc/nanocl/containerd.conf
+sudo containerd --config fake_path/etc/nanocl/containerd.conf
 sudo dockerd --config-file fake_path/etc/nanocl/daemon.json
 ```
