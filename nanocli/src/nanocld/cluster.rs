@@ -2,7 +2,10 @@ use clap::Parser;
 use tabled::Tabled;
 use serde::{Serialize, Deserialize};
 
-use super::{client::Nanocld, error::Error};
+use super::{
+  client::Nanocld,
+  error::{Error, is_api_error},
+};
 
 #[derive(Tabled, Serialize, Deserialize)]
 pub struct ClusterItem {
@@ -36,6 +39,8 @@ impl Nanocld {
       .send()
       .await
       .map_err(Error::SendRequest)?;
+    let status = res.status();
+    is_api_error(&mut res, &status).await?;
     let items = res
       .json::<Vec<ClusterItem>>()
       .await
@@ -52,6 +57,8 @@ impl Nanocld {
       .send_json(&item)
       .await
       .map_err(Error::SendRequest)?;
+    let status = res.status();
+    is_api_error(&mut res, &status).await?;
     let item = res
       .json::<ClusterItem>()
       .await
@@ -60,11 +67,13 @@ impl Nanocld {
   }
 
   pub async fn delete_cluster(&self, name: String) -> Result<(), Error> {
-    let _res = self
+    let mut res = self
       .delete(format!("/clusters/{name}", name = name))
       .send()
       .await
       .map_err(Error::SendRequest)?;
+    let status = res.status();
+    is_api_error(&mut res, &status).await?;
     Ok(())
   }
 
@@ -77,6 +86,8 @@ impl Nanocld {
       .send()
       .await
       .map_err(Error::SendRequest)?;
+    let status = res.status();
+    is_api_error(&mut res, &status).await?;
     let items = res
       .json::<Vec<ClusterNetworkItem>>()
       .await
@@ -94,6 +105,8 @@ impl Nanocld {
       .send_json(item)
       .await
       .map_err(Error::SendRequest)?;
+    let status = res.status();
+    is_api_error(&mut res, &status).await?;
     let item = res
       .json::<ClusterNetworkItem>()
       .await
@@ -106,7 +119,7 @@ impl Nanocld {
     cluster_name: String,
     network_name: String,
   ) -> Result<(), Error> {
-    let _res = self
+    let mut res = self
       .delete(format!(
         "/clusters/{c_name}/networks/{n_name}",
         c_name = cluster_name,
@@ -115,6 +128,8 @@ impl Nanocld {
       .send()
       .await
       .map_err(Error::SendRequest)?;
+    let status = res.status();
+    is_api_error(&mut res, &status).await?;
     Ok(())
   }
 }

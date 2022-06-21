@@ -25,7 +25,15 @@ use cli::*;
 use nanocld::error::Error;
 
 fn process_error(err: Error) {
-  eprintln!("{:?}", err);
+  match err {
+    Error::Api(err) => {
+      println!("{}", err.msg);
+    }
+    _ => eprintln!("{:?}", err),
+    // Error::Payload(_) => todo!(),
+    // Error::SendRequest(_) => todo!(),
+    // Error::JsonPayload(_) => todo!(),
+  }
   std::process::exit(1);
 }
 

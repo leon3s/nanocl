@@ -4,7 +4,7 @@ use serde::{Serialize, Deserialize};
 
 use super::{
   client::Nanocld,
-  error::{Error, ApiError},
+  error::{Error, is_api_error},
 };
 
 #[derive(Debug, Parser, Serialize, Deserialize)]
@@ -42,7 +42,8 @@ impl Nanocld {
       .send()
       .await
       .map_err(Error::SendRequest)?;
-
+    let status = res.status();
+    is_api_error(&mut res, &status).await?;
     let items = res
       .json::<Vec<CargoItem>>()
       .await
@@ -59,16 +60,20 @@ impl Nanocld {
       .send_json(item)
       .await
       .map_err(Error::SendRequest)?;
+    let status = res.status();
+    is_api_error(&mut res, &status).await?;
     let item = res.json::<CargoItem>().await.map_err(Error::JsonPayload)?;
     Ok(item)
   }
 
   pub async fn delete_cargo(&self, cargo_name: String) -> Result<(), Error> {
-    let _res = self
+    let mut res = self
       .delete(format!("/cargos/{name}", name = cargo_name))
       .send()
       .await
       .map_err(Error::SendRequest)?;
+    let status = res.status();
+    is_api_error(&mut res, &status).await?;
     Ok(())
   }
 
@@ -79,10 +84,7 @@ impl Nanocld {
       .await
       .map_err(Error::SendRequest)?;
     let status = res.status();
-    if status.is_client_error() || status.is_server_error() {
-      let err = res.json::<ApiError>().await.map_err(Error::JsonPayload)?;
-      return Err(Error::Api(err));
-    }
+    is_api_error(&mut res, &status).await?;
     Ok(())
   }
 }

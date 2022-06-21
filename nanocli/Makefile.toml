@@ -24,3 +24,5 @@ command = "cargo"
 args = ["test", "--", "--nocapture"]
 
 [tasks.release]
+command = "cargo"
+args = ["build", "--release"]

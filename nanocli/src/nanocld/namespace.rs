@@ -3,7 +3,7 @@ use tabled::Tabled;
 use serde::{Serialize, Deserialize};
 
 use super::client::Nanocld;
-use super::error::{Error, ApiError};
+use super::error::{Error, is_api_error};
 
 #[derive(Tabled, Serialize, Deserialize)]
 pub struct NamespaceItem {
@@ -22,10 +22,9 @@ impl Nanocld {
       .send()
       .await
       .map_err(Error::SendRequest)?;
-    if res.status().is_client_error() || res.status().is_server_error() {
-      let err = res.json::<ApiError>().await.map_err(Error::JsonPayload)?;
-      return Err(Error::Api(err));
-    }
+
+    let status = res.status();
+    is_api_error(&mut res, &status).await?;
     let items = res
       .json::<Vec<NamespaceItem>>()
       .await
@@ -43,10 +42,8 @@ impl Nanocld {
       .send_json(&new_item)
       .await
       .map_err(Error::SendRequest)?;
-    if res.status().is_client_error() || res.status().is_server_error() {
-      let err = res.json::<ApiError>().await.map_err(Error::JsonPayload)?;
-      return Err(Error::Api(err));
-    }
+    let status = res.status();
+    is_api_error(&mut res, &status).await?;
     let item = res
       .json::<NamespaceItem>()
       .await

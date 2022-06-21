@@ -1,3 +1,4 @@
+use ntex::http::StatusCode;
 use tabled::Tabled;
 use clap::{Parser, arg_enum};
 use serde::{Serialize, Deserialize};
@@ -5,7 +6,7 @@ use futures::{TryStreamExt, StreamExt};
 
 use super::client::Nanocld;
 
-use super::error::Error;
+use super::error::{Error, is_api_error};
 
 arg_enum! {
   #[derive(Debug, Tabled, Serialize, Deserialize)]
@@ -46,7 +47,8 @@ impl Nanocld {
       .send()
       .await
       .map_err(Error::SendRequest)?;
-
+    let status = res.status();
+    is_api_error(&mut res, &status).await?;
     let items = res
       .json::<Vec<GitRepositoryItem>>()
       .await
@@ -64,7 +66,8 @@ impl Nanocld {
       .send_json(&item)
       .await
       .map_err(Error::SendRequest)?;
-
+    let status = res.status();
+    is_api_error(&mut res, &status).await?;
     let body = res
       .json::<GitRepositoryItem>()
       .await
@@ -73,12 +76,16 @@ impl Nanocld {
   }
 
   pub async fn build_git_repository(&self, name: String) -> Result<(), Error> {
-    let res = self
+    let mut res = self
       .post(format!("/git_repositories/{name}/build", name = name))
       .send()
       .await
       .map_err(Error::SendRequest)?;
-
+    let status = res.status();
+    is_api_error(&mut res, &status).await?;
+    if status == StatusCode::NOT_MODIFIED {
+      return Ok(());
+    }
     let mut stream = res.into_stream();
     while let Some(result) = stream.next().await {
       let result = result.map_err(Error::Payload)?;
