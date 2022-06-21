@@ -1,5 +1,4 @@
 use clap::Parser;
-use futures::TryFutureExt;
 use tabled::Tabled;
 use serde::{Serialize, Deserialize};
 
