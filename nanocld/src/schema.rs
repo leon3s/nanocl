@@ -17,6 +17,8 @@ table! {
         name -> Varchar,
         image_name -> Varchar,
         network_name -> Varchar,
+        domain_name -> Nullable<Varchar>,
+        host_ip -> Nullable<Varchar>,
         namespace_name -> Varchar,
     }
 }

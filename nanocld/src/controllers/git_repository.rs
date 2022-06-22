@@ -1,10 +1,6 @@
 //! File to handle git repository routes
-
-use std::sync::Arc;
-
-use futures::StreamExt;
+use ntex::web;
 use ntex::http::StatusCode;
-use ntex::{web, rt};
 use serde::{Deserialize, Serialize};
 
 use crate::services::docker::build_git_repository;

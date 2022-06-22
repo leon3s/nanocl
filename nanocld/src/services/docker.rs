@@ -48,6 +48,7 @@ pub async fn build_git_repository(
   Ok(rx_body)
 }
 
+#[allow(dead_code)]
 pub async fn build_image(
   image_name: String,
   docker_api: web::types::State<bollard::Docker>,

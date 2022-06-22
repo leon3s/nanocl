@@ -283,8 +283,10 @@ mod test_cargo {
       .send_json(&CargoPartial {
         name: String::from(CARGO_NAME),
         network_name: None,
+        host_ip: None,
         ports: Some(vec![String::from("80")]),
         image_name: String::from("nginx:latest"),
+        domain_name: None,
       })
       .await?;
     assert!(res.status().is_success());

@@ -160,6 +160,7 @@ mod test {
     // Create many branches
     let items = vec![GitRepositoryBranchPartial {
       name: String::from("test-branch"),
+      last_commit_sha: String::from("sha256:super_commit!"),
       repository_name: res.name.to_owned(),
     }];
     create_many(items, &pool_state).await.unwrap();

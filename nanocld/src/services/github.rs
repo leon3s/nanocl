@@ -1,5 +1,3 @@
-use std::sync::{Arc, Mutex};
-
 use thiserror::Error;
 use url::{ParseError, Url};
 use serde::{Deserialize, Serialize};
@@ -28,6 +26,7 @@ pub struct GithubRepo {
 
 #[derive(Debug)]
 pub struct GitDesc {
+  #[allow(dead_code)]
   pub(crate) host: String,
   pub(crate) path: String,
 }
@@ -111,6 +110,7 @@ impl GithubApi {
     self.client.get(self.gen_url(url))
   }
 
+  #[allow(dead_code)]
   pub fn post(&self, url: String) -> ClientRequest {
     self.client.post(self.gen_url(url))
   }

@@ -1,4 +1,3 @@
-use uuid::Uuid;
 use utoipa::Component;
 use r2d2::PooledConnection;
 use diesel_derive_enum::DbEnum;
@@ -187,8 +186,10 @@ pub struct ClusterNetworkItem {
 pub struct CargoPartial {
   pub(crate) name: String,
   pub(crate) image_name: String,
-  pub(crate) network_name: Option<String>,
   pub(crate) ports: Option<Vec<String>>,
+  pub(crate) domain_name: Option<String>,
+  pub(crate) host_ip: Option<String>,
+  pub(crate) network_name: Option<String>,
 }
 
 /// Cargo item is an definition to container create image and start them
@@ -213,6 +214,8 @@ pub struct CargoItem {
   pub(crate) name: String,
   pub(crate) image_name: String,
   pub(crate) network_name: String,
+  pub(crate) domain_name: Option<String>,
+  pub(crate) host_ip: Option<String>,
   pub(crate) namespace_name: String,
 }
 

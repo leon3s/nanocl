@@ -4,5 +4,7 @@ create table "cargos" (
   "name" VARCHAR NOT NULL,
   "image_name" VARCHAR NOT NULL,
   "network_name" VARCHAR NOT NULL,
+  "domain_name" VARCHAR,
+  "host_ip" VARCHAR,
   "namespace_name" VARCHAR NOT NULL references namespaces("name")
 );

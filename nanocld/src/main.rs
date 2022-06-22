@@ -8,12 +8,8 @@
 #[macro_use]
 extern crate diesel;
 
-use std::sync::Arc;
-
 use ntex::web;
 use ntex_files as fs;
-
-use crate::services::github::GithubApi;
 
 mod boot;
 mod utils;

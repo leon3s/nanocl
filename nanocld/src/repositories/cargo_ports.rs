@@ -1,10 +1,9 @@
 use ntex::web;
 use diesel::prelude::*;
-use utoipa::openapi::security::Http;
 
 use crate::controllers::errors::HttpError;
 use crate::models::{Pool, CargoPortPartial, CargoPortItem, CargoItem};
-use crate::repositories::errors::{db_blocking_error, db_error};
+use crate::repositories::errors::db_blocking_error;
 use crate::utils::get_pool_conn;
 
 pub async fn create_many_for_cargo(
