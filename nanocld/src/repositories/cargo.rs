@@ -36,7 +36,7 @@ pub async fn create(
       host_ip: item.host_ip,
       namespace_name: nsp,
       image_name: item.image_name,
-      network_name: item.network_name.unwrap_or_else(|| String::from("")),
+      network_name: item.network_name,
     };
     diesel::insert_into(dsl::cargos)
       .values(&new_item)

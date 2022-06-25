@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::schema::{
   clusters, namespaces, git_repositories, cluster_networks,
-  git_repository_branches, cargos, cargo_ports,
+  git_repository_branches, cargos, cargo_ports, cargo_proxy_configs,
 };
 
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
@@ -124,6 +124,7 @@ pub struct ClusterPartial {
 /// this structure ensure read and write in database
 #[derive(
   Debug,
+  Clone,
   Component,
   Serialize,
   Deserialize,
@@ -182,7 +183,7 @@ pub struct ClusterNetworkItem {
 
 /// Cargo partial
 /// this structure ensure write in database
-#[derive(Component, Serialize, Deserialize)]
+#[derive(Debug, Component, Serialize, Deserialize)]
 pub struct CargoPartial {
   pub(crate) name: String,
   pub(crate) image_name: String,
@@ -190,6 +191,7 @@ pub struct CargoPartial {
   pub(crate) domain_name: Option<String>,
   pub(crate) host_ip: Option<String>,
   pub(crate) network_name: Option<String>,
+  pub(crate) proxy_config: Option<CargoProxyConfigPartial>,
 }
 
 /// Cargo item is an definition to container create image and start them
@@ -213,7 +215,7 @@ pub struct CargoItem {
   pub(crate) key: String,
   pub(crate) name: String,
   pub(crate) image_name: String,
-  pub(crate) network_name: String,
+  pub(crate) network_name: Option<String>,
   pub(crate) domain_name: Option<String>,
   pub(crate) host_ip: Option<String>,
   pub(crate) namespace_name: String,
@@ -243,6 +245,31 @@ pub struct CargoPortItem {
 pub struct CargoPortPartial {
   pub(crate) from: i32,
   pub(crate) to: i32,
+}
+
+#[derive(
+  Debug,
+  Component,
+  Serialize,
+  Deserialize,
+  Queryable,
+  Identifiable,
+  Insertable,
+  Associations,
+  AsChangeset,
+)]
+#[primary_key(cargo_key)]
+#[table_name = "cargo_proxy_configs"]
+pub struct CargoProxyConfigItem {
+  pub(crate) cargo_key: String,
+  pub(crate) domain_name: String,
+  pub(crate) host_ip: String,
+}
+
+#[derive(Debug, Clone, Component, Serialize, Deserialize)]
+pub struct CargoProxyConfigPartial {
+  pub(crate) domain_name: String,
+  pub(crate) host_ip: String,
 }
 
 /// Rexports postgre enum for schema.rs

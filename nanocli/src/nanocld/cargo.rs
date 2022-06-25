@@ -76,15 +76,4 @@ impl Nanocld {
     is_api_error(&mut res, &status).await?;
     Ok(())
   }
-
-  pub async fn start_cargo(&self, cargo_name: String) -> Result<(), Error> {
-    let mut res = self
-      .post(format!("/cargos/{name}/start", name = cargo_name))
-      .send()
-      .await
-      .map_err(Error::SendRequest)?;
-    let status = res.status();
-    is_api_error(&mut res, &status).await?;
-    Ok(())
-  }
 }

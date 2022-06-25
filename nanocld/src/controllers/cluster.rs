@@ -1,9 +1,12 @@
 //! File to handle cluster routes
 use ntex::web;
+use futures::StreamExt;
+use futures::stream::FuturesUnordered;
 use serde::{Deserialize, Serialize};
 
-use crate::models::{ClusterPartial, Pool, ClusterItemWithRelation};
-use crate::repositories::{cluster, cluster_network};
+use crate::models::{Pool, ClusterPartial, ClusterItemWithRelation};
+use crate::repositories::{cluster, cluster_network, cargo, namespace};
+use crate::services;
 
 use super::errors::HttpError;
 
@@ -135,6 +138,46 @@ async fn inspect_cluster_by_name(
   Ok(web::HttpResponse::Ok().json(&res))
 }
 
+#[web::post("/clusters/{name}/start")]
+async fn start_cluster_by_name(
+  pool: web::types::State<Pool>,
+  docker_api: web::types::State<bollard::Docker>,
+  name: web::types::Path<String>,
+  web::types::Query(qs): web::types::Query<ClusterQuery>,
+) -> Result<web::HttpResponse, HttpError> {
+  let name = name.into_inner();
+  let nsp = match qs.namespace {
+    None => String::from("global"),
+    Some(namespace) => namespace,
+  };
+  let gen_key = nsp.to_owned() + "-" + &name;
+  let cluster_item = cluster::find_by_key(gen_key, &pool).await?;
+  let nsp = namespace::find_by_name(nsp, &pool).await?;
+  let cargo_items = cargo::find_by_namespace(nsp, &pool).await?;
+
+  let vec_futures = cargo_items
+    .iter()
+    .map(|item| async {
+      services::cargo::start_cargo_in_cluster(
+        item.to_owned(),
+        cluster_item.to_owned(),
+        &docker_api,
+        &pool,
+      )
+      .await?;
+      Ok::<(), HttpError>(())
+    })
+    .collect::<FuturesUnordered<_>>()
+    .collect::<Vec<_>>()
+    .await;
+
+  vec_futures
+    .into_iter()
+    .collect::<Result<Vec<()>, HttpError>>()?;
+
+  Ok(web::HttpResponse::Ok().into())
+}
+
 /// # ntex config
 /// Bind namespace routes to ntex http server
 ///
@@ -153,6 +196,7 @@ pub fn ntex_config(config: &mut web::ServiceConfig) {
   config.service(create_cluster);
   config.service(inspect_cluster_by_name);
   config.service(delete_cluster_by_name);
+  config.service(start_cluster_by_name);
 }
 
 #[cfg(test)]

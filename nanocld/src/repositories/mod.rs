@@ -4,7 +4,8 @@ pub mod errors;
 pub mod namespace;
 
 pub mod cargo;
-pub mod cargo_ports;
+pub mod cargo_port;
+pub mod cargo_proxy_config;
 
 pub mod cluster;
 pub mod cluster_network;

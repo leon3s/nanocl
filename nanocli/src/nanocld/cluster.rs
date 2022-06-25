@@ -132,4 +132,20 @@ impl Nanocld {
     is_api_error(&mut res, &status).await?;
     Ok(())
   }
+
+  pub async fn start_cluster(&self, cluster_name: String) -> Result<(), Error> {
+    let mut res = self
+      .post(format!("/clusters/{name}/start", name = cluster_name))
+      .send()
+      .await
+      .map_err(Error::SendRequest)?;
+
+    let status = res.status();
+    println!("res {:?}", res);
+    let body = res.body().await;
+    println!("body {:?}", body);
+    is_api_error(&mut res, &status).await?;
+
+    Ok(())
+  }
 }

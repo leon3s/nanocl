@@ -1,8 +1,11 @@
 use ntex::web;
 use diesel::prelude::*;
+use utoipa::openapi::security::Http;
 
 use crate::controllers::errors::HttpError;
-use crate::models::{Pool, CargoPortPartial, CargoPortItem, CargoItem};
+use crate::models::{
+  Pool, CargoPortPartial, CargoPortItem, CargoItem, PgDeleteGeneric,
+};
 use crate::repositories::errors::db_blocking_error;
 use crate::utils::get_pool_conn;
 
@@ -101,5 +104,24 @@ pub async fn list_for_cargo(
   match res {
     Err(err) => Err(db_blocking_error(err)),
     Ok(items) => Ok(items),
+  }
+}
+
+pub async fn delete_for_cargo(
+  cargo_key: String,
+  pool: &web::types::State<Pool>,
+) -> Result<PgDeleteGeneric, HttpError> {
+  use crate::schema::cargo_ports::dsl;
+
+  let conn = get_pool_conn(pool)?;
+  let res = web::block(move || {
+    diesel::delete(dsl::cargo_ports.filter(dsl::cargo_key.eq(cargo_key)))
+      .execute(&conn)
+  })
+  .await;
+
+  match res {
+    Err(err) => Err(db_blocking_error(err)),
+    Ok(result) => Ok(PgDeleteGeneric { count: result }),
   }
 }

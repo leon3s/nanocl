@@ -15,10 +15,9 @@ pub async fn list_for_cluster(
   pool: &web::types::State<Pool>,
 ) -> Result<Vec<ClusterNetworkItem>, HttpError> {
   let conn = get_pool_conn(pool)?;
-  let res = web::block(move || {
-    ClusterNetworkItem::belonging_to(&cluster).load(&conn)
-  })
-  .await;
+  let res =
+    web::block(move || ClusterNetworkItem::belonging_to(&cluster).load(&conn))
+      .await;
   match res {
     Err(err) => Err(db_blocking_error(err)),
     Ok(items) => Ok(items),
@@ -125,7 +124,12 @@ mod cluster_networks {
     .unwrap();
 
     // create docker network for relationship
-    let docker = bollard::Docker::connect_with_unix("/run/nanocl/docker.sock", 120, bollard::API_DEFAULT_VERSION).unwrap();
+    let docker = bollard::Docker::connect_with_unix(
+      "/run/nanocl/docker.sock",
+      120,
+      bollard::API_DEFAULT_VERSION,
+    )
+    .unwrap();
     let net_config = CreateNetworkOptions {
       name: NET_NAME,
       ..Default::default()

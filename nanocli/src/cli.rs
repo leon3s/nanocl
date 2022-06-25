@@ -61,6 +61,11 @@ pub enum GitRepositoryCommands {
   Build(GitRepositoryBuildOptions),
 }
 
+#[derive(Debug, Parser)]
+pub struct ClusterStartOptions {
+  pub(crate) name: String,
+}
+
 #[derive(Debug, Subcommand)]
 pub enum ClusterCommands {
   /// list cluster
@@ -71,6 +76,8 @@ pub enum ClusterCommands {
   /// remove cluster
   #[clap(alias("rm"))]
   Remove(ClusterDeleteOptions),
+  /// start cluster
+  Start(ClusterStartOptions),
 }
 
 #[derive(Debug, Parser)]
@@ -123,8 +130,6 @@ pub enum CargoCommands {
   /// Remove cargo by it's name
   #[clap(alias("rm"))]
   Remove(CargoDeleteOptions),
-  /// Start cargo by it's name
-  Start(CargoStartOptions),
 }
 
 /// manage cargos

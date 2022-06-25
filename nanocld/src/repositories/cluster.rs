@@ -33,7 +33,7 @@ pub async fn create_for_namespace(
   item: ClusterPartial,
   pool: &web::types::State<Pool>,
 ) -> Result<ClusterItem, HttpError> {
-  use crate::schema::clusters::dsl::*;
+  use crate::schema::clusters::dsl;
   let conn = get_pool_conn(pool)?;
 
   let res = web::block(move || {
@@ -44,7 +44,7 @@ pub async fn create_for_namespace(
       name: item.name,
     };
 
-    diesel::insert_into(clusters)
+    diesel::insert_into(dsl::clusters)
       .values(&new_cluster)
       .execute(&conn)?;
     Ok(new_cluster)
@@ -109,11 +109,13 @@ pub async fn find_by_namespace(
   nsp: String,
   pool: &web::types::State<Pool>,
 ) -> Result<Vec<ClusterItem>, HttpError> {
-  use crate::schema::clusters::dsl::*;
+  use crate::schema::clusters::dsl;
 
   let conn = get_pool_conn(pool)?;
-  let res =
-    web::block(move || clusters.filter(namespace.eq(nsp)).load(&conn)).await;
+  let res = web::block(move || {
+    dsl::clusters.filter(dsl::namespace.eq(nsp)).load(&conn)
+  })
+  .await;
   match res {
     Err(err) => Err(db_blocking_error(err)),
     Ok(items) => Ok(items),

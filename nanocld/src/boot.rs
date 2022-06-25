@@ -107,7 +107,7 @@ pub async fn boot() -> Result<DaemonState, BootError> {
   // wrap into state to create default namespace using repository function
   let pool = web::types::State::new(db_pool.clone());
   // Create default namesapce
-  log::info!("ensuring namespace 'default' presence");
+  log::info!("ensuring namespace 'global' presence");
   create_default_nsp(&pool).await?;
 
   // Return state

@@ -1,12 +1,9 @@
-use std::collections::HashMap;
-
 use ntex::web;
 use ntex::http::StatusCode;
 use serde::{Deserialize, Serialize};
 
-use crate::repositories::{cargo, namespace, cargo_ports};
-use crate::models::{Pool, CargoPartial, CargoPortPartial, CargoPortItem};
-use crate::utils::get_free_port;
+use crate::repositories::{cargo, namespace, cargo_port, cargo_proxy_config};
+use crate::models::{Pool, CargoPartial, CargoPortPartial};
 use super::errors::HttpError;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -66,9 +63,16 @@ pub async fn create_cargo(
     None => String::from("global"),
     Some(nsp) => nsp,
   };
+  log::info!(
+    "creating cargo for namespace {} with payload {:?}",
+    &nsp,
+    payload,
+  );
   let ports = payload.ports.clone();
+  let proxy_config = payload.proxy_config.clone();
   let item = cargo::create(nsp, payload, &pool).await?;
   if let Some(ports) = ports {
+    log::info!("creating port mapping");
     let ports = ports
       .into_iter()
       .map(|port| CargoPortPartial {
@@ -76,9 +80,19 @@ pub async fn create_cargo(
         to: port.parse::<i32>().unwrap_or(0),
       })
       .collect::<Vec<CargoPortPartial>>();
-    cargo_ports::create_many_for_cargo(item.key.to_owned(), ports, &pool)
+    cargo_port::create_many_for_cargo(item.key.to_owned(), ports, &pool)
       .await?;
   }
+  if let Some(proxy_config) = proxy_config {
+    log::info!("creating proxy config");
+    cargo_proxy_config::create_for_cargo(
+      item.key.to_owned(),
+      proxy_config,
+      &pool,
+    )
+    .await?;
+  }
+  log::info!("cargo succefully created");
   Ok(web::HttpResponse::Created().json(&item))
 }
 
@@ -131,121 +145,9 @@ pub async fn delete_cargo_by_name(
     }
   }
 
-  let res = cargo::delete_by_key(gen_key.clone(), &pool).await?;
+  cargo_port::delete_for_cargo(gen_key.to_owned(), &pool).await?;
+  let res = cargo::delete_by_key(gen_key.to_owned(), &pool).await?;
   Ok(web::HttpResponse::Ok().json(&res))
-}
-
-/// Start cargo by it's name
-#[utoipa::path(
-  post,
-  path = "/cargos/{name}/start",
-  params(
-    ("name" = String, path, description = "Name of cargo to start"),
-    ("namespace" = Option<String>, query, description = "Name of the namespace where the cargo is stored"),
-  ),
-  responses(
-    (status = 204, description = "Cargo started"),
-    (status = 400, description = "Generic database error", body = ApiError),
-    (status = 404, description = "Namespace name not valid", body = ApiError),
-  ),
-)]
-#[web::post("/cargos/{name}/start")]
-pub async fn start_cargo_by_name(
-  pool: web::types::State<Pool>,
-  docker_api: web::types::State<bollard::Docker>,
-  name: web::types::Path<String>,
-  web::types::Query(qs): web::types::Query<CargoQuery>,
-) -> Result<web::HttpResponse, HttpError> {
-  let nsp = match qs.namespace {
-    None => String::from("global"),
-    Some(nsp) => nsp,
-  };
-
-  let gen_key = nsp + "-" + &name.into_inner();
-  let item = cargo::find_by_key(gen_key.clone(), &pool).await?;
-  let image_name = item.image_name.clone();
-  let container_name = gen_key.to_owned() + "-" + &image_name.replace(':', "-");
-
-  let ports = cargo_ports::list_for_cargo(item.to_owned(), &pool).await?;
-
-  log::debug!("item found {:?}", item);
-  log::debug!("image name not empty {:?}", image_name.clone());
-  if docker_api.inspect_image(&item.image_name).await.is_err() {
-    return Err(HttpError {
-      msg: String::from("image name is not valid"),
-      status: StatusCode::BAD_REQUEST,
-    });
-  }
-  let image = Some(image_name.clone());
-  let options = Some(bollard::container::CreateContainerOptions {
-    name: container_name.clone(),
-  });
-  let mut port_bindings: HashMap<
-    String,
-    Option<Vec<bollard::models::PortBinding>>,
-  > = HashMap::new();
-  let updated_ports = ports
-    .into_iter()
-    .map(|port| -> Result<CargoPortItem, HttpError> {
-      let new_port = get_free_port()?;
-      port_bindings.insert(
-        port.to.to_string() + "/tcp",
-        Some(vec![bollard::models::PortBinding {
-          host_ip: None,
-          host_port: Some(new_port.to_string()),
-        }]),
-      );
-      let item = CargoPortItem {
-        key: port.key,
-        cargo_key: port.cargo_key,
-        to: port.to,
-        from: new_port as i32,
-      };
-      Ok(item)
-    })
-    .collect::<Result<Vec<CargoPortItem>, HttpError>>()?;
-
-  cargo_ports::update_many(updated_ports, &pool).await?;
-  let config = bollard::container::Config {
-    image,
-    tty: Some(true),
-    host_config: Some(bollard::models::HostConfig {
-      port_bindings: Some(port_bindings),
-      ..Default::default()
-    }),
-    attach_stdout: Some(true),
-    attach_stderr: Some(true),
-    ..Default::default()
-  };
-  if let Err(err) = docker_api.create_container(options, config).await {
-    return match err {
-      bollard::errors::Error::DockerResponseServerError {
-        message,
-        status_code,
-      } => Err(HttpError {
-        msg: message,
-        status: StatusCode::from_u16(status_code).unwrap(),
-      }),
-      _ => Err(HttpError {
-        msg: format!("unable to create container {:?}", err),
-        status: StatusCode::BAD_REQUEST,
-      }),
-    };
-  }
-
-  if let Err(err) = docker_api
-    .start_container(
-      &container_name,
-      None::<bollard::container::StartContainerOptions<String>>,
-    )
-    .await
-  {
-    return Err(HttpError {
-      msg: format!("unable to start container {:?}", err),
-      status: StatusCode::BAD_REQUEST,
-    });
-  }
-  Ok(web::HttpResponse::NoContent().into())
 }
 
 pub fn ntex_config(config: &mut web::ServiceConfig) {
@@ -253,7 +155,6 @@ pub fn ntex_config(config: &mut web::ServiceConfig) {
   config.service(create_cargo);
   // config.service(build_cargo_by_name);
   config.service(delete_cargo_by_name);
-  config.service(start_cargo_by_name);
 }
 
 #[cfg(test)]
@@ -284,6 +185,7 @@ mod test_cargo {
         name: String::from(CARGO_NAME),
         network_name: None,
         host_ip: None,
+        proxy_config: None,
         ports: Some(vec![String::from("80")]),
         image_name: String::from("nginx:latest"),
         domain_name: None,

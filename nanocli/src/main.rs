@@ -29,6 +29,9 @@ fn process_error(err: Error) {
     Error::Api(err) => {
       println!("{}", err.msg);
     }
+    Error::JsonPayload(err) => {
+      eprintln!("{:?}", err);
+    }
     _ => eprintln!("{:?}", err),
     // Error::Payload(_) => todo!(),
     // Error::SendRequest(_) => todo!(),
@@ -120,6 +123,11 @@ async fn main() -> std::io::Result<()> {
           process_error(err);
         }
       }
+      ClusterCommands::Start(options) => {
+        if let Err(err) = client.start_cluster(options.name.to_owned()).await {
+          process_error(err);
+        }
+      }
     },
     Commands::ClusterNetwork(args) => match &args.commands {
       ClusterNetworkCommands::List => {
@@ -186,11 +194,6 @@ async fn main() -> std::io::Result<()> {
       },
       CargoCommands::Remove(options) => {
         if let Err(err) = client.delete_cargo(options.name.to_owned()).await {
-          process_error(err);
-        }
-      }
-      CargoCommands::Start(options) => {
-        if let Err(err) = client.start_cargo(options.name.to_owned()).await {
           process_error(err);
         }
       }
