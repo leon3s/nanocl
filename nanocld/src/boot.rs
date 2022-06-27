@@ -4,14 +4,20 @@ use ntex::web;
 use crate::postgre;
 use crate::services;
 use crate::repositories;
-use crate::controllers::errors::HttpError;
-use bollard::errors::Error as DockerError;
+use crate::utils::get_pool_conn;
 use crate::models::{Pool, NamespacePartial};
+use crate::controllers::errors::HttpError;
+
+use bollard::errors::Error as DockerError;
+use diesel_migrations::RunMigrationsError;
+
+embed_migrations!("./migrations");
 
 #[derive(Debug)]
 pub enum BootError {
   Errorhttp(HttpError),
   Errordocker(DockerError),
+  Errormigration(RunMigrationsError),
 }
 
 #[derive(Clone)]
@@ -91,6 +97,7 @@ async fn boot_docker_services(
 /// Boot function called before server start to initialize his state
 pub async fn boot() -> Result<DaemonState, BootError> {
   // Boot services
+  log::info!("booting");
   log::info!("connecting to docker on /run/nanocl/docker.sock");
   let docker_api = bollard::Docker::connect_with_unix(
     "/run/nanocl/docker.sock",
@@ -99,17 +106,20 @@ pub async fn boot() -> Result<DaemonState, BootError> {
   )
   .map_err(BootError::Errordocker)?;
   boot_docker_services(&docker_api).await?;
-
   // Connect to postgresql
   log::info!("creating a pool connection to postgresql server");
   let db_pool = postgre::create_pool();
-
-  // wrap into state to create default namespace using repository function
+  // wrap into state to be abble to use our functions
   let pool = web::types::State::new(db_pool.clone());
+  let conn = get_pool_conn(&pool).map_err(BootError::Errorhttp)?;
+  log::info!("running migration script");
+  embedded_migrations::run(&conn).map_err(BootError::Errormigration)?;
+
   // Create default namesapce
   log::info!("ensuring namespace 'global' presence");
   create_default_nsp(&pool).await?;
 
+  log::info!("booted");
   // Return state
   Ok(DaemonState {
     pool: db_pool,

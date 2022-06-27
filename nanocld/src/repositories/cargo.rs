@@ -31,9 +31,7 @@ pub async fn create(
   let res = web::block(move || {
     let new_item = CargoItem {
       key: nsp.to_owned() + "-" + &item.name,
-      domain_name: item.domain_name,
       name: item.name.clone(),
-      host_ip: item.host_ip,
       namespace_name: nsp,
       image_name: item.image_name,
       network_name: item.network_name,

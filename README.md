@@ -85,7 +85,6 @@ sudo dockerd --config-file fake_path/etc/nanocl/dockerd.json
 add daemon options for directory with default values
 man.md for cli and daemon
 use of diesel migration to migrate sql database at boot time
-nginx template
 cluster domain
 cluster variables
 environement variables

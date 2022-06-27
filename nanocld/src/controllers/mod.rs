@@ -11,3 +11,5 @@ pub mod cargo;
 pub mod git_repository;
 /// Manage cluster network
 pub mod cluster_network;
+/// Manage nginx template
+pub mod nginx_template;

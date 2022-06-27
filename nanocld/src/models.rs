@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::schema::{
   clusters, namespaces, git_repositories, cluster_networks,
   git_repository_branches, cargos, cargo_ports, cargo_proxy_configs,
+  nginx_templates,
 };
 
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
@@ -188,8 +189,6 @@ pub struct CargoPartial {
   pub(crate) name: String,
   pub(crate) image_name: String,
   pub(crate) ports: Option<Vec<String>>,
-  pub(crate) domain_name: Option<String>,
-  pub(crate) host_ip: Option<String>,
   pub(crate) network_name: Option<String>,
   pub(crate) proxy_config: Option<CargoProxyConfigPartial>,
 }
@@ -216,8 +215,6 @@ pub struct CargoItem {
   pub(crate) name: String,
   pub(crate) image_name: String,
   pub(crate) network_name: Option<String>,
-  pub(crate) domain_name: Option<String>,
-  pub(crate) host_ip: Option<String>,
   pub(crate) namespace_name: String,
 }
 
@@ -270,6 +267,23 @@ pub struct CargoProxyConfigItem {
 pub struct CargoProxyConfigPartial {
   pub(crate) domain_name: String,
   pub(crate) host_ip: String,
+}
+
+#[derive(
+  Debug,
+  Clone,
+  Component,
+  Serialize,
+  Deserialize,
+  Queryable,
+  Identifiable,
+  Insertable,
+)]
+#[primary_key(name)]
+#[table_name = "nginx_templates"]
+pub struct NginxTemplateItem {
+  pub(crate) name: String,
+  pub(crate) content: String,
 }
 
 /// Rexports postgre enum for schema.rs

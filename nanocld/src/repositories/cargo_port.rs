@@ -1,6 +1,5 @@
 use ntex::web;
 use diesel::prelude::*;
-use utoipa::openapi::security::Http;
 
 use crate::controllers::errors::HttpError;
 use crate::models::{

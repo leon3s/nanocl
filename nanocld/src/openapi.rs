@@ -15,6 +15,9 @@ use crate::controllers::errors::ApiError;
     namespace::delete_namespace_by_name,
     namespace::inspect_namespace_by_name,
 
+    // nginx template
+    nginx_template::list_nginx_template,
+
     // Cargo
     cargo::list_cargo,
     cargo::create_cargo,
@@ -41,6 +44,9 @@ use crate::controllers::errors::ApiError;
   components(
     ApiError,
     PgDeleteGeneric,
+
+    // Nginx template
+    NginxTemplateItem,
 
     // Git repository
     GitRepositoryItem,

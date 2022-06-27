@@ -7,6 +7,8 @@
 //!
 #[macro_use]
 extern crate diesel;
+#[macro_use]
+extern crate diesel_migrations;
 
 use ntex::web;
 use ntex_files as fs;
@@ -66,6 +68,8 @@ async fn main() -> std::io::Result<()> {
       .configure(controllers::cluster::ntex_config)
       // bind controller cluster network
       .configure(controllers::cluster_network::ntex_config)
+      // bind controller nginx template
+      .configure(controllers::nginx_template::ntex_config)
       // bind controller cargo
       .configure(controllers::cargo::ntex_config)
       // TOTO remove it's for test websocket with javascript

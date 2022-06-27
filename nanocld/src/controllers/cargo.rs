@@ -117,7 +117,7 @@ pub async fn delete_cargo_by_name(
   name: web::types::Path<String>,
   web::types::Query(qs): web::types::Query<CargoQuery>,
 ) -> Result<web::HttpResponse, HttpError> {
-  log::debug!("requiring cargo deletion");
+  log::info!("asking cargo deletion {}", &name);
   let nsp = match qs.namespace {
     None => String::from("global"),
     Some(nsp) => nsp,
@@ -128,6 +128,7 @@ pub async fn delete_cargo_by_name(
   let container_name =
     gen_key.to_owned() + "-" + &item.image_name.replace(':', "-");
 
+  log::info!("deleting container {}", &container_name);
   let options = Some(bollard::container::RemoveContainerOptions {
     force: true,
     ..Default::default()
@@ -145,7 +146,11 @@ pub async fn delete_cargo_by_name(
     }
   }
 
+  log::info!("deleting cargo ports");
   cargo_port::delete_for_cargo(gen_key.to_owned(), &pool).await?;
+  log::info!("deleting cargo proxy config");
+  cargo_proxy_config::delete_for_cargo(gen_key.to_owned(), &pool).await?;
+  log::info!("deleting ports cargo");
   let res = cargo::delete_by_key(gen_key.to_owned(), &pool).await?;
   Ok(web::HttpResponse::Ok().json(&res))
 }
@@ -153,7 +158,6 @@ pub async fn delete_cargo_by_name(
 pub fn ntex_config(config: &mut web::ServiceConfig) {
   config.service(list_cargo);
   config.service(create_cargo);
-  // config.service(build_cargo_by_name);
   config.service(delete_cargo_by_name);
 }
 
@@ -184,11 +188,9 @@ mod test_cargo {
       .send_json(&CargoPartial {
         name: String::from(CARGO_NAME),
         network_name: None,
-        host_ip: None,
         proxy_config: None,
         ports: Some(vec![String::from("80")]),
         image_name: String::from("nginx:latest"),
-        domain_name: None,
       })
       .await?;
     assert!(res.status().is_success());

@@ -1,11 +1,15 @@
+use std::io::prelude::*;
 use ntex::web;
 use ntex::http::StatusCode;
+use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 use futures::StreamExt;
 use futures::stream::FuturesUnordered;
-use crate::models::{Pool, CargoItem, CargoPortItem, ClusterItem};
+use crate::models::{
+  Pool, CargoItem, CargoPortItem, ClusterItem, CargoProxyConfigItem,
+};
 
-use crate::repositories::cargo_port;
+use crate::repositories::{cargo_port, cargo_proxy_config, nginx_template};
 use crate::controllers::errors::HttpError;
 
 use crate::utils::get_free_port;
@@ -35,35 +39,10 @@ pub async fn start_cargo(
   let options = Some(bollard::container::CreateContainerOptions {
     name: container_name.clone(),
   });
-  let mut port_bindings: HashMap<
-    String,
-    Option<Vec<bollard::models::PortBinding>>,
-  > = HashMap::new();
-  let updated_ports = ports
-    .into_iter()
-    .map(|port| -> Result<CargoPortItem, HttpError> {
-      let new_port = get_free_port()?;
-      port_bindings.insert(
-        port.to.to_string() + "/tcp",
-        Some(vec![bollard::models::PortBinding {
-          host_ip: None,
-          host_port: Some(new_port.to_string()),
-        }]),
-      );
-      let item = CargoPortItem {
-        key: port.key,
-        cargo_key: port.cargo_key,
-        to: port.to,
-        from: new_port as i32,
-      };
-      Ok(item)
-    })
-    .collect::<Result<Vec<CargoPortItem>, HttpError>>()?;
 
   let mut labels: HashMap<String, String> = HashMap::new();
   labels.insert(String::from("namespace"), item.namespace_name.to_owned());
   labels.insert(String::from("cargo"), item.key.to_owned());
-  cargo_port::update_many(updated_ports, pool).await?;
   let config = bollard::container::Config {
     image,
     tty: Some(true),
@@ -71,7 +50,6 @@ pub async fn start_cargo(
     attach_stdout: Some(true),
     attach_stderr: Some(true),
     host_config: Some(bollard::models::HostConfig {
-      port_bindings: Some(port_bindings),
       ..Default::default()
     }),
     ..Default::default()
@@ -104,8 +82,64 @@ pub async fn start_cargo(
       status: StatusCode::BAD_REQUEST,
     });
   }
-
   Ok(container_names)
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MustacheData {
+  domain_name: String,
+  host_ip: String,
+  target_ip: String,
+}
+
+async fn deploy_proxy_config(
+  container_name: &String,
+  network_name: &String,
+  item: CargoItem,
+  proxy_config: CargoProxyConfigItem,
+  docker_api: &web::types::State<bollard::Docker>,
+  pool: &web::types::State<Pool>,
+) -> Result<(), HttpError> {
+  let template =
+    nginx_template::get_by_name(String::from("nodejs-single"), pool).await?;
+  let template =
+    mustache::compile_str(&template.content).map_err(|err| HttpError {
+      msg: format!("mustache template error: {:?}", err),
+      status: StatusCode::INTERNAL_SERVER_ERROR,
+    })?;
+
+  let container = docker_api
+    .inspect_container(container_name, None)
+    .await
+    .map_err(|err| HttpError {
+      msg: format!("unable to inspect container {} {:?}", container_name, err),
+      status: StatusCode::INTERNAL_SERVER_ERROR,
+    })?;
+
+  let networks = container.network_settings.unwrap().networks.unwrap();
+  println!("{:?}", networks);
+  let container_ip = networks
+    .get(network_name)
+    .unwrap()
+    .ip_address
+    .as_ref()
+    .unwrap();
+
+  let data = MustacheData {
+    domain_name: proxy_config.domain_name,
+    host_ip: proxy_config.host_ip,
+    target_ip: container_ip.clone(),
+  };
+  let mut file = std::fs::File::create(format!(
+    "/var/lib/nanocl/nginx/sites-enabled/{name}.conf",
+    name = item.name
+  ))
+  .map_err(|err| HttpError {
+    msg: format!("unable to generate template file {:?}", err),
+    status: StatusCode::INTERNAL_SERVER_ERROR,
+  })?;
+  template.render(&mut file, &data).unwrap();
+  Ok(())
 }
 
 pub async fn start_cargo_in_cluster(
@@ -114,7 +148,9 @@ pub async fn start_cargo_in_cluster(
   docker_api: &web::types::State<bollard::Docker>,
   pool: &web::types::State<Pool>,
 ) -> Result<(), HttpError> {
-  let key = &cluster.key;
+  let cargo = &item.to_owned();
+  let cargo_key = &cargo.key;
+  let cluster_key = &cluster.key;
   let network_name = item.network_name.to_owned();
   let container_names = start_cargo(item, docker_api, pool).await?;
 
@@ -122,7 +158,7 @@ pub async fn start_cargo_in_cluster(
     let vec_futures = container_names
       .into_iter()
       .map(|container_name| async move {
-        let network_name = key.to_owned() + "-" + network_name;
+        let network_name = cluster_key.to_owned() + "-" + network_name;
         let config = bollard::network::ConnectNetworkOptions {
           container: container_name.to_owned(),
           ..Default::default()
@@ -134,7 +170,17 @@ pub async fn start_cargo_in_cluster(
             msg: format!("unable to connect container to network {:?}", err),
             status: StatusCode::INTERNAL_SERVER_ERROR,
           })?;
-
+        let proxy_config =
+          cargo_proxy_config::get_for_cargo(cargo_key.to_owned(), pool).await?;
+        deploy_proxy_config(
+          &container_name,
+          &network_name,
+          cargo.to_owned(),
+          proxy_config,
+          docker_api,
+          pool,
+        )
+        .await?;
         Ok::<(), HttpError>(())
       })
       .collect::<FuturesUnordered<_>>()

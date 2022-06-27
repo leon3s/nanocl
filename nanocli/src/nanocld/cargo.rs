@@ -1,11 +1,61 @@
 use clap::Parser;
 use tabled::Tabled;
+use thiserror::Error;
 use serde::{Serialize, Deserialize};
 
 use super::{
   client::Nanocld,
   error::{Error, is_api_error},
 };
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CargoProxyConfigPartial {
+  pub(crate) domain_name: String,
+  pub(crate) host_ip: String,
+}
+
+#[derive(Debug, Error)]
+pub enum CargoProxyConfigError {
+  #[error("the config key `{0}` is not available")]
+  ParseError(String),
+}
+
+impl std::str::FromStr for CargoProxyConfigPartial {
+  type Err = CargoProxyConfigError;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    let mut options = s.split(',');
+
+    let item = options.try_fold(
+      CargoProxyConfigPartial {
+        domain_name: String::from(""),
+        host_ip: String::from(""),
+      },
+      |acc, option| {
+        let args = option.split('=').collect::<Vec<&str>>();
+        match args[0] {
+          "domain_name" => Ok(CargoProxyConfigPartial {
+            domain_name: String::from(args[1]),
+            ..acc
+          }),
+          "host_ip" => Ok(CargoProxyConfigPartial {
+            host_ip: String::from(args[1]),
+            ..acc
+          }),
+          &_ => Err(CargoProxyConfigError::ParseError(args[0].to_owned())),
+        }
+      },
+    )?;
+
+    Ok(item)
+  }
+}
+
+impl std::fmt::Display for CargoProxyConfigPartial {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{:?}", self)
+  }
+}
 
 #[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct CargoPartial {
@@ -19,6 +69,9 @@ pub struct CargoPartial {
   /// list of open to open
   #[clap(short, long)]
   pub(crate) ports: Option<Vec<String>>,
+  /// proxy config is an optional string as follow domain_name=your_domain,host_ip=your_host_ip
+  #[clap(long)]
+  pub(crate) proxy_config: CargoProxyConfigPartial,
 }
 
 /// Cargo item is an definition to container create image and start them
@@ -30,9 +83,17 @@ pub struct CargoItem {
   #[serde(rename = "image_name")]
   pub(crate) image: String,
   #[serde(rename = "network_name")]
-  pub(crate) network: String,
+  #[tabled(display_with = "optional_string")]
+  pub(crate) network: Option<String>,
   #[serde(rename = "namespace_name")]
   pub(crate) namespace: String,
+}
+
+fn optional_string(s: &Option<String>) -> String {
+  match s {
+    None => String::from(""),
+    Some(s) => s.to_owned(),
+  }
 }
 
 impl Nanocld {

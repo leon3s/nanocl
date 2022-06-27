@@ -3,6 +3,8 @@ pub mod errors;
 
 pub mod namespace;
 
+pub mod nginx_template;
+
 pub mod cargo;
 pub mod cargo_port;
 pub mod cargo_proxy_config;
