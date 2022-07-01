@@ -2,4 +2,4 @@ codecov:
   disable_default_path_fixes: true
 
 fixes:
-   - "/home/runner/work/nanocl/::"
+   - "/home/runner/work/nanocl/nanocl/::"
