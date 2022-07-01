@@ -1,6 +1,6 @@
-use clap::{App, AppSettings, Parser, Subcommand};
-use clap_complete::{generate, Generator};
 use std::io;
+use clap_complete::{generate, Generator};
+use clap::{App, AppSettings, Parser, Subcommand};
 
 use crate::nanocld::{
   git_repository::GitRepositoryPartial,
@@ -132,7 +132,7 @@ pub enum CargoCommands {
   Remove(CargoDeleteOptions),
 }
 
-/// manage cargos
+/// manage cargoes
 #[derive(Debug, Parser)]
 #[clap(name = "nanocl cargo")]
 pub struct CargoArgs {

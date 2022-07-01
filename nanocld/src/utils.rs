@@ -24,7 +24,7 @@ pub fn get_pool_conn(
   Ok(conn)
 }
 
-pub fn get_free_port() -> Result<u16, HttpError> {
+pub fn _get_free_port() -> Result<u16, HttpError> {
   let socket = match std::net::UdpSocket::bind("127.0.0.1:0") {
     Err(err) => {
       return Err(HttpError {

@@ -7,7 +7,7 @@ pub(crate) struct YmlFile {
   // name of the namespace
   pub(crate) name: String,
   // list of cargo to deploy
-  pub(crate) cargos: Vec<Cargo>,
+  pub(crate) cargoes: Vec<Cargo>,
   // list of network to create when deploy
   pub(crate) networks: Vec<Network>,
   // List of configuration a bit like github workflow matrix

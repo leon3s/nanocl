@@ -1,12 +1,14 @@
 //! File to handle cluster routes
 use ntex::web;
-use futures::StreamExt;
-use futures::stream::FuturesUnordered;
 use serde::{Deserialize, Serialize};
 
-use crate::models::{Pool, ClusterPartial, ClusterItemWithRelation};
-use crate::repositories::{cluster, cluster_network, cargo, namespace};
 use crate::services;
+use crate::repositories;
+
+use crate::services::cluster::JoinCargoOptions;
+use crate::models::{
+  Pool, ClusterJoinBody, ClusterPartial, ClusterItemWithRelation,
+};
 
 use super::errors::HttpError;
 
@@ -38,7 +40,7 @@ async fn list_cluster(
     Some(namespace) => namespace,
   };
 
-  let items = cluster::find_by_namespace(nsp, &pool).await?;
+  let items = repositories::cluster::find_by_namespace(nsp, &pool).await?;
   Ok(web::HttpResponse::Ok().json(&items))
 }
 
@@ -66,7 +68,8 @@ async fn create_cluster(
     None => String::from("global"),
     Some(namespace) => namespace,
   };
-  let res = cluster::create_for_namespace(nsp, json, &pool).await?;
+  let res =
+    repositories::cluster::create_for_namespace(nsp, json, &pool).await?;
   Ok(web::HttpResponse::Created().json(&res))
 }
 
@@ -95,7 +98,7 @@ async fn delete_cluster_by_name(
     Some(namespace) => namespace,
   };
   let gen_key = nsp.to_owned() + "-" + &name.into_inner();
-  let res = cluster::delete_by_key(gen_key, &pool).await?;
+  let res = repositories::cluster::delete_by_key(gen_key, &pool).await?;
   Ok(web::HttpResponse::Ok().json(&res))
 }
 
@@ -125,8 +128,9 @@ async fn inspect_cluster_by_name(
     Some(namespace) => namespace,
   };
   let gen_key = nsp.to_owned() + "-" + &name;
-  let item = cluster::find_by_key(gen_key.clone(), &pool).await?;
-  let networks = cluster_network::list_for_cluster(item, &pool).await?;
+  let item = repositories::cluster::find_by_key(gen_key.clone(), &pool).await?;
+  let networks =
+    repositories::cluster_network::list_for_cluster(item, &pool).await?;
 
   let res = ClusterItemWithRelation {
     name,
@@ -138,6 +142,20 @@ async fn inspect_cluster_by_name(
   Ok(web::HttpResponse::Ok().json(&res))
 }
 
+/// Start all cargo inside cluster
+#[utoipa::path(
+  post,
+  path = "/clusters/{name}/start",
+  params(
+    ("name" = String, path, description = "Name of the cluster"),
+    ("namespace" = Option<String>, query, description = "Namespace to add cluster in if empty we use 'global' as value"),
+  ),
+  responses(
+    (status = 200, description = "Cargos have been started"),
+    (status = 400, description = "Generic database error", body = ApiError),
+    (status = 404, description = "Cluster name of namespace invalid", body = ApiError),
+  ),
+)]
 #[web::post("/clusters/{name}/start")]
 async fn start_cluster_by_name(
   pool: web::types::State<Pool>,
@@ -151,30 +169,59 @@ async fn start_cluster_by_name(
     Some(namespace) => namespace,
   };
   let gen_key = nsp.to_owned() + "-" + &name;
-  let cluster_item = cluster::find_by_key(gen_key, &pool).await?;
-  let nsp = namespace::find_by_name(nsp, &pool).await?;
-  let cargo_items = cargo::find_by_namespace(nsp, &pool).await?;
+  let cluster = repositories::cluster::find_by_key(gen_key, &pool).await?;
+  services::cluster::start(&cluster, &docker_api, &pool).await?;
+  Ok(web::HttpResponse::Ok().into())
+}
 
-  let vec_futures = cargo_items
-    .iter()
-    .map(|item| async {
-      services::cargo::start_cargo_in_cluster(
-        item.to_owned(),
-        cluster_item.to_owned(),
-        &docker_api,
-        &pool,
-      )
-      .await?;
-      Ok::<(), HttpError>(())
-    })
-    .collect::<FuturesUnordered<_>>()
-    .collect::<Vec<_>>()
-    .await;
+/// join cargo inside a cluster
+#[utoipa::path(
+  post,
+  path = "/clusters/{name}/join",
+  request_body = ClusterJoinBody,
+  params(
+    ("name" = String, path, description = "Name of the cluster"),
+    ("namespace" = Option<String>, query, description = "Namespace to add cluster in if empty we use 'global' as value"),
+  ),
+  responses(
+    (status = 200, description = "Cargo joinned successfully"),
+    (status = 400, description = "Generic database error", body = ApiError),
+    (status = 404, description = "Cluster name of namespace invalid", body = ApiError),
+  ),
+)]
+#[web::post("/clusters/{name}/join")]
+async fn join_cargo_to_cluster(
+  pool: web::types::State<Pool>,
+  docker_api: web::types::State<bollard::Docker>,
+  name: web::types::Path<String>,
+  web::types::Query(qs): web::types::Query<ClusterQuery>,
+  web::types::Json(payload): web::types::Json<ClusterJoinBody>,
+) -> Result<web::HttpResponse, HttpError> {
+  let name = name.into_inner();
+  let nsp = match qs.namespace {
+    None => String::from("global"),
+    Some(namespace) => namespace,
+  };
+  let cluster_key = nsp.to_owned() + "-" + &name;
+  let cargo_key = nsp.to_owned() + "-" + &payload.cargo;
+  let cluster = repositories::cluster::find_by_key(cluster_key, &pool).await?;
+  let cargo = repositories::cargo::find_by_key(cargo_key, &pool).await?;
+  let network_key = cluster.key.to_owned() + "-" + &payload.network;
+  let network =
+    repositories::cluster_network::find_by_key(network_key, &pool).await?;
 
-  vec_futures
-    .into_iter()
-    .collect::<Result<Vec<()>, HttpError>>()?;
-
+  log::debug!(
+    "joining cargo {:?} into cluster {:?}",
+    cargo.key,
+    cluster.key
+  );
+  let join_cargo_opts = JoinCargoOptions {
+    cluster,
+    cargo,
+    network,
+  };
+  services::cluster::join_cargo(&join_cargo_opts, &docker_api, &pool).await?;
+  log::debug!("join success.");
   Ok(web::HttpResponse::Ok().into())
 }
 
@@ -197,6 +244,7 @@ pub fn ntex_config(config: &mut web::ServiceConfig) {
   config.service(inspect_cluster_by_name);
   config.service(delete_cluster_by_name);
   config.service(start_cluster_by_name);
+  config.service(join_cargo_to_cluster);
 }
 
 #[cfg(test)]

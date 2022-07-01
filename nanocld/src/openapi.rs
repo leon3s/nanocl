@@ -34,6 +34,13 @@ use crate::controllers::errors::ApiError;
     cluster::create_cluster,
     cluster::delete_cluster_by_name,
     cluster::inspect_cluster_by_name,
+    cluster::start_cluster_by_name,
+    cluster::join_cargo_to_cluster,
+
+    // Cluster variable
+    cluster_variable::list_cluster_variable,
+    cluster_variable::create_cluster_variable,
+    cluster_variable::delete_cluster_variable,
 
     // Cluster network
     cluster_network::list_cluster_network,
@@ -66,6 +73,11 @@ use crate::controllers::errors::ApiError;
     // Cluster
     ClusterItem,
     ClusterPartial,
+    ClusterJoinBody,
+
+    // Cluster variable
+    ClusterVariableItem,
+    ClusterVariablePartial,
 
     // Cluster network
     ClusterNetworkItem,

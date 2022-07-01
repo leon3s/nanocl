@@ -1,10 +1,14 @@
-# nanocl
+<div align="center">
+  <p><h1>nanocl</h1> </p>
+  <p><strong>self-sufficient vms and containers manager</strong> </p>
+</div>
+
 Unlock all control of your network using nanocl
 
 Setup and configure enterprice grade vpn with dns!
 And automaticaly test, deploy and scale your services or applications.
 
-Allow container and virtual machine management on multiple machine using swarm mode
+Allow vms and containers management on multiple machine
 
 ## State
 
@@ -70,6 +74,8 @@ cargo run --help
 ```
 
 ## Note
+
+### Ubuntu
 We may read /sys/class/net and /proc/net to get network informations but
 for now user specify the ip address to bind to
 
@@ -81,10 +87,27 @@ sudo containerd --config fake_path/etc/nanocl/containerd.conf
 sudo dockerd --config-file fake_path/etc/nanocl/dockerd.json
 ```
 
+### Windows
+You can develop under windows using wsl2
+you just need to add dns entry inside WSL network interface to make it work properly
+
+identify the ID of WSL interface
+```powershell
+Get-NetAdapter
+```
+
+you should see a line line this
+```
+vEthernet (WSL)           Hyper-V Virtual Ethernet Adapter          59 Up
+```
+then update interface dns
+```powershell
+Set-DnsClientServerAddress -InterfaceIndex 59 -ServerAddresses ("10.0.0.1","10.0.0.2")
+```
+
 ## TODO
 add daemon options for directory with default values
 man.md for cli and daemon
-use of diesel migration to migrate sql database at boot time
-cluster domain
-cluster variables
-environement variables
+restart nginx after config file write
+add domain entry inside dnsmasq.conf
+environement variables for cargoes

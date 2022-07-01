@@ -25,6 +25,10 @@ impl Display for HttpError {
   }
 }
 
+pub trait IntoHttpError {
+  fn to_http_error(&self) -> HttpError;
+}
+
 impl web::WebResponseError for HttpError {
   // builds the actual response to send back when an error occurs
   fn error_response(&self, _: &web::HttpRequest) -> web::HttpResponse {

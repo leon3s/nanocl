@@ -43,6 +43,7 @@ pub async fn create_for_cargo(
       cargo_key,
       domain_name: item.domain_name,
       host_ip: item.host_ip,
+      target_port: item.target_port,
     };
     diesel::insert_into(dsl::cargo_proxy_configs)
       .values(&item)

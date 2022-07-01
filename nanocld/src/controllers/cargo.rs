@@ -2,8 +2,9 @@ use ntex::web;
 use ntex::http::StatusCode;
 use serde::{Deserialize, Serialize};
 
-use crate::repositories::{cargo, namespace, cargo_port, cargo_proxy_config};
-use crate::models::{Pool, CargoPartial, CargoPortPartial};
+use crate::repositories::{cargo, namespace, cargo_proxy_config};
+use crate::models::{Pool, CargoPartial};
+
 use super::errors::HttpError;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -14,7 +15,7 @@ pub struct CargoQuery {
 /// List cargo
 #[utoipa::path(
   get,
-  path = "/cargos",
+  path = "/cargoes",
   params(
     ("namespace" = Option<String>, query, description = "Name of the namespace where the cargo are stored"),
   ),
@@ -24,8 +25,8 @@ pub struct CargoQuery {
     (status = 404, description = "Namespace name not valid", body = ApiError),
   ),
 )]
-#[web::get("/cargos")]
-pub async fn list_cargo(
+#[web::get("/cargoes")]
+async fn list_cargo(
   pool: web::types::State<Pool>,
   web::types::Query(qs): web::types::Query<CargoQuery>,
 ) -> Result<web::HttpResponse, HttpError> {
@@ -43,7 +44,7 @@ pub async fn list_cargo(
 #[utoipa::path(
   post,
   request_body = CargoPartial,
-  path = "/cargos",
+  path = "/cargoes",
   params(
     ("namespace" = Option<String>, query, description = "Name of the namespace where the cargo will be stored"),
   ),
@@ -53,8 +54,8 @@ pub async fn list_cargo(
     (status = 404, description = "Namespace name not valid", body = ApiError),
   ),
 )]
-#[web::post("/cargos")]
-pub async fn create_cargo(
+#[web::post("/cargoes")]
+async fn create_cargo(
   pool: web::types::State<Pool>,
   web::types::Query(qs): web::types::Query<CargoQuery>,
   web::types::Json(payload): web::types::Json<CargoPartial>,
@@ -68,21 +69,8 @@ pub async fn create_cargo(
     &nsp,
     payload,
   );
-  let ports = payload.ports.clone();
   let proxy_config = payload.proxy_config.clone();
   let item = cargo::create(nsp, payload, &pool).await?;
-  if let Some(ports) = ports {
-    log::info!("creating port mapping");
-    let ports = ports
-      .into_iter()
-      .map(|port| CargoPortPartial {
-        from: 0,
-        to: port.parse::<i32>().unwrap_or(0),
-      })
-      .collect::<Vec<CargoPortPartial>>();
-    cargo_port::create_many_for_cargo(item.key.to_owned(), ports, &pool)
-      .await?;
-  }
   if let Some(proxy_config) = proxy_config {
     log::info!("creating proxy config");
     cargo_proxy_config::create_for_cargo(
@@ -99,7 +87,7 @@ pub async fn create_cargo(
 /// Delete cargo by it's name
 #[utoipa::path(
   delete,
-  path = "/cargos/{name}",
+  path = "/cargoes/{name}",
   params(
     ("name" = String, path, description = "Name of the cargo"),
     ("namespace" = Option<String>, query, description = "Name of the namespace where the cargo is stored"),
@@ -110,8 +98,8 @@ pub async fn create_cargo(
     (status = 404, description = "Namespace name not valid", body = ApiError),
   ),
 )]
-#[web::delete("/cargos/{name}")]
-pub async fn delete_cargo_by_name(
+#[web::delete("/cargoes/{name}")]
+async fn delete_cargo_by_name(
   pool: web::types::State<Pool>,
   docker_api: web::types::State<bollard::Docker>,
   name: web::types::Path<String>,
@@ -146,8 +134,6 @@ pub async fn delete_cargo_by_name(
     }
   }
 
-  log::info!("deleting cargo ports");
-  cargo_port::delete_for_cargo(gen_key.to_owned(), &pool).await?;
   log::info!("deleting cargo proxy config");
   cargo_proxy_config::delete_for_cargo(gen_key.to_owned(), &pool).await?;
   log::info!("deleting ports cargo");
@@ -165,46 +151,13 @@ pub fn ntex_config(config: &mut web::ServiceConfig) {
 mod test_cargo {
   use crate::utils::test::*;
 
-  use crate::models::CargoPartial;
-
   use super::ntex_config;
 
   #[ntex::test]
   async fn test_list() -> TestReturn {
     let srv = generate_server(ntex_config);
-    let mut res = srv.get("/cargos").send().await?;
-    println!("body {:?}", res.body().await);
-    assert!(res.status().is_success());
-    Ok(())
-  }
-
-  #[ntex::test]
-  async fn test_start_nginx() -> TestReturn {
-    const CARGO_NAME: &str = "nginx-test";
-    let srv = generate_server(ntex_config);
-
-    let res = srv
-      .post("/cargos")
-      .send_json(&CargoPartial {
-        name: String::from(CARGO_NAME),
-        network_name: None,
-        proxy_config: None,
-        ports: Some(vec![String::from("80")]),
-        image_name: String::from("nginx:latest"),
-      })
-      .await?;
-    assert!(res.status().is_success());
-
-    let res = srv
-      .post(format!("/cargos/{name}/start", name = CARGO_NAME))
-      .send()
-      .await?;
-    assert!(res.status().is_success());
-
-    let res = srv
-      .delete(format!("/cargos/{name}", name = CARGO_NAME))
-      .send()
-      .await?;
+    let mut res = srv.get("/cargoes").send().await?;
+    println!("body {:#?}", res.body().await);
     assert!(res.status().is_success());
     Ok(())
   }

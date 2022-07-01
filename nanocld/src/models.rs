@@ -6,8 +6,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::schema::{
   clusters, namespaces, git_repositories, cluster_networks,
-  git_repository_branches, cargos, cargo_ports, cargo_proxy_configs,
-  nginx_templates,
+  git_repository_branches, cargoes, cargo_proxy_configs, nginx_templates,
+  cluster_variables, cluster_cargoes,
 };
 
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
@@ -209,39 +209,13 @@ pub struct CargoPartial {
 )]
 #[primary_key(key)]
 #[belongs_to(NamespaceItem, foreign_key = "namespace_name")]
-#[table_name = "cargos"]
+#[table_name = "cargoes"]
 pub struct CargoItem {
   pub(crate) key: String,
   pub(crate) name: String,
   pub(crate) image_name: String,
   pub(crate) network_name: Option<String>,
   pub(crate) namespace_name: String,
-}
-
-#[derive(
-  Debug,
-  Serialize,
-  Deserialize,
-  Queryable,
-  Identifiable,
-  Insertable,
-  Associations,
-  AsChangeset,
-)]
-#[primary_key(key)]
-#[belongs_to(CargoItem, foreign_key = "cargo_key")]
-#[table_name = "cargo_ports"]
-pub struct CargoPortItem {
-  pub(crate) key: String,
-  pub(crate) cargo_key: String,
-  pub(crate) from: i32,
-  pub(crate) to: i32,
-}
-
-#[derive(Debug)]
-pub struct CargoPortPartial {
-  pub(crate) from: i32,
-  pub(crate) to: i32,
 }
 
 #[derive(
@@ -261,12 +235,14 @@ pub struct CargoProxyConfigItem {
   pub(crate) cargo_key: String,
   pub(crate) domain_name: String,
   pub(crate) host_ip: String,
+  pub(crate) target_port: i32,
 }
 
 #[derive(Debug, Clone, Component, Serialize, Deserialize)]
 pub struct CargoProxyConfigPartial {
   pub(crate) domain_name: String,
   pub(crate) host_ip: String,
+  pub(crate) target_port: i32,
 }
 
 #[derive(
@@ -286,8 +262,70 @@ pub struct NginxTemplateItem {
   pub(crate) content: String,
 }
 
-/// Rexports postgre enum for schema.rs
+#[derive(Debug, Component, Serialize, Deserialize)]
+pub struct ClusterJoinBody {
+  pub(crate) cargo: String,
+  pub(crate) network: String,
+}
+
+#[derive(
+  Debug,
+  Component,
+  Serialize,
+  Deserialize,
+  Queryable,
+  Identifiable,
+  Insertable,
+  Associations,
+  AsChangeset,
+)]
+#[primary_key(key)]
+#[table_name = "cluster_variables"]
+#[belongs_to(ClusterItem, foreign_key = "cluster_key")]
+pub struct ClusterVariableItem {
+  pub(crate) key: String,
+  pub(crate) cluster_key: String,
+  pub(crate) name: String,
+  pub(crate) value: String,
+}
+
+#[derive(Debug, Component, Serialize, Deserialize)]
+pub struct ClusterVariablePartial {
+  pub(crate) name: String,
+  pub(crate) value: String,
+}
+
+#[derive(
+  Debug,
+  Serialize,
+  Deserialize,
+  Queryable,
+  Insertable,
+  Identifiable,
+  Associations,
+  AsChangeset,
+)]
+#[primary_key(key)]
+#[table_name = "cluster_cargoes"]
+#[belongs_to(CargoItem, foreign_key = "cargo_key")]
+#[belongs_to(ClusterItem, foreign_key = "cluster_key")]
+#[belongs_to(ClusterNetworkItem, foreign_key = "network_key")]
+pub struct ClusterCargoItem {
+  pub(crate) key: String,
+  pub(crate) cargo_key: String,
+  pub(crate) cluster_key: String,
+  pub(crate) network_key: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ClusterCargoPartial {
+  pub(crate) cargo_key: String,
+  pub(crate) cluster_key: String,
+  pub(crate) network_key: String,
+}
+
+/// Re exports ours enums and diesel sql_types for schema.rs
 pub mod exports {
-  pub use super::Git_repository_source_type;
   pub use diesel::sql_types::*;
+  pub use super::Git_repository_source_type;
 }

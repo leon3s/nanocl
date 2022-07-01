@@ -26,7 +26,6 @@ pub async fn build_git_repository(
     ..Default::default()
   };
   let (tx, rx_body) = mpsc::channel();
-
   rt::spawn(async move {
     let mut stream = docker_api.build_image(options, None, None);
     while let Some(result) = stream.next().await {

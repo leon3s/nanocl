@@ -23,7 +23,7 @@ mod services;
 mod controllers;
 mod repositories;
 
-/// nanocld is the daemon to manager namespace cluster network and cargos
+/// nanocld is the daemon to manager namespace cluster network and cargoes
 ///
 /// # Example
 /// ```sh
@@ -33,7 +33,7 @@ mod repositories;
 async fn main() -> std::io::Result<()> {
   // building env logger
   if std::env::var("LOG_LEVEL").is_err() {
-    std::env::set_var("LOG_LEVEL", "nanocld=info,warn,error");
+    std::env::set_var("LOG_LEVEL", "nanocld=info,warn,error,nanocld=debug");
   }
   env_logger::Builder::new().parse_env("LOG_LEVEL").init();
 
@@ -66,6 +66,8 @@ async fn main() -> std::io::Result<()> {
       .configure(controllers::git_repository::ntex_config)
       // bind controller cluster
       .configure(controllers::cluster::ntex_config)
+      // bind controller cluster variables
+      .configure(controllers::cluster_variable::ntex_config)
       // bind controller cluster network
       .configure(controllers::cluster_network::ntex_config)
       // bind controller nginx template

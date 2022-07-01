@@ -1,28 +1,18 @@
 table! {
     use crate::models::exports::*;
 
-    cargo_ports (key) {
-        key -> Varchar,
-        cargo_key -> Varchar,
-        from -> Int4,
-        to -> Int4,
-    }
-}
-
-table! {
-    use crate::models::exports::*;
-
     cargo_proxy_configs (cargo_key) {
         cargo_key -> Varchar,
         domain_name -> Varchar,
         host_ip -> Varchar,
+        target_port -> Int4,
     }
 }
 
 table! {
     use crate::models::exports::*;
 
-    cargos (key) {
+    cargoes (key) {
         key -> Varchar,
         name -> Varchar,
         image_name -> Varchar,
@@ -34,11 +24,33 @@ table! {
 table! {
     use crate::models::exports::*;
 
+    cluster_cargoes (key) {
+        key -> Varchar,
+        cargo_key -> Varchar,
+        cluster_key -> Varchar,
+        network_key -> Varchar,
+    }
+}
+
+table! {
+    use crate::models::exports::*;
+
     cluster_networks (key) {
         key -> Varchar,
         name -> Varchar,
         docker_network_id -> Varchar,
         cluster_key -> Varchar,
+    }
+}
+
+table! {
+    use crate::models::exports::*;
+
+    cluster_variables (key) {
+        key -> Varchar,
+        cluster_key -> Varchar,
+        name -> Varchar,
+        value -> Varchar,
     }
 }
 
@@ -91,18 +103,22 @@ table! {
     }
 }
 
-joinable!(cargo_proxy_configs -> cargos (cargo_key));
-joinable!(cargos -> namespaces (namespace_name));
+joinable!(cargo_proxy_configs -> cargoes (cargo_key));
+joinable!(cargoes -> namespaces (namespace_name));
+joinable!(cluster_cargoes -> cargoes (cargo_key));
+joinable!(cluster_cargoes -> cluster_networks (network_key));
+joinable!(cluster_cargoes -> clusters (cluster_key));
 joinable!(cluster_networks -> clusters (cluster_key));
 
 allow_tables_to_appear_in_same_query!(
-  cargo_ports,
-  cargo_proxy_configs,
-  cargos,
-  cluster_networks,
-  clusters,
-  git_repositories,
-  git_repository_branches,
-  namespaces,
-  nginx_templates,
+    cargo_proxy_configs,
+    cargoes,
+    cluster_cargoes,
+    cluster_networks,
+    cluster_variables,
+    clusters,
+    git_repositories,
+    git_repository_branches,
+    namespaces,
+    nginx_templates,
 );

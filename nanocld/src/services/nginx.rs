@@ -1,11 +1,26 @@
 use bollard::{
   Docker,
+  models::HostConfig,
   errors::Error as DockerError,
   container::{CreateContainerOptions, Config},
-  models::HostConfig,
+  exec::{CreateExecOptions, StartExecOptions},
 };
 
 use super::utils::*;
+
+pub async fn reload_config(docker: &Docker) -> Result<(), DockerError> {
+  let container_name = "nanocl-proxy-nginx";
+  let config = CreateExecOptions {
+    cmd: Some(vec!["nginx", "-s", "reload"]),
+    attach_stdout: Some(true),
+    attach_stderr: Some(true),
+    ..Default::default()
+  };
+  let res = docker.create_exec(container_name, config).await?;
+  let config = StartExecOptions { detach: false };
+  docker.start_exec(&res.id, Some(config)).await?;
+  Ok(())
+}
 
 fn gen_nginx_host_conf() -> HostConfig {
   let binds = Some(vec![

@@ -5,7 +5,7 @@ CREATE TABLE "nginx_templates" (
 );
 
 INSERT INTO "nginx_templates" ("name", "content") VALUES ('nodejs-single', 'server {
-  server_name {{domain_name}};
+  server_name {{vars.pre_domain}}{{domain_name}};
   listen {{host_ip}}:80;
   location / {
       proxy_set_header upgrade $http_upgrade;
@@ -13,10 +13,10 @@ INSERT INTO "nginx_templates" ("name", "content") VALUES ('nodejs-single', 'serv
       proxy_http_version 1.1;
       proxy_set_header x-forwarded-for $proxy_add_x_forwarded_for;
       proxy_set_header host $host;
-      proxy_pass http://{{target_ip}}:{{port}};
+      proxy_pass http://{{target_ip}}:{{target_port}};
   }
 
-  if ($host != {{domain}}) {
+  if ($host != {{domain_name}}) {
       return 502;
   }
 }');

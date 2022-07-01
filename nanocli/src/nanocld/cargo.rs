@@ -12,12 +12,15 @@ use super::{
 pub struct CargoProxyConfigPartial {
   pub(crate) domain_name: String,
   pub(crate) host_ip: String,
+  pub(crate) target_port: i32,
 }
 
 #[derive(Debug, Error)]
 pub enum CargoProxyConfigError {
   #[error("the config key `{0}` is not available")]
   ParseError(String),
+  #[error("the config key `{0}` is required")]
+  ValueRequired(String),
 }
 
 impl std::str::FromStr for CargoProxyConfigPartial {
@@ -30,6 +33,7 @@ impl std::str::FromStr for CargoProxyConfigPartial {
       CargoProxyConfigPartial {
         domain_name: String::from(""),
         host_ip: String::from(""),
+        target_port: 0,
       },
       |acc, option| {
         let args = option.split('=').collect::<Vec<&str>>();
@@ -42,10 +46,25 @@ impl std::str::FromStr for CargoProxyConfigPartial {
             host_ip: String::from(args[1]),
             ..acc
           }),
+          "target_port" => Ok(CargoProxyConfigPartial {
+            target_port: args[1].parse::<i32>().map_err(|_| {
+              CargoProxyConfigError::ParseError(format!(
+                "{} must be a number",
+                args[0]
+              ))
+            })?,
+            ..acc
+          }),
           &_ => Err(CargoProxyConfigError::ParseError(args[0].to_owned())),
         }
       },
     )?;
+
+    if item.target_port == 0 {
+      return Err(CargoProxyConfigError::ValueRequired(String::from(
+        "target_port",
+      )));
+    }
 
     Ok(item)
   }
@@ -99,7 +118,7 @@ fn optional_string(s: &Option<String>) -> String {
 impl Nanocld {
   pub async fn list_cargo(&self) -> Result<Vec<CargoItem>, Error> {
     let mut res = self
-      .get(String::from("/cargos"))
+      .get(String::from("/cargoes"))
       .send()
       .await
       .map_err(Error::SendRequest)?;
@@ -117,7 +136,7 @@ impl Nanocld {
     item: &CargoPartial,
   ) -> Result<CargoItem, Error> {
     let mut res = self
-      .post(String::from("/cargos"))
+      .post(String::from("/cargoes"))
       .send_json(item)
       .await
       .map_err(Error::SendRequest)?;
@@ -129,7 +148,7 @@ impl Nanocld {
 
   pub async fn delete_cargo(&self, cargo_name: String) -> Result<(), Error> {
     let mut res = self
-      .delete(format!("/cargos/{name}", name = cargo_name))
+      .delete(format!("/cargoes/{name}", name = cargo_name))
       .send()
       .await
       .map_err(Error::SendRequest)?;

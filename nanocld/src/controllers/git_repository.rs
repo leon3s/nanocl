@@ -303,6 +303,7 @@ mod test_namespace_git_repository {
       .send_json(&new_repository)
       .await?;
     assert!(res.status().is_success());
+
     let res = srv
       .delete("/git_repositories/express-test-deploy")
       .send()

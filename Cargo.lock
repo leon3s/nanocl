@@ -876,6 +876,7 @@ dependencies = [
  "ntex",
  "ntex-files",
  "r2d2",
+ "regex",
  "serde",
  "serde_json",
  "thiserror",

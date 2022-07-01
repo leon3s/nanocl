@@ -30,7 +30,7 @@ networks:
   - name: docktron-backend
   - name: docktron-frontend
 
-cargos:
+cargoes:
   - name: docktron-db
     image: mongodb:latest
     network: docktron-backend

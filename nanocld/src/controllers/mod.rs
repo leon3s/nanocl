@@ -1,6 +1,8 @@
 //! File to export controller
 /// Manage http errors
 pub mod errors;
+/// Some utils
+pub mod utils;
 /// Manage namespace
 pub mod namespace;
 /// Manage cluster
@@ -13,3 +15,5 @@ pub mod git_repository;
 pub mod cluster_network;
 /// Manage nginx template
 pub mod nginx_template;
+/// Manage cluster variable
+pub mod cluster_variable;

@@ -25,7 +25,7 @@ pub async fn create(
   item: CargoPartial,
   pool: &web::types::State<Pool>,
 ) -> Result<CargoItem, HttpError> {
-  use crate::schema::cargos::dsl;
+  use crate::schema::cargoes::dsl;
 
   let conn = get_pool_conn(pool)?;
   let res = web::block(move || {
@@ -36,7 +36,7 @@ pub async fn create(
       image_name: item.image_name,
       network_name: item.network_name,
     };
-    diesel::insert_into(dsl::cargos)
+    diesel::insert_into(dsl::cargoes)
       .values(&new_item)
       .execute(&conn)?;
     Ok(new_item)
@@ -52,11 +52,11 @@ pub async fn delete_by_key(
   key: String,
   pool: &web::types::State<Pool>,
 ) -> Result<PgDeleteGeneric, HttpError> {
-  use crate::schema::cargos::dsl;
+  use crate::schema::cargoes::dsl;
 
   let conn = get_pool_conn(pool)?;
   let res = web::block(move || {
-    diesel::delete(dsl::cargos)
+    diesel::delete(dsl::cargoes)
       .filter(dsl::key.eq(key))
       .execute(&conn)
   })
@@ -71,11 +71,11 @@ pub async fn find_by_key(
   key: String,
   pool: &web::types::State<Pool>,
 ) -> Result<CargoItem, HttpError> {
-  use crate::schema::cargos::dsl;
+  use crate::schema::cargoes::dsl;
 
   let conn = get_pool_conn(pool)?;
   let res =
-    web::block(move || dsl::cargos.filter(dsl::key.eq(key)).get_result(&conn))
+    web::block(move || dsl::cargoes.filter(dsl::key.eq(key)).get_result(&conn))
       .await;
 
   match res {

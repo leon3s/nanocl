@@ -1,5 +1,5 @@
 -- Your SQL goes here
-create table "cargos" (
+create table "cargoes" (
   "key" VARCHAR NOT NULL UNIQUE PRIMARY KEY,
   "name" VARCHAR NOT NULL,
   "image_name" VARCHAR NOT NULL,
