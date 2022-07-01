@@ -33,7 +33,7 @@ jobs:
     - name: Start docker and containerd
       run: sudo sh ./scripts/pre_start_nanocl.sh
     - name: Ci file perm
-      run: sudo chmod 777 /run/nanocl && sudo chmod 777 /var/lib/nanocl
+      run: sudo chmod 777 -R /run/nanocl && sudo chmod 777 -R /var/lib/nanocl
     - name: Setup nanocl
       run: cargo run --bin nanocld -- --boot-only
     - name: Run tests
