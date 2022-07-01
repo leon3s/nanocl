@@ -20,6 +20,7 @@ jobs:
         toolchain: stable
         override: true
         components: llvm-tools-preview
+    - uses: Swatinem/rust-cache@v1
     - uses: davidB/rust-cargo-make@v1
     - uses: taiki-e/install-action@cargo-llvm-cov
     - uses: taiki-e/install-action@nextest
