@@ -34,7 +34,6 @@ pub async fn create(
       name: item.name.clone(),
       namespace_name: nsp,
       image_name: item.image_name,
-      network_name: item.network_name,
     };
     diesel::insert_into(dsl::cargoes)
       .values(&new_item)
@@ -54,6 +53,7 @@ pub async fn delete_by_key(
 ) -> Result<PgDeleteGeneric, HttpError> {
   use crate::schema::cargoes::dsl;
 
+  println!("cargo deleting key {}", key);
   let conn = get_pool_conn(pool)?;
   let res = web::block(move || {
     diesel::delete(dsl::cargoes)

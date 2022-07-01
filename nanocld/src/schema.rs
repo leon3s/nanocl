@@ -16,7 +16,6 @@ table! {
         key -> Varchar,
         name -> Varchar,
         image_name -> Varchar,
-        network_name -> Nullable<Varchar>,
         namespace_name -> Varchar,
     }
 }

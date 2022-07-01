@@ -50,10 +50,13 @@ pub async fn start(
         services::cargo::list_containers(cargo_key.to_owned(), docker_api)
           .await?;
 
+      println!("starting cargo {}", &cargo_key);
+
       let target_ips = containers
         .into_iter()
         .map(|container| async move {
           let container_id = container.id.unwrap_or_default();
+          println!("starting container {}", &container_id);
           docker_api
             .start_container(
               &container_id,
@@ -61,6 +64,7 @@ pub async fn start(
             )
             .await
             .map_err(docker_error)?;
+          println!("started");
           let container = docker_api
             .inspect_container(&container_id, None)
             .await
@@ -103,6 +107,7 @@ pub async fn start(
         .await
         .into_iter()
         .collect::<Result<Vec<String>, HttpError>>()?;
+      println!("setup proxy config");
       let proxy_config =
         repositories::cargo_proxy_config::get_for_cargo(cargo_key.into(), pool)
           .await;

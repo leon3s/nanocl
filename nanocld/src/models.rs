@@ -188,8 +188,6 @@ pub struct ClusterNetworkItem {
 pub struct CargoPartial {
   pub(crate) name: String,
   pub(crate) image_name: String,
-  pub(crate) ports: Option<Vec<String>>,
-  pub(crate) network_name: Option<String>,
   pub(crate) proxy_config: Option<CargoProxyConfigPartial>,
 }
 
@@ -214,7 +212,6 @@ pub struct CargoItem {
   pub(crate) key: String,
   pub(crate) name: String,
   pub(crate) image_name: String,
-  pub(crate) network_name: Option<String>,
   pub(crate) namespace_name: String,
 }
 

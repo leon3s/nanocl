@@ -1,6 +1,8 @@
 use ntex::web;
 use ntex::http::StatusCode;
 use std::collections::HashMap;
+use futures::{StreamExt, TryStreamExt};
+use futures::stream::FuturesUnordered;
 
 use crate::models::CargoItem;
 
@@ -77,4 +79,36 @@ pub async fn list_containers(
     .await
     .map_err(docker_error)?;
   Ok(containers)
+}
+
+pub async fn delete_container(
+  cargo_key: String,
+  docker_api: &web::types::State<bollard::Docker>,
+) -> Result<(), HttpError> {
+  let containers = list_containers(cargo_key, docker_api).await?;
+
+  containers
+    .into_iter()
+    .map(|container| async move {
+      let id = container.id.ok_or(HttpError {
+        msg: String::from("unable to get container id"),
+        status: StatusCode::INTERNAL_SERVER_ERROR,
+      })?;
+      let options = Some(bollard::container::RemoveContainerOptions {
+        force: true,
+        ..Default::default()
+      });
+      docker_api
+        .remove_container(&id, options)
+        .await
+        .map_err(docker_error)?;
+      Ok::<_, HttpError>(())
+    })
+    .collect::<FuturesUnordered<_>>()
+    .collect::<Vec<_>>()
+    .await
+    .into_iter()
+    .collect::<Result<Vec<()>, HttpError>>()?;
+
+  Ok(())
 }

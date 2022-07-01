@@ -1,8 +1,7 @@
 use ntex::web;
-use ntex::http::StatusCode;
 use serde::{Deserialize, Serialize};
 
-use crate::repositories::{cargo, namespace, cargo_proxy_config};
+use crate::{services, repositories};
 use crate::models::{Pool, CargoPartial};
 
 use super::errors::HttpError;
@@ -35,8 +34,8 @@ async fn list_cargo(
     Some(nsp) => nsp,
   };
 
-  let nsp = namespace::find_by_name(nsp, &pool).await?;
-  let items = cargo::find_by_namespace(nsp, &pool).await?;
+  let nsp = repositories::namespace::find_by_name(nsp, &pool).await?;
+  let items = repositories::cargo::find_by_namespace(nsp, &pool).await?;
   Ok(web::HttpResponse::Ok().json(&items))
 }
 
@@ -69,11 +68,11 @@ async fn create_cargo(
     &nsp,
     payload,
   );
-  let proxy_config = payload.proxy_config.clone();
-  let item = cargo::create(nsp, payload, &pool).await?;
+  let proxy_config = payload.proxy_config.to_owned();
+  let item = repositories::cargo::create(nsp, payload, &pool).await?;
   if let Some(proxy_config) = proxy_config {
     log::info!("creating proxy config");
-    cargo_proxy_config::create_for_cargo(
+    repositories::cargo_proxy_config::create_for_cargo(
       item.key.to_owned(),
       proxy_config,
       &pool,
@@ -110,34 +109,20 @@ async fn delete_cargo_by_name(
     None => String::from("global"),
     Some(nsp) => nsp,
   };
-
   let gen_key = nsp + "-" + &name.into_inner();
-  let item = cargo::find_by_key(gen_key.clone(), &pool).await?;
-  let container_name =
-    gen_key.to_owned() + "-" + &item.image_name.replace(':', "-");
 
-  log::info!("deleting container {}", &container_name);
-  let options = Some(bollard::container::RemoveContainerOptions {
-    force: true,
-    ..Default::default()
-  });
-
-  let res = docker_api.inspect_container(&container_name, None).await;
-
-  if res.is_ok() {
-    let res = docker_api.remove_container(&container_name, options).await;
-    if let Err(err) = res {
-      return Err(HttpError {
-        msg: format!("unable to remove container {:?}", err),
-        status: StatusCode::INTERNAL_SERVER_ERROR,
-      });
-    }
-  }
-
+  repositories::cargo::find_by_key(gen_key.clone(), &pool).await?;
   log::info!("deleting cargo proxy config");
-  cargo_proxy_config::delete_for_cargo(gen_key.to_owned(), &pool).await?;
-  log::info!("deleting ports cargo");
-  let res = cargo::delete_by_key(gen_key.to_owned(), &pool).await?;
+  repositories::cargo_proxy_config::delete_for_cargo(gen_key.to_owned(), &pool)
+    .await?;
+  log::info!("deleting cluster links");
+  repositories::cluster_cargo::delete_by_cargo_key(gen_key.to_owned(), &pool)
+    .await?;
+  log::info!("deleting cargo");
+  let res =
+    repositories::cargo::delete_by_key(gen_key.to_owned(), &pool).await?;
+  log::info!("deleting containers");
+  services::cargo::delete_container(gen_key.to_owned(), &docker_api).await?;
   Ok(web::HttpResponse::Ok().json(&res))
 }
 

@@ -68,3 +68,21 @@ pub async fn delete_by_key(
     Ok(result) => Ok(PgDeleteGeneric { count: result }),
   }
 }
+
+pub async fn delete_by_cargo_key(
+  cargo_key: String,
+  pool: &web::types::State<Pool>,
+) -> Result<PgDeleteGeneric, HttpError> {
+  use crate::schema::cluster_cargoes::dsl;
+
+  let conn = get_pool_conn(pool)?;
+  let res = web::block(move || {
+    diesel::delete(dsl::cluster_cargoes.filter(dsl::cargo_key.eq(cargo_key)))
+      .execute(&conn)
+  })
+  .await;
+  match res {
+    Err(err) => Err(db_blocking_error(err)),
+    Ok(result) => Ok(PgDeleteGeneric { count: result }),
+  }
+}
