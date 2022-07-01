@@ -34,5 +34,7 @@ jobs:
       run: sudo sh ./scripts/pre_start_nanocl.sh
     - name: Ci file perm
       run: sudo chmod 777 /run/nanocl && sudo chmod 777 /var/lib/nanocl
+    - name: Setup nanocl
+      run: cargo run --bin nanocld -- --boot-only
     - name: Run tests
       run: cargo make test
