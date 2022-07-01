@@ -22,12 +22,9 @@ fn gen_postgre_host_conf() -> HostConfig {
     }]),
   );
 
-  let binds = vec![
-    String::from(
-      "/var/lib/nanocl/nginx/sites-enabled:/etc/nginx/sites-enabled",
-    ),
-    String::from("/var/lib/nanocl/postgre/data:/var/lib/postgresql/data"),
-  ];
+  let binds = vec![String::from(
+    "/var/lib/nanocl/postgre/data:/var/lib/postgresql/data",
+  )];
 
   HostConfig {
     binds: Some(binds),
@@ -42,7 +39,11 @@ async fn create_postgre_container(
   name: &str,
 ) -> Result<(), DockerError> {
   let image = Some("postgres:latest");
-  let env = Some(vec!["POSTGRES_USER=root", "POSTGRES_PASSWORD=root"]);
+  let env = Some(vec![
+    "POSTGRES_USER=root",
+    "POSTGRES_PASSWORD=root",
+    "POSTGRES_DB=nanocl",
+  ]);
   let labels = Some(gen_labels_with_namespace("nanocl"));
   let host_config = Some(gen_postgre_host_conf());
   let options = Some(CreateContainerOptions { name });
