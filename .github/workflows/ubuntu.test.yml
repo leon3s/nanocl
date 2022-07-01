@@ -10,12 +10,13 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
-
+  ubuntu_test:
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
+    - name: Install sudo
+      run: apt update && apt upgrade && apt install sudo
     - name: Install docker
       run: sudo ./scripts/install_docker.ubuntu.sh
     - name: Start docker and containerd
