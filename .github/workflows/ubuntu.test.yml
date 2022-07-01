@@ -33,4 +33,9 @@ jobs:
     - name: Setup nanocl
       run: cargo run --bin nanocld -- --boot-only
     - name: Run tests
-      run: cargo make test
+      run: cargo make cov
+    - uses: codecov/codecov-action@v3
+      with:
+        files: ./nanocld/daemon_cov.json
+        flags: unittests # optional
+        verbose: true # optional (default = false)
