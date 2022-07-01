@@ -1,0 +1,24 @@
+name: Rust
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install docker
+      run: sudo ./scripts/install_docker.ubuntu.sh
+    - name: Start docker and containerd
+      run: sudo ./pre_start.sh
+    - name: Run tests
+      run: cargo make test --verbose
