@@ -111,18 +111,14 @@ pub async fn boot() -> Result<DaemonState, BootError> {
   let postgres_ip = get_postgres_ip(&docker_api)
     .await
     .map_err(BootError::Errorhttp)?;
-  log::info!("creating postgresql migration pool");
-  let migration_pool = postgre::create_migration_pool(postgres_ip.to_owned());
-  let conn = get_pool_conn(&web::types::State::new(migration_pool.to_owned()))
-    .map_err(BootError::Errorhttp)?;
-  // wrap into state to be abble to use our functions
-  log::info!("running migration script");
-  embedded_migrations::run(&conn).map_err(BootError::Errormigration)?;
-  drop(conn);
-  drop(migration_pool);
   log::info!("creating postgresql state pool");
   let db_pool = postgre::create_pool(postgres_ip.to_owned());
   let pool = web::types::State::new(db_pool.to_owned());
+  log::info!("creating postgresql migration pool");
+  let conn = get_pool_conn(&pool).map_err(BootError::Errorhttp)?;
+  // wrap into state to be abble to use our functions
+  log::info!("running migration script");
+  embedded_migrations::run(&conn).map_err(BootError::Errormigration)?;
   // Create default namesapce
   log::info!("ensuring namespace 'global' presence");
   create_default_nsp(&pool).await?;
