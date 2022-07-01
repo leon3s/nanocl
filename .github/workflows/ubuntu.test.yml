@@ -18,7 +18,9 @@ jobs:
         components: llvm-tools-preview
     - uses: actions/cache@v3
       with:
-        path: ./target/llvm-cov-target
+        path: |
+          ./target/llvm-cov-target
+          /var/lib/nanocl
         key: static-key
     - uses: Swatinem/rust-cache@v1
     - uses: davidB/rust-cargo-make@v1
