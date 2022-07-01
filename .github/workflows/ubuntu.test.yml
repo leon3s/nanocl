@@ -15,10 +15,14 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - name: Install ubuntu dependencies
+      run: sudo sh ./scripts/ubuntu.deps.sh
     - name: Install docker
       run: sudo sh ./scripts/install_docker.ubuntu.sh
+    - name: Install rust dependencies
+      run: sh ./scripts/rust.deps.sh
     - name: Install nanocl
-      run: sudo sh ./install.sh
+      run: sudo sh ./scripts/install_nanocl.ubuntu.sh
     - name: Start docker and containerd
       run: sudo sh ./pre_start.sh
     - name: Run tests
