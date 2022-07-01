@@ -36,6 +36,7 @@ jobs:
       run: cargo make cov
     - uses: codecov/codecov-action@v3
       with:
+        token: ${{ secrets.CODECOV_TOKEN }}
         files: ./nanocld/daemon_cov.json
         flags: unittests # optional
         verbose: true # optional (default = false)
