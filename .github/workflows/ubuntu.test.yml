@@ -15,15 +15,21 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+        components: llvm-tools-preview
+    - uses: davidB/rust-cargo-make@v1
+    - uses: taiki-e/install-action@cargo-llvm-cov
+    - uses: taiki-e/install-action@nextest
     - name: Install ubuntu dependencies
       run: sudo sh ./scripts/ubuntu.deps.sh
     - name: Install docker
       run: sudo sh ./scripts/install_docker.ubuntu.sh
-    - name: Install rust dependencies
-      run: sh ./scripts/rust.deps.sh
     - name: Install nanocl
-      run: sudo sh ./scripts/install_nanocl.ubuntu.sh
+      run: sudo sh ./scripts/install_nanocl.sh
     - name: Start docker and containerd
-      run: sudo sh ./pre_start.sh
+      run: sudo sh ./scripts/pre_start.sh
     - name: Run tests
       run: cargo make test --verbose
