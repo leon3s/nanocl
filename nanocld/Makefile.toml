@@ -13,7 +13,7 @@ args = ["run"]
 
 [tasks.cov]
 command = "cargo"
-args = ["llvm-cov", "nextest"]
+args = ["llvm-cov", "nextest", "--", "--output-path", "./daemon_cov.json", "--json"]
 
 [tasks.test]
 command = "cargo"
