@@ -12,7 +12,9 @@ extern crate diesel_migrations;
 
 use ntex::web;
 use ntex_files as fs;
+use clap::Parser;
 
+mod cli;
 mod boot;
 mod utils;
 mod models;
@@ -31,6 +33,7 @@ mod repositories;
 /// ```
 #[ntex::main]
 async fn main() -> std::io::Result<()> {
+  let args = cli::Cli::parse();
   // building env logger
   if std::env::var("LOG_LEVEL").is_err() {
     std::env::set_var("LOG_LEVEL", "nanocld=info,warn,error,nanocld=debug");
@@ -46,6 +49,9 @@ async fn main() -> std::io::Result<()> {
     Ok(state) => state,
   };
   log::info!("booted");
+  if args.boot_only {
+    return Ok(());
+  }
   log::info!("starting http");
   let mut server = web::HttpServer::new(move || {
     web::App::new()

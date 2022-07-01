@@ -866,6 +866,7 @@ version = "0.1.0"
 dependencies = [
  "bollard",
  "chrono",
+ "clap",
  "diesel",
  "diesel-derive-enum",
  "diesel_migrations",
