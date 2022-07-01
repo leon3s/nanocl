@@ -132,17 +132,15 @@ pub async fn update_item(
 
 #[cfg(test)]
 mod test {
-  use crate::postgre;
+  use super::*;
+
+  use crate::utils::test::*;
   use crate::repositories::git_repository;
   use crate::models::{GitRepositoryPartial, GitRepositoryBranchPartial};
 
-  use crate::utils::test::*;
-
-  use super::*;
-
   #[ntex::test]
   async fn main() -> TestReturn {
-    let pool = postgre::create_pool();
+    let pool = gen_postgre_pool().await;
     let pool_state = web::types::State::new(pool);
 
     let new_repository = GitRepositoryPartial {

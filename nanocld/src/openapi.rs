@@ -135,7 +135,7 @@ mod test_openapi {
 
   #[ntex::test]
   async fn main() -> TestReturn {
-    let srv = generate_server(ntex_config);
+    let srv = generate_server(ntex_config).await;
 
     test_swagger(&srv).await?;
     test_specs(&srv).await?;

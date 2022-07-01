@@ -98,17 +98,18 @@ mod cluster_networks {
   use ntex::web;
   use bollard::network::CreateNetworkOptions;
 
-  use crate::postgre;
   use crate::repositories::cluster;
   use crate::models::ClusterPartial;
 
   use super::*;
 
+  use crate::utils::test::*;
+
   #[ntex::test]
   async fn main() {
     const NET_NAME: &str = "test-cluster-network";
 
-    let pool = postgre::create_pool();
+    let pool = gen_postgre_pool().await;
     let pool_state = web::types::State::new(pool);
 
     // Create cluster for relationship

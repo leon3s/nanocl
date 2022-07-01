@@ -291,7 +291,7 @@ mod test_namespace_cluster {
 
   #[ntex::test]
   async fn main() -> TestReturn {
-    let srv = generate_server(ntex_config);
+    let srv = generate_server(ntex_config).await;
     test_list(&srv).await?;
     test_list_with_nsp(&srv).await?;
     test_create(&srv).await?;

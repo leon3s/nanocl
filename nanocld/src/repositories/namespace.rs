@@ -161,11 +161,11 @@ pub async fn find_by_name(
 #[cfg(test)]
 mod test_namespace {
   use super::*;
-  use crate::postgre;
 
+  use crate::utils::test::*;
   #[ntex::test]
   async fn main() -> Result<(), HttpError> {
-    let pool = postgre::create_pool();
+    let pool = gen_postgre_pool().await;
     let pool_state = web::types::State::new(pool);
 
     // List namespace

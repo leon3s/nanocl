@@ -178,7 +178,7 @@ mod test_namespace {
 
   #[ntex::test]
   async fn main() -> TestReturn {
-    let srv = generate_server(ntex_config);
+    let srv = generate_server(ntex_config).await;
 
     test_fail_create(&srv).await?;
     test_create(&srv).await?;

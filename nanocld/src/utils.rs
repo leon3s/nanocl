@@ -51,7 +51,9 @@ pub fn _get_free_port() -> Result<u16, HttpError> {
 pub mod test {
   use ntex::web::*;
 
-  use crate::postgre::create_pool;
+  use crate::{
+    postgre::create_pool, services::postgresql::get_postgres_ip, models::Pool,
+  };
 
   pub use ntex::web::test::TestServer;
 
@@ -59,14 +61,28 @@ pub mod test {
 
   type Config = fn(&mut ServiceConfig);
 
-  pub fn generate_server(config: Config) -> test::TestServer {
-    let docker = bollard::Docker::connect_with_unix(
+  pub fn gen_docker_client() -> bollard::Docker {
+    bollard::Docker::connect_with_unix(
       "/run/nanocl/docker.sock",
       120,
       bollard::API_DEFAULT_VERSION,
     )
-    .unwrap();
-    let pool = create_pool();
+    .unwrap()
+  }
+
+  pub async fn gen_postgre_pool() -> Pool {
+    let docker = gen_docker_client();
+    let ip_addr = get_postgres_ip(&docker).await.unwrap();
+    let pool = create_pool(ip_addr);
+    pool
+  }
+
+  pub async fn generate_server(config: Config) -> test::TestServer {
+    let docker = gen_docker_client();
+
+    let ip_addr = get_postgres_ip(&docker).await.unwrap();
+
+    let pool = create_pool(ip_addr);
     test::server(move || {
       App::new()
         .state(pool.clone())

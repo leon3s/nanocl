@@ -140,7 +140,7 @@ mod test_cargo {
 
   #[ntex::test]
   async fn test_list() -> TestReturn {
-    let srv = generate_server(ntex_config);
+    let srv = generate_server(ntex_config).await;
     let mut res = srv.get("/cargoes").send().await?;
     println!("body {:#?}", res.body().await);
     assert!(res.status().is_success());

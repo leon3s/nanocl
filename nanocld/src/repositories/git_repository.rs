@@ -152,13 +152,13 @@ pub async fn list(
 
 #[cfg(test)]
 mod test_git_repository {
-  use crate::postgre;
-
   use super::*;
+
+  use crate::utils::test::*;
 
   #[ntex::test]
   async fn main() {
-    let pool = postgre::create_pool();
+    let pool = gen_postgre_pool().await;
     let pool_state = web::types::State::new(pool);
     // Find
     let _res = list(&pool_state).await.unwrap();

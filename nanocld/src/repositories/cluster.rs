@@ -161,16 +161,16 @@ pub async fn delete_by_key(
 mod test_cluster {
   use ntex::web;
 
-  use crate::postgre;
-
   use super::*;
+
+  use crate::utils::test::*;
 
   #[ntex::test]
   async fn main() {
     const NSP_NAME: &str = "default";
     const CLUSTER_NAME: &str = "test-default-cluster";
 
-    let pool = postgre::create_pool();
+    let pool = gen_postgre_pool().await;
     let pool_state = web::types::State::new(pool);
 
     // test list cluster
