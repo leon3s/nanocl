@@ -106,8 +106,8 @@ Set-DnsClientServerAddress -InterfaceIndex 59 -ServerAddresses ("10.0.0.1","10.0
 ```
 
 ## TODO
-add daemon options for directory with default values
-man.md for cli and daemon
-restart nginx after config file write
-add domain entry inside dnsmasq.conf
-environement variables for cargoes
+- add daemon options for directory with default values
+- man.md for cli and daemon
+- environement variables for cargoes
+- prepare a release build
+- get at least 80% code coverage
