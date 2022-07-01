@@ -13,8 +13,8 @@ use crate::models::Pool;
 /// ```
 /// let pool = create_pool();
 /// ```
-pub fn create_pool() -> Pool {
-  let db_url = "postgres://root:root@nanocl-db-postgre/nanocl";
+pub fn create_pool(host: String) -> Pool {
+  let db_url = "postgres://root:root@".to_owned() + &host + "/nanocl";
   let manager = ConnectionManager::<PgConnection>::new(db_url);
 
   r2d2::Pool::builder()

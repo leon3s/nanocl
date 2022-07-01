@@ -4,6 +4,7 @@ use ntex::web;
 use crate::postgre;
 use crate::services;
 use crate::repositories;
+use crate::services::postgresql::get_postgres_ip;
 use crate::utils::get_pool_conn;
 use crate::models::{Pool, NamespacePartial};
 use crate::controllers::errors::HttpError;
@@ -107,8 +108,11 @@ pub async fn boot() -> Result<DaemonState, BootError> {
   .map_err(BootError::Errordocker)?;
   boot_docker_services(&docker_api).await?;
   // Connect to postgresql
+  let postgres_ip = get_postgres_ip(&docker_api)
+    .await
+    .map_err(BootError::Errorhttp)?;
   log::info!("creating a pool connection to postgresql server");
-  let db_pool = postgre::create_pool();
+  let db_pool = postgre::create_pool(postgres_ip);
   // wrap into state to be abble to use our functions
   let pool = web::types::State::new(db_pool.clone());
   let conn = get_pool_conn(&pool).map_err(BootError::Errorhttp)?;

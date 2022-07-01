@@ -5,8 +5,11 @@ use bollard::{
   models::{PortBinding, HostConfig},
   container::{CreateContainerOptions, Config},
 };
+use ntex::http::StatusCode;
 
-use super::utils::*;
+use crate::controllers::errors::HttpError;
+
+use super::{utils::*, errors::docker_error};
 
 fn gen_postgre_host_conf() -> HostConfig {
   let mut port_bindings: HashMap<String, Option<Vec<PortBinding>>> =
@@ -70,4 +73,38 @@ pub async fn boot(docker: &Docker) -> Result<(), DockerError> {
     }
   }
   Ok(())
+}
+
+pub async fn get_postgres_ip(docker: &Docker) -> Result<String, HttpError> {
+  let container = docker
+    .inspect_container("nanocl-db-postgre", None)
+    .await
+    .map_err(docker_error)?;
+
+  let networks = container
+    .network_settings
+    .ok_or(HttpError {
+      msg: String::from("unable to get nanocl-db-postgre network nettings"),
+      status: StatusCode::INTERNAL_SERVER_ERROR,
+    })?
+    .networks
+    .ok_or(HttpError {
+      msg: String::from("unable to get nanocl-db-postgre networks"),
+      status: StatusCode::INTERNAL_SERVER_ERROR,
+    })?;
+
+  let ip_address = networks
+    .get("nanocl")
+    .ok_or(HttpError {
+      msg: String::from("unable to get nanocl-db-postgre network nanocl"),
+      status: StatusCode::INTERNAL_SERVER_ERROR,
+    })?
+    .ip_address
+    .as_ref()
+    .ok_or(HttpError {
+      msg: String::from("unable to get nanocl-db-postgre network nanocl"),
+      status: StatusCode::INTERNAL_SERVER_ERROR,
+    })?;
+
+  Ok(ip_address.to_owned())
 }
