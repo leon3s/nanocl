@@ -19,4 +19,4 @@ sudo containerd --config ./fake_path/etc/nanocl/containerd.conf 2> /dev/null &
 sudo dockerd --config-file ./fake_path/etc/nanocl/dockerd.json 2> /dev/null &
 
 sudo chown root:nanocl -R /run/nanocl
-sudo chmod 770 -R /run/nanocl
+sudo chmod 070 -R /run/nanocl
