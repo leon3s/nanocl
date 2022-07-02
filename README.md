@@ -3,10 +3,10 @@
   <p><strong>self-sufficient vms and containers manager</strong> </p>
 </div>
 
-Unlock all control of your network using nanocl
+Unlock control of your network using nanocl.
 
-Setup and configure enterprice grade vpn with dns!
-And automaticaly test, deploy and scale your services or applications.
+Setup and configure enterprice grade vpn with his own dns server.
+Automaticaly test, deploy and scale your services or applications.
 
 Allow vms and containers management on multiple machine
 
