@@ -1,11 +1,11 @@
 use ntex::web;
 use diesel::prelude::*;
 
+use crate::services;
 use crate::models::{Pool, ClusterCargoPartial, ClusterCargoItem, PgDeleteGeneric};
 
 use crate::controllers::errors::HttpError;
 use crate::repositories::errors::db_blocking_error;
-use crate::utils::get_pool_conn;
 
 pub async fn create(
   item: ClusterCargoPartial,
@@ -13,7 +13,7 @@ pub async fn create(
 ) -> Result<ClusterCargoItem, HttpError> {
   use crate::schema::cluster_cargoes::dsl;
 
-  let conn = get_pool_conn(pool)?;
+  let conn = services::postgresql::get_pool_conn(pool)?;
   let res = web::block(move || {
     let item = ClusterCargoItem {
       key: format!("{}-{}", item.cluster_key, item.cargo_key),
@@ -39,7 +39,7 @@ pub async fn get_by_cluster_key(
 ) -> Result<Vec<ClusterCargoItem>, HttpError> {
   use crate::schema::cluster_cargoes::dsl;
 
-  let conn = get_pool_conn(pool)?;
+  let conn = services::postgresql::get_pool_conn(pool)?;
   let res = web::block(move || {
     dsl::cluster_cargoes
       .filter(dsl::cluster_key.eq(cluster_key))
@@ -52,13 +52,15 @@ pub async fn get_by_cluster_key(
   }
 }
 
+#[allow(dead_code)]
+/// This may be not needed.
 pub async fn delete_by_key(
   key: String,
   pool: &web::types::State<Pool>,
 ) -> Result<PgDeleteGeneric, HttpError> {
   use crate::schema::cluster_cargoes::dsl;
 
-  let conn = get_pool_conn(pool)?;
+  let conn = services::postgresql::get_pool_conn(pool)?;
   let res = web::block(move || {
     diesel::delete(dsl::cluster_cargoes.filter(dsl::key.eq(key))).execute(&conn)
   })
@@ -75,7 +77,7 @@ pub async fn delete_by_cargo_key(
 ) -> Result<PgDeleteGeneric, HttpError> {
   use crate::schema::cluster_cargoes::dsl;
 
-  let conn = get_pool_conn(pool)?;
+  let conn = services::postgresql::get_pool_conn(pool)?;
   let res = web::block(move || {
     diesel::delete(dsl::cluster_cargoes.filter(dsl::cargo_key.eq(cargo_key)))
       .execute(&conn)

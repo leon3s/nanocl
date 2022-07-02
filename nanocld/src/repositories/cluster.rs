@@ -2,7 +2,7 @@
 use ntex::web;
 use diesel::prelude::*;
 
-use crate::utils::get_pool_conn;
+use crate::services;
 use crate::controllers::errors::HttpError;
 use crate::repositories::errors::db_blocking_error;
 use crate::models::{Pool, ClusterItem, ClusterPartial, PgDeleteGeneric};
@@ -34,7 +34,7 @@ pub async fn create_for_namespace(
   pool: &web::types::State<Pool>,
 ) -> Result<ClusterItem, HttpError> {
   use crate::schema::clusters::dsl;
-  let conn = get_pool_conn(pool)?;
+  let conn = services::postgresql::get_pool_conn(pool)?;
 
   let res = web::block(move || {
     let k = nsp.to_owned() + "-" + &item.name;
@@ -78,7 +78,7 @@ pub async fn find_by_key(
 ) -> Result<ClusterItem, HttpError> {
   use crate::schema::clusters::dsl;
 
-  let conn = get_pool_conn(pool)?;
+  let conn = services::postgresql::get_pool_conn(pool)?;
   let res = web::block(move || {
     dsl::clusters.filter(dsl::key.eq(key)).get_result(&conn)
   })
@@ -111,7 +111,7 @@ pub async fn find_by_namespace(
 ) -> Result<Vec<ClusterItem>, HttpError> {
   use crate::schema::clusters::dsl;
 
-  let conn = get_pool_conn(pool)?;
+  let conn = services::postgresql::get_pool_conn(pool)?;
   let res = web::block(move || {
     dsl::clusters.filter(dsl::namespace.eq(nsp)).load(&conn)
   })
@@ -143,7 +143,7 @@ pub async fn delete_by_key(
 ) -> Result<PgDeleteGeneric, HttpError> {
   use crate::schema::clusters::dsl;
 
-  let conn = get_pool_conn(pool)?;
+  let conn = services::postgresql::get_pool_conn(pool)?;
   let res = web::block(move || {
     diesel::delete(dsl::clusters)
       .filter(dsl::key.eq(key))

@@ -3,10 +3,10 @@
 use ntex::web;
 use diesel::prelude::*;
 
-use crate::utils::get_pool_conn;
-use crate::controllers::errors::HttpError;
-use crate::models::{NamespacePartial, NamespaceItem, PgDeleteGeneric, Pool};
+use crate::services;
+use crate::models::{Pool, NamespacePartial, NamespaceItem, PgDeleteGeneric};
 
+use crate::controllers::errors::HttpError;
 use super::errors::db_blocking_error;
 
 /// Create new namespace
@@ -33,7 +33,7 @@ pub async fn create(
 ) -> Result<NamespaceItem, HttpError> {
   use crate::schema::namespaces::dsl;
 
-  let conn = get_pool_conn(pool)?;
+  let conn = services::postgresql::get_pool_conn(pool)?;
   let res = web::block(move || {
     let item = NamespaceItem { name: item.name };
     diesel::insert_into(dsl::namespaces)
@@ -67,7 +67,7 @@ pub async fn list(
 ) -> Result<Vec<NamespaceItem>, HttpError> {
   use crate::schema::namespaces::dsl;
 
-  let conn = get_pool_conn(pool)?;
+  let conn = services::postgresql::get_pool_conn(pool)?;
   let res = web::block(move || dsl::namespaces.load(&conn)).await;
 
   match res {
@@ -96,7 +96,7 @@ pub async fn inspect_by_name(
 ) -> Result<NamespaceItem, HttpError> {
   use crate::schema::namespaces::dsl;
 
-  let conn = get_pool_conn(pool)?;
+  let conn = services::postgresql::get_pool_conn(pool)?;
   let res = web::block(move || {
     dsl::namespaces.filter(dsl::name.eq(name)).get_result(&conn)
   })
@@ -128,7 +128,7 @@ pub async fn delete_by_name(
 ) -> Result<PgDeleteGeneric, HttpError> {
   use crate::schema::namespaces::dsl;
 
-  let conn = get_pool_conn(pool)?;
+  let conn = services::postgresql::get_pool_conn(pool)?;
   let res = web::block(move || {
     diesel::delete(dsl::namespaces.filter(dsl::name.eq(name))).execute(&conn)
   })
@@ -146,7 +146,7 @@ pub async fn find_by_name(
 ) -> Result<NamespaceItem, HttpError> {
   use crate::schema::namespaces::dsl;
 
-  let conn = get_pool_conn(pool)?;
+  let conn = services::postgresql::get_pool_conn(pool)?;
   let res = web::block(move || {
     dsl::namespaces.filter(dsl::name.eq(name)).get_result(&conn)
   })

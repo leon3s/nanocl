@@ -1,12 +1,12 @@
 use ntex::web;
 use diesel::prelude::*;
 
-use crate::models::Pool;
-use crate::utils::get_pool_conn;
-use crate::controllers::errors::HttpError;
+use crate::services;
 use crate::models::{
-  GitRepositoryBranchPartial, GitRepositoryBranchItem, PgDeleteGeneric,
+  Pool, GitRepositoryBranchPartial, GitRepositoryBranchItem, PgDeleteGeneric,
 };
+
+use crate::controllers::errors::HttpError;
 
 use super::errors::db_blocking_error;
 
@@ -33,7 +33,7 @@ pub async fn create_many(
 ) -> Result<Vec<GitRepositoryBranchItem>, HttpError> {
   use crate::schema::git_repository_branches::dsl;
 
-  let conn = get_pool_conn(pool)?;
+  let conn = services::postgresql::get_pool_conn(pool)?;
   let res = web::block(move || {
     let branches = items
       .into_iter()
@@ -76,7 +76,7 @@ pub async fn delete_by_repository_id(
 ) -> Result<PgDeleteGeneric, HttpError> {
   use crate::schema::git_repository_branches::dsl;
 
-  let conn = get_pool_conn(pool)?;
+  let conn = services::postgresql::get_pool_conn(pool)?;
   let res = web::block(move || {
     diesel::delete(dsl::git_repository_branches)
       .filter(dsl::repository_name.eq(repository_name))
@@ -96,7 +96,7 @@ pub async fn get_by_key(
 ) -> Result<GitRepositoryBranchItem, HttpError> {
   use crate::schema::git_repository_branches::dsl;
 
-  let conn = get_pool_conn(pool)?;
+  let conn = services::postgresql::get_pool_conn(pool)?;
   let res = web::block(move || {
     dsl::git_repository_branches
       .filter(dsl::key.eq(key))
@@ -116,7 +116,7 @@ pub async fn update_item(
 ) -> Result<(), HttpError> {
   use crate::schema::git_repository_branches::dsl;
 
-  let conn = get_pool_conn(pool)?;
+  let conn = services::postgresql::get_pool_conn(pool)?;
   let res = web::block(move || {
     diesel::update(dsl::git_repository_branches.filter(dsl::key.eq(item.key)))
       .set(dsl::last_commit_sha.eq(item.last_commit_sha))

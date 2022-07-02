@@ -1,7 +1,7 @@
 use ntex::web;
 use diesel::prelude::*;
 
-use crate::utils::get_pool_conn;
+use crate::services;
 use crate::controllers::errors::HttpError;
 use crate::models::{Pool, CargoItem, CargoPartial, PgDeleteGeneric, NamespaceItem};
 
@@ -11,7 +11,7 @@ pub async fn find_by_namespace(
   nsp: NamespaceItem,
   pool: &web::types::State<Pool>,
 ) -> Result<Vec<CargoItem>, HttpError> {
-  let conn = get_pool_conn(pool)?;
+  let conn = services::postgresql::get_pool_conn(pool)?;
 
   let res = web::block(move || CargoItem::belonging_to(&nsp).load(&conn)).await;
   match res {
@@ -27,7 +27,7 @@ pub async fn create(
 ) -> Result<CargoItem, HttpError> {
   use crate::schema::cargoes::dsl;
 
-  let conn = get_pool_conn(pool)?;
+  let conn = services::postgresql::get_pool_conn(pool)?;
   let res = web::block(move || {
     let new_item = CargoItem {
       key: nsp.to_owned() + "-" + &item.name,
@@ -54,7 +54,7 @@ pub async fn delete_by_key(
   use crate::schema::cargoes::dsl;
 
   println!("cargo deleting key {}", key);
-  let conn = get_pool_conn(pool)?;
+  let conn = services::postgresql::get_pool_conn(pool)?;
   let res = web::block(move || {
     diesel::delete(dsl::cargoes)
       .filter(dsl::key.eq(key))
@@ -73,7 +73,7 @@ pub async fn find_by_key(
 ) -> Result<CargoItem, HttpError> {
   use crate::schema::cargoes::dsl;
 
-  let conn = get_pool_conn(pool)?;
+  let conn = services::postgresql::get_pool_conn(pool)?;
   let res =
     web::block(move || dsl::cargoes.filter(dsl::key.eq(key)).get_result(&conn))
       .await;

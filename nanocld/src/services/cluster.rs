@@ -2,7 +2,7 @@ use ntex::web;
 use ntex::http::StatusCode;
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
-use futures::{StreamExt, TryStreamExt};
+use futures::StreamExt;
 use futures::stream::FuturesUnordered;
 
 use crate::{services, repositories};

@@ -1,13 +1,13 @@
 use ntex::web;
 use diesel::prelude::*;
 
+use crate::services;
 use crate::models::{
   Pool, CargoProxyConfigItem, CargoProxyConfigPartial, PgDeleteGeneric,
 };
 
 use crate::controllers::errors::HttpError;
 use crate::repositories::errors::db_blocking_error;
-use crate::utils::get_pool_conn;
 
 pub async fn get_for_cargo(
   cargo_key: String,
@@ -15,7 +15,7 @@ pub async fn get_for_cargo(
 ) -> Result<CargoProxyConfigItem, HttpError> {
   use crate::schema::cargo_proxy_configs::dsl;
 
-  let conn = get_pool_conn(pool)?;
+  let conn = services::postgresql::get_pool_conn(pool)?;
   let res = web::block(move || {
     dsl::cargo_proxy_configs
       .filter(dsl::cargo_key.eq(cargo_key))
@@ -36,7 +36,7 @@ pub async fn create_for_cargo(
 ) -> Result<CargoProxyConfigItem, HttpError> {
   use crate::schema::cargo_proxy_configs::dsl;
 
-  let conn = get_pool_conn(pool)?;
+  let conn = services::postgresql::get_pool_conn(pool)?;
 
   let res = web::block(move || {
     let item = CargoProxyConfigItem {
@@ -63,7 +63,7 @@ pub async fn delete_for_cargo(
 ) -> Result<PgDeleteGeneric, HttpError> {
   use crate::schema::cargo_proxy_configs::dsl;
 
-  let conn = get_pool_conn(pool)?;
+  let conn = services::postgresql::get_pool_conn(pool)?;
   let res = web::block(move || {
     diesel::delete(
       dsl::cargo_proxy_configs.filter(dsl::cargo_key.eq(cargo_key)),

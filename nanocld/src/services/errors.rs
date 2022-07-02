@@ -11,11 +11,7 @@ pub fn docker_error_ref(err: &bollard::errors::Error) -> HttpError {
       msg: message.to_owned(),
       status: StatusCode::from_u16(status_code.to_owned()).unwrap(),
     },
-    bollard::errors::Error::JsonDataError {
-      message,
-      contents,
-      column,
-    } => HttpError {
+    bollard::errors::Error::JsonDataError { message, .. } => HttpError {
       msg: message.to_owned(),
       status: StatusCode::INTERNAL_SERVER_ERROR,
     },

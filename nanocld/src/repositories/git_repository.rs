@@ -1,13 +1,13 @@
 use ntex::web;
 use diesel::prelude::*;
 
-use crate::utils::get_pool_conn;
-use crate::controllers::errors::HttpError;
+use crate::services;
 use crate::models::{
-  PgDeleteGeneric, Pool, GitRepositoryPartial, GitRepositoryItem,
+  Pool, PgDeleteGeneric, GitRepositoryPartial, GitRepositoryItem,
   GitRepositorySourceType,
 };
 
+use crate::controllers::errors::HttpError;
 use super::errors::db_blocking_error;
 
 /// Create fresh git repository
@@ -33,7 +33,7 @@ pub async fn create(
 ) -> Result<GitRepositoryItem, HttpError> {
   use crate::schema::git_repositories::dsl;
 
-  let conn = get_pool_conn(pool)?;
+  let conn = services::postgresql::get_pool_conn(pool)?;
   let res = web::block(move || {
     let new_namespace = GitRepositoryItem {
       url: item.url,
@@ -75,7 +75,7 @@ pub async fn delete_by_name(
 ) -> Result<PgDeleteGeneric, HttpError> {
   use crate::schema::git_repositories::dsl;
 
-  let conn = get_pool_conn(pool)?;
+  let conn = services::postgresql::get_pool_conn(pool)?;
   let res = web::block(move || {
     diesel::delete(dsl::git_repositories.filter(dsl::name.eq(id)))
       .execute(&conn)
@@ -109,7 +109,7 @@ pub async fn find_by_name(
 ) -> Result<GitRepositoryItem, HttpError> {
   use crate::schema::git_repositories::dsl;
 
-  let conn = get_pool_conn(pool)?;
+  let conn = services::postgresql::get_pool_conn(pool)?;
   let res = web::block(move || {
     dsl::git_repositories
       .filter(dsl::name.eq(id_or_name))
@@ -142,7 +142,7 @@ pub async fn list(
 ) -> Result<Vec<GitRepositoryItem>, HttpError> {
   use crate::schema::git_repositories::dsl;
 
-  let conn = get_pool_conn(pool)?;
+  let conn = services::postgresql::get_pool_conn(pool)?;
   let res = web::block(move || dsl::git_repositories.load(&conn)).await;
   match res {
     Err(err) => Err(db_blocking_error(err)),

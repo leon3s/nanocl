@@ -1,4 +1,4 @@
-use clap::{App, AppSettings, Parser, Subcommand};
+use clap::{AppSettings, Parser};
 /// A self-sufficient vms and containers manager
 #[derive(Debug, Parser)]
 #[clap(

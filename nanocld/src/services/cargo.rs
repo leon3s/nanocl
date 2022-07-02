@@ -1,7 +1,7 @@
 use ntex::web;
 use ntex::http::StatusCode;
 use std::collections::HashMap;
-use futures::{StreamExt, TryStreamExt};
+use futures::StreamExt;
 use futures::stream::FuturesUnordered;
 
 use crate::models::CargoItem;

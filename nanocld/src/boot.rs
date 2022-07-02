@@ -1,11 +1,7 @@
 //! File used to describe daemon boot
 use ntex::web;
 
-use crate::postgre;
-use crate::services;
-use crate::repositories;
-use crate::services::postgresql::get_postgres_ip;
-use crate::utils::get_pool_conn;
+use crate::{services, repositories};
 use crate::models::{Pool, NamespacePartial};
 use crate::controllers::errors::HttpError;
 
@@ -19,6 +15,16 @@ pub enum BootError {
   Errorhttp(HttpError),
   Errordocker(DockerError),
   Errormigration(RunMigrationsError),
+}
+
+#[derive(Debug)]
+#[allow(dead_code)]
+/// Todo Daemon config as state
+pub struct DaemonConfig {
+  root_path: String,
+  state_path: String,
+  pidfile: String,
+  hosts: Vec<String>,
 }
 
 #[derive(Clone)]
@@ -108,14 +114,15 @@ pub async fn boot() -> Result<DaemonState, BootError> {
   .map_err(BootError::Errordocker)?;
   boot_docker_services(&docker_api).await?;
   // Connect to postgresql
-  let postgres_ip = get_postgres_ip(&docker_api)
+  let postgres_ip = services::postgresql::get_postgres_ip(&docker_api)
     .await
     .map_err(BootError::Errorhttp)?;
   log::info!("creating postgresql state pool");
-  let db_pool = postgre::create_pool(postgres_ip.to_owned());
+  let db_pool = services::postgresql::create_pool(postgres_ip.to_owned());
   let pool = web::types::State::new(db_pool.to_owned());
   log::info!("creating postgresql migration pool");
-  let conn = get_pool_conn(&pool).map_err(BootError::Errorhttp)?;
+  let conn =
+    services::postgresql::get_pool_conn(&pool).map_err(BootError::Errorhttp)?;
   // wrap into state to be abble to use our functions
   log::info!("running migration script");
   embedded_migrations::run(&conn).map_err(BootError::Errormigration)?;

@@ -20,7 +20,6 @@ mod utils;
 mod models;
 mod schema;
 mod openapi;
-mod postgre;
 mod services;
 mod controllers;
 mod repositories;
