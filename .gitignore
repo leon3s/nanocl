@@ -1,2 +1,4 @@
 /target
 *_cov.json
+fake_path/var/lib/nanocl/containerd
+fake_path/var/lib/nanocl/docker

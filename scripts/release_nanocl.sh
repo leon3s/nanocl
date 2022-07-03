@@ -1,5 +1,5 @@
 #!/bin/sh
-## name: release.sh
+## name: release_nanocl.sh
 set -e -x
 
 cargo make release

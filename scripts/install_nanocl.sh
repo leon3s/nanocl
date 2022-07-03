@@ -1,5 +1,5 @@
 #!/bin/sh
-## name: install.sh
+## name: install_nanocl.sh
 set -e -x
 
 sudo addgroup nanocl
