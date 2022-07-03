@@ -90,6 +90,7 @@ async fn create_cluster(
 #[web::delete("clusters/{name}")]
 async fn delete_cluster_by_name(
   pool: web::types::State<Pool>,
+  docker_api: web::types::State<bollard::Docker>,
   name: web::types::Path<String>,
   web::types::Query(qs): web::types::Query<ClusterQuery>,
 ) -> Result<web::HttpResponse, HttpError> {
@@ -98,6 +99,22 @@ async fn delete_cluster_by_name(
     Some(namespace) => namespace,
   };
   let gen_key = nsp.to_owned() + "-" + &name.into_inner();
+
+  let item =
+    repositories::cluster::find_by_key(gen_key.to_owned(), &pool).await?;
+
+  log::info!("deleting cluster cargo");
+  repositories::cluster_cargo::get_by_cluster_key(gen_key.to_owned(), &pool)
+    .await?;
+
+  log::info!("deleting cluster variable");
+  repositories::cluster_variable::delete_by_cluster_key(
+    gen_key.to_owned(),
+    &pool,
+  )
+  .await?;
+  log::info!("deleting cluster networks");
+  services::cluster::delete_networks(item, &docker_api, &pool).await?;
   let res = repositories::cluster::delete_by_key(gen_key, &pool).await?;
   Ok(web::HttpResponse::Ok().json(&res))
 }

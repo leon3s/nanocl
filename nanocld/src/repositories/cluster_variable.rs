@@ -56,6 +56,26 @@ pub async fn list_by_cluster(
   }
 }
 
+pub async fn delete_by_cluster_key(
+  cluster_key: String,
+  pool: &web::types::State<Pool>,
+) -> Result<PgDeleteGeneric, HttpError> {
+  use crate::schema::cluster_variables::dsl;
+
+  let conn = services::postgresql::get_pool_conn(pool)?;
+  let res = web::block(move || {
+    diesel::delete(
+      dsl::cluster_variables.filter(dsl::cluster_key.eq(cluster_key)),
+    )
+    .execute(&conn)
+  })
+  .await;
+  match res {
+    Err(err) => Err(db_blocking_error(err)),
+    Ok(result) => Ok(PgDeleteGeneric { count: result }),
+  }
+}
+
 pub async fn delete_by_key(
   key: String,
   pool: &web::types::State<Pool>,

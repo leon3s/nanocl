@@ -32,6 +32,36 @@ pub struct NginxTemplateData {
   target_port: i32,
 }
 
+pub async fn delete_networks(
+  cluster: ClusterItem,
+  docker_api: &web::types::State<bollard::Docker>,
+  pool: &web::types::State<Pool>,
+) -> Result<(), HttpError> {
+  let networks =
+    repositories::cluster_network::list_for_cluster(cluster, pool).await?;
+
+  networks
+    .into_iter()
+    .map(|network| async move {
+      docker_api
+        .remove_network(&network.docker_network_id)
+        .await
+        .map_err(|err| HttpError {
+          msg: format!("unable to remove network {:#?}", err),
+          status: StatusCode::INTERNAL_SERVER_ERROR,
+        })?;
+      repositories::cluster_network::delete_by_key(network.key, pool).await?;
+      Ok::<_, HttpError>(())
+    })
+    .collect::<FuturesUnordered<_>>()
+    .collect::<Vec<_>>()
+    .await
+    .into_iter()
+    .collect::<Result<Vec<_>, HttpError>>()?;
+
+  Ok(())
+}
+
 pub async fn list_containers(
   cluster_key: &str,
   docker_api: &web::types::State<bollard::Docker>,
