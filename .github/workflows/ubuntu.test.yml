@@ -35,7 +35,7 @@ jobs:
     - name: Install nanocl
       run: sudo sh ./scripts/install_nanocl.sh
     - name: Start docker and containerd
-      run: sudo sh ./scripts/pre_start_nanocl.dev.sh
+      run: sudo sh ./scripts/pre_start_nanocl.sh
     - name: Ci file perm
       run: sudo chmod 777 -R /run/nanocl && sudo chmod 777 -R /var/lib/nanocl
     - name: Setup nanocl
