@@ -8,7 +8,7 @@ use super::{
   error::{NanocldError, is_api_error},
 };
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CargoProxyConfigPartial {
   pub(crate) domain_name: String,
   pub(crate) host_ip: String,
@@ -78,19 +78,17 @@ impl std::fmt::Display for CargoProxyConfigPartial {
 
 #[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct CargoPartial {
+  /// Name of the cargo
   pub(crate) name: String,
-  /// name of the network to connect to
-  #[clap(long, name = "network")]
-  pub(crate) network_name: Option<String>,
   /// name of the image
   #[clap(long = "image")]
   pub(crate) image_name: String,
-  /// list of open to open
-  #[clap(short, long)]
-  pub(crate) ports: Option<Vec<String>>,
   /// proxy config is an optional string as follow domain_name=your_domain,host_ip=your_host_ip
   #[clap(long)]
-  pub(crate) proxy_config: CargoProxyConfigPartial,
+  pub(crate) proxy_config: Option<CargoProxyConfigPartial>,
+  /// Environement variable
+  #[clap(long = "-env")]
+  pub(crate) environnements: Option<Vec<String>>,
 }
 
 /// Cargo item is an definition to container create image and start them
@@ -101,9 +99,9 @@ pub struct CargoItem {
   pub(crate) name: String,
   #[serde(rename = "image_name")]
   pub(crate) image: String,
-  #[serde(rename = "network_name")]
-  #[tabled(display_with = "optional_string")]
-  pub(crate) network: Option<String>,
+  // #[serde(rename = "network_name")]
+  // #[tabled(display_with = "optional_string")]
+  // pub(crate) network: Option<String>,
   #[serde(rename = "namespace_name")]
   pub(crate) namespace: String,
 }

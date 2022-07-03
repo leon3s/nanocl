@@ -190,6 +190,21 @@ pub struct ClusterNetworkArgs {
   pub commands: ClusterNetworkCommands,
 }
 
+/// apply a configuration file
+#[derive(Debug, Parser)]
+pub struct ApplyArgs {
+  #[clap(short)]
+  /// .yml conf file to apply
+  pub(crate) file_path: String,
+}
+
+#[derive(Debug, Parser)]
+pub struct DeleteArgs {
+  #[clap(short)]
+  /// .yml conf file to revert
+  pub(crate) file_path: String,
+}
+
 #[derive(Debug, Subcommand)]
 pub enum Commands {
   Docker(DockerOptions),
@@ -198,6 +213,8 @@ pub enum Commands {
   ClusterNetwork(ClusterNetworkArgs),
   Cargo(CargoArgs),
   GitRepository(GitRepositoryArgs),
+  Apply(ApplyArgs),
+  Delete(DeleteArgs),
   // TODO Completion
   // Completion {
   //   /// Shell to generate completion for
@@ -206,7 +223,7 @@ pub enum Commands {
   // },
 }
 
-// TODO
+// TODO for completion
 pub fn _print_completion<G>(gen: G, app: &mut App)
 where
   G: Generator,

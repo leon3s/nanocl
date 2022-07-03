@@ -27,6 +27,18 @@ pub struct ClusterNetworkItem {
   pub(crate) cluster_key: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ClusterVarPartial {
+  pub(crate) name: String,
+  pub(crate) value: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ClusterJoinPartial {
+  pub(crate) network: String,
+  pub(crate) cargo: String,
+}
+
 #[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct ClusterNetworkPartial {
   pub(crate) name: String,
@@ -119,12 +131,58 @@ impl Nanocld {
     Ok(())
   }
 
-  pub async fn start_cluster(
+  pub async fn create_cluster_var(
     &self,
-    cluster_name: String,
+    c_name: &str,
+    item: ClusterVarPartial,
   ) -> Result<(), NanocldError> {
     let mut res = self
-      .post(format!("/clusters/{name}/start", name = cluster_name))
+      .post(format!("/clusters/{c_name}/variables", c_name = c_name))
+      .send_json(&item)
+      .await?;
+    let status = res.status();
+    is_api_error(&mut res, &status).await?;
+
+    Ok(())
+  }
+
+  pub async fn delete_cluster_var(
+    &self,
+    c_name: &str,
+    v_name: &str,
+  ) -> Result<(), NanocldError> {
+    let mut res = self
+      .delete(format!(
+        "/clusters/{c_name}/variables/{v_name}",
+        c_name = c_name,
+        v_name = v_name
+      ))
+      .send()
+      .await?;
+    let status = res.status();
+    is_api_error(&mut res, &status).await?;
+
+    Ok(())
+  }
+
+  pub async fn join_cluster_cargo(
+    &self,
+    c_name: &str,
+    item: &ClusterJoinPartial,
+  ) -> Result<(), NanocldError> {
+    let mut res = self
+      .post(format!("/clusters/{c_name}/join", c_name = c_name))
+      .send_json(item)
+      .await?;
+    let status = res.status();
+    is_api_error(&mut res, &status).await?;
+
+    Ok(())
+  }
+
+  pub async fn start_cluster(&self, c_name: &str) -> Result<(), NanocldError> {
+    let mut res = self
+      .post(format!("/clusters/{c_name}/start", c_name = c_name))
       .send()
       .await?;
 

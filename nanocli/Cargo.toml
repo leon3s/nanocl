@@ -1,14 +1,10 @@
 [package]
-name = "nanocli"
+name = "nanocl"
 version = "0.1.0"
 edition = "2021"
 authors = ["nanocl contributors <team@next-hat.com>"]
 description = "nanocli a self-sufficient vms and containers manager"
 readme = "README.md"
-
-[features]
-default = []
-mangen = ["dep:clap_mangen"]
 
 [dependencies]
 futures = "0.3"
@@ -21,4 +17,3 @@ serde = { version = "1.0", features = ["derive"] }
 clap = { version = "3.1.8", features = ["derive"] }
 uuid = { version = "0.8", features = ["serde", "v4"] }
 ntex = { version = "0.5", features = ["openssl", "rustls", "tokio"] }
-clap_mangen = { version = "0.1.8", optional = true }

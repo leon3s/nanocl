@@ -1,14 +1,5 @@
 use clap::Parser;
 
-#[cfg(feature = "mangen")]
-use clap_mangen::Man;
-#[cfg(feature = "mangen")]
-use clap_complete::generate_to;
-#[cfg(feature = "mangen")]
-use std::{path::Path, fs::File};
-#[cfg(feature = "mangen")]
-use clap::IntoApp;
-
 use std::process::{Command, Stdio};
 
 use tabled::{
@@ -17,39 +8,25 @@ use tabled::{
 };
 
 mod cli;
-mod models;
+mod yml;
+mod error;
 mod nanocld;
 
 use cli::*;
 
-use nanocld::error::Error;
+use nanocld::error::NanocldError;
 
-fn process_error(err: Error) {
+fn process_error(err: NanocldError) {
   match err {
-    Error::Api(err) => {
+    NanocldError::Api(err) => {
       println!("{}", err.msg);
     }
-    Error::JsonPayload(err) => {
+    NanocldError::JsonPayload(err) => {
       eprintln!("{:?}", err);
     }
     _ => eprintln!("{:?}", err),
-    // Error::Payload(_) => todo!(),
-    // Error::SendRequest(_) => todo!(),
-    // Error::JsonPayload(_) => todo!(),
   }
   std::process::exit(1);
-}
-
-#[cfg(feature = "mangen")]
-fn build_manpages(outdir: &Path) -> Result<(), Box<dyn std::error::Error>> {
-  let app = Cli::into_app();
-
-  let file = Path::new(&outdir).join("nanocli.1");
-  let mut file = File::create(&file)?;
-
-  Man::new(app).render(&mut file)?;
-
-  Ok(())
 }
 
 fn print_table<T>(iter: impl IntoIterator<Item = T>)
@@ -68,15 +45,12 @@ where
   print!("{}", table);
 }
 
+async fn execute_args(args: Cli) {}
+
 #[ntex::main]
 async fn main() -> std::io::Result<()> {
   let args = Cli::parse();
   let client = nanocld::client::Nanocld::connect_with_unix_default().await;
-  #[cfg(feature = "mangen")]
-  {
-    let dir = std::env::current_dir()?;
-    build_manpages(&dir).unwrap();
-  }
   match &args.command {
     Commands::Docker(options) => {
       let mut opts = vec![
@@ -101,7 +75,7 @@ async fn main() -> std::io::Result<()> {
         Ok(items) => print_table(items),
       },
       NamespaceCommands::Create(item) => {
-        match client.create_namespace(item.name.to_owned()).await {
+        match client.create_namespace(&item.name).await {
           Err(err) => process_error(err),
           Ok(item) => println!("{}", item.name),
         }
@@ -124,7 +98,7 @@ async fn main() -> std::io::Result<()> {
         }
       }
       ClusterCommands::Start(options) => {
-        if let Err(err) = client.start_cluster(options.name.to_owned()).await {
+        if let Err(err) = client.start_cluster(&options.name).await {
           process_error(err);
         }
       }
@@ -198,22 +172,18 @@ async fn main() -> std::io::Result<()> {
         }
       }
     },
+    Commands::Apply(args) => {
+      let mut file_path = std::env::current_dir()?;
+      file_path.push(&args.file_path);
+      println!("apply !");
+      yml::config::apply(file_path, &client).await.unwrap();
+    }
+    Commands::Delete(args) => {
+      let mut file_path = std::env::current_dir()?;
+      file_path.push(&args.file_path);
+      println!("delete !");
+      yml::config::delete(file_path, &client).await.unwrap();
+    }
   }
-  // REAM yml file
-  // let args: Vec<String> = env::args().collect();
-  // if args.len() < 2 {
-  //   eprintln!("require the file path to parse as argument");
-  // }
-  // let mut path = env::current_dir()?;
-  // path.push(&args[1]);
-
-  // let result = fs::read_to_string(&path);
-  // if let Ok(str) = result {
-  //   if let Err(err) = parse_config(&str) {
-  //     eprintln!("error while parsing config {:?}", err);
-  //   }
-  // } else {
-  //   eprintln!("the file {:?} cannot be parsed", path);
-  // }
   Ok(())
 }

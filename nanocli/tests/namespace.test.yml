@@ -1,0 +1,47 @@
+name: global
+auto_start: true
+type: namespace
+git_repositories:
+  - name: express-test-deploy
+    url: https://github.com/leon3s/express-test-deploy
+    update_on:
+      push:
+        branches:
+          - development
+
+clusters:
+  - name: dev
+    joins:
+      - cargo: express-test-deploy
+        network: express-test-deploy
+    vars:
+      CLUSTER: DEV
+
+  - name: staging
+    vars:
+      CLUSTER: STAGING
+    joins:
+      - cargo: express-test-deploy
+        network: express-test-deploy
+
+  - name: production
+    vars:
+      CLUSTER: PRODUCTION
+    joins:
+      - cargo: express-test-deploy
+        network: express-test-deploy
+
+networks:
+  - name: express-test-deploy
+
+cargoes:
+  - name: express-test-deploy
+    image: express-test-deploy:development
+    network: express-test-deploy
+    proxy_config:
+      target_port: 3000
+      domain_name: "express-test-deploy.com"
+      host_ip: 172.21.62.90
+    envs:
+      - NODE_ENV=production
+      - CLUSTER={{vars.CLUSTER}}

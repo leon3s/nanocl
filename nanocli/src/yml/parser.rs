@@ -1,4 +1,10 @@
-fn _parse_config(str: &str) -> Result<models::YmlFile, serde_yaml::Error> {
-  let result: models::YmlFile = serde_yaml::from_str(str)?;
-  Ok(result)
+use serde::Deserialize;
+
+use super::models;
+
+pub fn get_config_type(
+  str: &str,
+) -> Result<models::YmlConfigTypes, serde_yaml::Error> {
+  let result = serde_yaml::from_str::<models::YmlFile>(str)?;
+  Ok(result.file_type)
 }

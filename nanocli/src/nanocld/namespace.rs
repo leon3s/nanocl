@@ -30,9 +30,9 @@ impl Nanocld {
 
   pub async fn create_namespace(
     &self,
-    name: String,
+    name: &str,
   ) -> Result<NamespaceItem, NanocldError> {
-    let new_item = NamespaceItem { name };
+    let new_item = NamespaceItem { name: name.into() };
     let mut res = self
       .post(String::from("/namespaces"))
       .send_json(&new_item)
@@ -46,7 +46,7 @@ impl Nanocld {
 
   pub async fn inspect_namespace(
     &self,
-    name: String,
+    name: &str,
   ) -> Result<NamespaceItem, NanocldError> {
     let mut res = self
       .get(format!("/namespaces/{name}/inspect", name = name))
