@@ -32,6 +32,24 @@ pub struct NginxTemplateData {
   target_port: i32,
 }
 
+pub async fn list_containers(
+  cluster_key: &str,
+  docker_api: &web::types::State<bollard::Docker>,
+) -> Result<Vec<bollard::models::ContainerSummary>, HttpError> {
+  let target_cluster = &format!("cluster={}", &cluster_key);
+  let mut filters = HashMap::new();
+  filters.insert("label", vec![target_cluster.as_str()]);
+  let options = Some(bollard::container::ListContainersOptions {
+    all: true,
+    filters,
+    ..Default::default()
+  });
+  let containers = docker_api
+    .list_containers(options)
+    .await
+    .map_err(docker_error)?;
+  Ok(containers)
+}
 pub async fn start(
   cluster: &ClusterItem,
   docker_api: &web::types::State<bollard::Docker>,
@@ -49,8 +67,7 @@ pub async fn start(
       let cargo_key = &cluster_cargo.cargo_key;
       let network_key = &cluster_cargo.network_key;
       let containers =
-        services::cargo::list_containers(cargo_key.to_owned(), docker_api)
-          .await?;
+        list_containers(&cluster_cargo.cluster_key, docker_api).await?;
 
       println!("starting cargo {}", &cargo_key);
 
