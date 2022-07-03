@@ -29,13 +29,13 @@ jobs:
     - uses: taiki-e/install-action@cargo-llvm-cov
     - uses: taiki-e/install-action@nextest
     - name: Install ubuntu dependencies
-      run: sudo ./scripts/ubuntu.deps.sh
+      run: sudo sh ./scripts/ubuntu.deps.sh
     - name: Install docker
-      run: sudo ./scripts/install_docker.ubuntu.sh
+      run: sudo sh ./scripts/install_docker.ubuntu.sh
     - name: Install nanocl
-      run: sudo ./scripts/install_nanocl.sh
+      run: sudo sh ./scripts/install_nanocl.sh
     - name: Start docker and containerd
-      run: sudo ./scripts/pre_start_nanocl.dev.sh
+      run: sudo sh ./scripts/pre_start_nanocl.dev.sh
     - name: Ci file perm
       run: sudo chmod 777 -R /run/nanocl && sudo chmod 777 -R /var/lib/nanocl
     - name: Setup nanocl
