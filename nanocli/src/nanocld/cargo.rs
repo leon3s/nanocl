@@ -106,7 +106,8 @@ pub struct CargoItem {
   pub(crate) namespace: String,
 }
 
-fn optional_string(s: &Option<String>) -> String {
+// Helper for tabled may be needed later
+fn _optional_string(s: &Option<String>) -> String {
   match s {
     None => String::from(""),
     Some(s) => s.to_owned(),

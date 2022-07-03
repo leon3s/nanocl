@@ -9,28 +9,28 @@ use crate::nanocld::cluster::{
   ClusterNetworkPartial, ClusterPartial, ClusterVarPartial,
 };
 
-use super::parser::get_config_type;
-use super::errors::YmlConfigError;
+use crate::errors::CliError;
 
+use super::parser::get_config_type;
 use super::models::{YmlConfigTypes, NamespaceConfig};
 
 async fn delete_namespace(
   namespace: &NamespaceConfig,
   client: &Nanocld,
-) -> Result<(), YmlConfigError> {
+) -> Result<(), CliError> {
   // Delete cargoes
   namespace
     .cargoes
     .iter()
     .map(|cargo| async {
       client.delete_cargo(cargo.name.to_owned()).await?;
-      Ok::<(), YmlConfigError>(())
+      Ok::<(), CliError>(())
     })
     .collect::<FuturesUnordered<_>>()
     .collect::<Vec<_>>()
     .await
     .into_iter()
-    .collect::<Result<Vec<()>, YmlConfigError>>()?;
+    .collect::<Result<Vec<()>, CliError>>()?;
 
   // Delete clusters
   namespace
@@ -38,13 +38,13 @@ async fn delete_namespace(
     .iter()
     .map(|cluster| async {
       client.delete_cluster(cluster.name.to_owned()).await?;
-      Ok::<(), YmlConfigError>(())
+      Ok::<(), CliError>(())
     })
     .collect::<FuturesUnordered<_>>()
     .collect::<Vec<_>>()
     .await
     .into_iter()
-    .collect::<Result<Vec<()>, YmlConfigError>>()?;
+    .collect::<Result<Vec<()>, CliError>>()?;
 
   Ok(())
 }
@@ -52,7 +52,7 @@ async fn delete_namespace(
 async fn apply_namespace(
   namespace: &NamespaceConfig,
   client: &Nanocld,
-) -> Result<(), YmlConfigError> {
+) -> Result<(), CliError> {
   // Create namespace if not exists
   if client.inspect_namespace(&namespace.name).await.is_err() {
     client.create_namespace(&namespace.name).await?;
@@ -83,13 +83,13 @@ async fn apply_namespace(
             client
               .create_cluster_var(&cluster.name.to_owned(), item)
               .await?;
-            Ok::<_, YmlConfigError>(())
+            Ok::<_, CliError>(())
           })
           .collect::<FuturesUnordered<_>>()
           .collect::<Vec<_>>()
           .await
           .into_iter()
-          .collect::<Result<Vec<()>, YmlConfigError>>()?;
+          .collect::<Result<Vec<()>, CliError>>()?;
       }
       // Create cluster networks
       namespace
@@ -103,20 +103,20 @@ async fn apply_namespace(
             .create_cluster_network(cluster.name.to_owned(), &item)
             .await?;
 
-          Ok::<_, YmlConfigError>(())
+          Ok::<_, CliError>(())
         })
         .collect::<FuturesUnordered<_>>()
         .collect::<Vec<_>>()
         .await
         .into_iter()
-        .collect::<Result<Vec<()>, YmlConfigError>>()?;
-      Ok::<_, YmlConfigError>(())
+        .collect::<Result<Vec<()>, CliError>>()?;
+      Ok::<_, CliError>(())
     })
     .collect::<FuturesUnordered<_>>()
     .collect::<Vec<_>>()
     .await
     .into_iter()
-    .collect::<Result<Vec<()>, YmlConfigError>>()?;
+    .collect::<Result<Vec<()>, CliError>>()?;
 
   // Create cargoes
   namespace
@@ -131,13 +131,13 @@ async fn apply_namespace(
       };
       client.create_cargo(&item).await?;
       // client.join_cluster_cargo(&cluster.name.to_owned(), )
-      Ok::<_, YmlConfigError>(())
+      Ok::<_, CliError>(())
     })
     .collect::<FuturesUnordered<_>>()
     .collect::<Vec<_>>()
     .await
     .into_iter()
-    .collect::<Result<Vec<()>, YmlConfigError>>()?;
+    .collect::<Result<Vec<()>, CliError>>()?;
 
   namespace
     .clusters
@@ -149,29 +149,29 @@ async fn apply_namespace(
           .map(|join| async {
             client.join_cluster_cargo(&cluster.name, join).await?;
 
-            Ok::<_, YmlConfigError>(())
+            Ok::<_, CliError>(())
           })
           .collect::<FuturesUnordered<_>>()
           .collect::<Vec<_>>()
           .await
           .into_iter()
-          .collect::<Result<Vec<()>, YmlConfigError>>()?;
+          .collect::<Result<Vec<()>, CliError>>()?;
       }
 
       if let Some(auto_start) = cluster.auto_start {
         if !auto_start {
-          return Ok::<_, YmlConfigError>(());
+          return Ok::<_, CliError>(());
         }
         client.start_cluster(&cluster.name).await?;
       }
 
-      Ok::<_, YmlConfigError>(())
+      Ok::<_, CliError>(())
     })
     .collect::<FuturesUnordered<_>>()
     .collect::<Vec<_>>()
     .await
     .into_iter()
-    .collect::<Result<Vec<()>, YmlConfigError>>()?;
+    .collect::<Result<Vec<()>, CliError>>()?;
 
   Ok(())
 }
@@ -179,7 +179,7 @@ async fn apply_namespace(
 pub async fn apply(
   file_path: PathBuf,
   client: &Nanocld,
-) -> Result<(), YmlConfigError> {
+) -> Result<(), CliError> {
   let file_content = std::fs::read_to_string(file_path)?;
   let config_type = get_config_type(&file_content)?;
   println!("config_type : {:#?}", &config_type);
@@ -197,7 +197,7 @@ pub async fn apply(
 pub async fn delete(
   file_path: PathBuf,
   client: &Nanocld,
-) -> Result<(), YmlConfigError> {
+) -> Result<(), CliError> {
   let file_content = std::fs::read_to_string(file_path)?;
   let config_type = get_config_type(&file_content)?;
   println!("config_type : {:#?}", &config_type);

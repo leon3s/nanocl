@@ -146,7 +146,8 @@ impl Nanocld {
     Ok(())
   }
 
-  pub async fn delete_cluster_var(
+  // Todo be edit and delete cluster vars
+  pub async fn _delete_cluster_var(
     &self,
     c_name: &str,
     v_name: &str,

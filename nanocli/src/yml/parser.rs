@@ -1,5 +1,3 @@
-use serde::Deserialize;
-
 use super::models;
 
 pub fn get_config_type(

@@ -1,4 +1,5 @@
 use clap::Parser;
+use errors::CliError;
 
 use std::process::{Command, Stdio};
 
@@ -9,23 +10,13 @@ use tabled::{
 
 mod cli;
 mod yml;
-mod error;
+mod errors;
 mod nanocld;
 
 use cli::*;
 
-use nanocld::error::NanocldError;
-
-fn process_error(err: NanocldError) {
-  match err {
-    NanocldError::Api(err) => {
-      println!("{}", err.msg);
-    }
-    NanocldError::JsonPayload(err) => {
-      eprintln!("{:?}", err);
-    }
-    _ => eprintln!("{:?}", err),
-  }
+fn process_error(err: errors::CliError) {
+  eprintln!("{:#?}", err);
   std::process::exit(1);
 }
 
@@ -45,11 +36,7 @@ where
   print!("{}", table);
 }
 
-async fn execute_args(args: Cli) {}
-
-#[ntex::main]
-async fn main() -> std::io::Result<()> {
-  let args = Cli::parse();
+async fn execute_args(args: Cli) -> Result<(), CliError> {
   let client = nanocld::client::Nanocld::connect_with_unix_default().await;
   match &args.command {
     Commands::Docker(options) => {
@@ -70,120 +57,104 @@ async fn main() -> std::io::Result<()> {
       let _status = cmd.wait();
     }
     Commands::Namespace(args) => match &args.commands {
-      NamespaceCommands::List => match client.list_namespace().await {
-        Err(err) => process_error(err),
-        Ok(items) => print_table(items),
-      },
+      NamespaceCommands::List => {
+        let items = client.list_namespace().await?;
+        print_table(items);
+      }
       NamespaceCommands::Create(item) => {
-        match client.create_namespace(&item.name).await {
-          Err(err) => process_error(err),
-          Ok(item) => println!("{}", item.name),
-        }
+        let item = client.create_namespace(&item.name).await?;
+        println!("{}", item.name);
       }
     },
     Commands::Cluster(args) => match &args.commands {
-      ClusterCommands::List => match client.list_cluster().await {
-        Err(err) => process_error(err),
-        Ok(items) => print_table(items),
-      },
+      ClusterCommands::List => {
+        let items = client.list_cluster().await?;
+        print_table(items);
+      }
       ClusterCommands::Create(item) => {
-        match client.create_cluster(item).await {
-          Err(err) => process_error(err),
-          Ok(item) => println!("{}", item.key),
-        }
+        let item = client.create_cluster(item).await?;
+        println!("{}", item.key);
       }
       ClusterCommands::Remove(options) => {
-        if let Err(err) = client.delete_cluster(options.name.to_owned()).await {
-          process_error(err);
-        }
+        client.delete_cluster(options.name.to_owned()).await?;
       }
       ClusterCommands::Start(options) => {
-        if let Err(err) = client.start_cluster(&options.name).await {
-          process_error(err);
-        }
+        client.start_cluster(&options.name).await?;
       }
     },
     Commands::ClusterNetwork(args) => match &args.commands {
       ClusterNetworkCommands::List => {
-        match client.list_cluster_network(args.cluster.to_owned()).await {
-          Err(err) => process_error(err),
-          Ok(items) => print_table(items),
-        }
+        let items =
+          client.list_cluster_network(args.cluster.to_owned()).await?;
+        print_table(items);
       }
       ClusterNetworkCommands::Create(item) => {
-        match client
+        let item = client
           .create_cluster_network(args.cluster.to_owned(), item)
-          .await
-        {
-          Err(err) => process_error(err),
-          Ok(items) => println!("{}", items.key),
-        }
+          .await?;
+        println!("{}", item.key);
       }
       ClusterNetworkCommands::Remove(options) => {
-        if let Err(err) = client
+        client
           .delete_cluster_network(
             args.cluster.to_owned(),
             options.name.to_owned(),
           )
-          .await
-        {
-          process_error(err);
-        }
+          .await?;
       }
     },
     Commands::GitRepository(args) => match &args.commands {
-      GitRepositoryCommands::List => match client.list_git_repository().await {
-        Err(err) => process_error(err),
-        Ok(items) => print_table(items),
-      },
+      GitRepositoryCommands::List => {
+        let items = client.list_git_repository().await?;
+        print_table(items);
+      }
       GitRepositoryCommands::Create(item) => {
-        match client.create_git_repository(item).await {
-          Err(err) => process_error(err),
-          Ok(item) => println!("{}", item.name),
-        }
+        client.create_git_repository(item).await?;
+        println!("{}", item.name);
       }
       GitRepositoryCommands::Remove(options) => {
-        if let Err(err) =
-          client.delete_git_repository(options.name.to_owned()).await
-        {
-          process_error(err);
-        }
+        client
+          .delete_git_repository(options.name.to_owned())
+          .await?;
       }
       GitRepositoryCommands::Build(options) => {
-        if let Err(err) =
-          client.build_git_repository(options.name.to_owned()).await
-        {
-          process_error(err);
-        }
+        client.build_git_repository(options.name.to_owned()).await?;
       }
     },
     Commands::Cargo(args) => match &args.commands {
-      CargoCommands::List => match client.list_cargo().await {
-        Err(err) => process_error(err),
-        Ok(items) => print_table(items),
-      },
-      CargoCommands::Create(item) => match client.create_cargo(item).await {
-        Err(err) => process_error(err),
-        Ok(item) => println!("{}", item.key),
-      },
+      CargoCommands::List => {
+        let items = client.list_cargo().await?;
+        print_table(items);
+      }
+      CargoCommands::Create(item) => {
+        let item = client.create_cargo(item).await?;
+        println!("{}", item.key);
+      }
       CargoCommands::Remove(options) => {
-        if let Err(err) = client.delete_cargo(options.name.to_owned()).await {
-          process_error(err);
-        }
+        client.delete_cargo(options.name.to_owned()).await?;
       }
     },
     Commands::Apply(args) => {
       let mut file_path = std::env::current_dir()?;
       file_path.push(&args.file_path);
       println!("apply !");
-      yml::config::apply(file_path, &client).await.unwrap();
+      yml::config::apply(file_path, &client).await?;
     }
     Commands::Delete(args) => {
       let mut file_path = std::env::current_dir()?;
       file_path.push(&args.file_path);
       println!("delete !");
-      yml::config::delete(file_path, &client).await.unwrap();
+      yml::config::delete(file_path, &client).await?;
     }
+  }
+  Ok(())
+}
+
+#[ntex::main]
+async fn main() -> std::io::Result<()> {
+  let args = Cli::parse();
+  if let Err(err) = execute_args(args).await {
+    process_error(err);
   }
   Ok(())
 }
