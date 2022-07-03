@@ -104,11 +104,3 @@ then update interface dns
 ```powershell
 Set-DnsClientServerAddress -InterfaceIndex 59 -ServerAddresses ("10.0.0.1","10.0.0.2")
 ```
-
-## TODO
-- add daemon options for directory with default values
-- man.md for cli and daemon
-- environement variables for cargoes
-- prepare a release build
-- get at least 80% code coverage
-
