@@ -43,4 +43,20 @@ impl Nanocld {
 
     Ok(item)
   }
+
+  pub async fn inspect_namespace(
+    &self,
+    name: String,
+  ) -> Result<NamespaceItem, NanocldError> {
+    let mut res = self
+      .get(format!("/namespaces/{name}/inspect", name = name))
+      .send()
+      .await?;
+
+    let status = res.status();
+    is_api_error(&mut res, &status).await?;
+    let item = res.json::<NamespaceItem>().await?;
+
+    Ok(item)
+  }
 }
