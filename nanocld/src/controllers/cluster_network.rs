@@ -5,7 +5,7 @@ use ntex::http::StatusCode;
 use serde::{Serialize, Deserialize};
 
 use super::errors::HttpError;
-use crate::repositories::{cluster, cluster_network};
+use crate::repositories::{cluster, cluster_network, self};
 use crate::models::{ClusterNetworkPartial, Pool};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -73,7 +73,7 @@ async fn create_cluster_network(
     None => String::from("global"),
     Some(nsp) => nsp,
   };
-  let gen_key = nsp + "-" + &name;
+  let gen_key = nsp.to_owned() + "-" + &name;
   let cluster = cluster::find_by_key(gen_key.clone(), &pool).await?;
   let mut labels = HashMap::new();
   labels.insert(String::from("cluster_key"), gen_key.clone());
@@ -114,7 +114,7 @@ async fn create_cluster_network(
   };
 
   let new_network =
-    cluster_network::create_for_cluster(gen_key, payload, id, &pool).await?;
+    cluster_network::create_for_cluster(nsp, name, payload, id, &pool).await?;
   Ok(web::HttpResponse::Created().json(&new_network))
 }
 
@@ -199,9 +199,38 @@ async fn delete_cluster_network_by_name(
   Ok(web::HttpResponse::Ok().json(&res))
 }
 
+/// Count cluster
+#[utoipa::path(
+  get,
+  path = "/networks/count",
+  params(
+    ("namespace" = Option<String>, query, description = "Name of the namespace where the cargo is stored"),
+  ),
+  responses(
+    (status = 200, description = "Generic delete", body = PgGenericCount),
+    (status = 400, description = "Generic database error", body = ApiError),
+    (status = 404, description = "Namespace name not valid", body = ApiError),
+  ),
+)]
+#[web::get("/networks/count")]
+async fn count_cluster_network_by_namespace(
+  pool: web::types::State<Pool>,
+  web::types::Query(qs): web::types::Query<ClusterNetworkQuery>,
+) -> Result<web::HttpResponse, HttpError> {
+  let nsp = match qs.namespace {
+    None => String::from("global"),
+    Some(nsp) => nsp,
+  };
+  let res =
+    repositories::cluster_network::count_by_namespace(nsp, &pool).await?;
+
+  Ok(web::HttpResponse::Ok().json(&res))
+}
+
 pub fn ntex_config(config: &mut web::ServiceConfig) {
   config.service(list_cluster_network);
   config.service(create_cluster_network);
   config.service(inspect_cluster_network_by_name);
   config.service(delete_cluster_network_by_name);
+  config.service(count_cluster_network_by_namespace);
 }

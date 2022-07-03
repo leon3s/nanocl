@@ -3,7 +3,9 @@ use diesel::prelude::*;
 
 use crate::services;
 use crate::controllers::errors::HttpError;
-use crate::models::{Pool, CargoItem, CargoPartial, PgDeleteGeneric, NamespaceItem};
+use crate::models::{
+  Pool, CargoItem, CargoPartial, PgDeleteGeneric, NamespaceItem, PgGenericCount,
+};
 
 use super::errors::db_blocking_error;
 
@@ -47,13 +49,33 @@ pub async fn create(
   }
 }
 
+pub async fn count(
+  namespace: String,
+  pool: &web::types::State<Pool>,
+) -> Result<PgGenericCount, HttpError> {
+  use crate::schema::cargoes::dsl;
+
+  let conn = services::postgresql::get_pool_conn(pool)?;
+  let res = web::block(move || {
+    dsl::cargoes
+      .filter(dsl::namespace_name.eq(namespace))
+      .count()
+      .get_result(&conn)
+  })
+  .await;
+
+  match res {
+    Err(err) => Err(db_blocking_error(err)),
+    Ok(result) => Ok(PgGenericCount { count: result }),
+  }
+}
+
 pub async fn delete_by_key(
   key: String,
   pool: &web::types::State<Pool>,
 ) -> Result<PgDeleteGeneric, HttpError> {
   use crate::schema::cargoes::dsl;
 
-  println!("cargo deleting key {}", key);
   let conn = services::postgresql::get_pool_conn(pool)?;
   let res = web::block(move || {
     diesel::delete(dsl::cargoes)

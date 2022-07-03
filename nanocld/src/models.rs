@@ -14,9 +14,14 @@ pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
 pub type DBConn = PooledConnection<ConnectionManager<PgConnection>>;
 
 /// Generic postgresql delete response
-#[derive(Component, Serialize, Deserialize)]
+#[derive(Debug, Component, Serialize, Deserialize)]
 pub struct PgDeleteGeneric {
   pub(crate) count: usize,
+}
+
+#[derive(Debug, Component, Serialize, Deserialize)]
+pub struct PgGenericCount {
+  pub(crate) count: i64,
 }
 
 /// Namespace to encapsulate clusters
@@ -178,6 +183,7 @@ pub struct ClusterNetworkPartial {
 pub struct ClusterNetworkItem {
   pub(crate) key: String,
   pub(crate) name: String,
+  pub(crate) namespace: String,
   pub(crate) docker_network_id: String,
   pub(crate) cluster_key: String,
 }

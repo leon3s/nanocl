@@ -201,7 +201,7 @@ pub struct ApplyArgs {
 
 /// revert a configuration file
 #[derive(Debug, Parser)]
-pub struct DeleteArgs {
+pub struct RevertArgs {
   #[clap(short)]
   /// .yml conf file to revert
   pub(crate) file_path: String,
@@ -216,7 +216,7 @@ pub enum Commands {
   Cargo(CargoArgs),
   GitRepository(GitRepositoryArgs),
   Apply(ApplyArgs),
-  Delete(DeleteArgs),
+  Revert(RevertArgs),
   // TODO Completion
   // Completion {
   //   /// Shell to generate completion for

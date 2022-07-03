@@ -30,6 +30,7 @@ pub struct NginxTemplateData {
   target_ip: String,
   target_ips: Vec<String>,
   target_port: i32,
+  vars: Option<HashMap<String, String>>,
 }
 
 pub async fn delete_networks(
@@ -64,11 +65,16 @@ pub async fn delete_networks(
 
 pub async fn list_containers(
   cluster_key: &str,
+  cargo_key: &str,
   docker_api: &web::types::State<bollard::Docker>,
 ) -> Result<Vec<bollard::models::ContainerSummary>, HttpError> {
   let target_cluster = &format!("cluster={}", &cluster_key);
+  let target_cargo = &format!("cargo={}", &cargo_key);
   let mut filters = HashMap::new();
-  filters.insert("label", vec![target_cluster.as_str()]);
+  filters.insert(
+    "label",
+    vec![target_cluster.as_str(), target_cargo.as_str()],
+  );
   let options = Some(bollard::container::ListContainersOptions {
     all: true,
     filters,
@@ -91,13 +97,26 @@ pub async fn start(
   )
   .await?;
 
+  let cluster_vars = repositories::cluster_variable::list_by_cluster(
+    cluster.key.to_owned(),
+    pool,
+  )
+  .await?;
+
+  let vars = &services::cluster_variable::cluster_vars_to_hashmap(cluster_vars);
+
   cluster_cargoes
     .into_iter()
     .map(|cluster_cargo| async move {
+      let cluster_cargo_key = &cluster_cargo.key;
       let cargo_key = &cluster_cargo.cargo_key;
       let network_key = &cluster_cargo.network_key;
-      let containers =
-        list_containers(&cluster_cargo.cluster_key, docker_api).await?;
+      let containers = list_containers(
+        &cluster_cargo.cluster_key,
+        &cluster_cargo.cargo_key,
+        docker_api,
+      )
+      .await?;
 
       println!("starting cargo {}", &cargo_key);
 
@@ -178,12 +197,13 @@ pub async fn start(
           target_ip: target_ips[0].to_owned(),
           target_ips,
           target_port: proxy_config.target_port,
+          vars: Some(vars.to_owned()),
         };
         log::debug!("generating nginx template with content : {:#?}", content);
         log::debug!("generating nginx template with data : {:#?}", &data);
         let mut file = std::fs::File::create(format!(
           "/var/lib/nanocl/nginx/sites-enabled/{name}.conf",
-          name = &cargo_key
+          name = &cluster_cargo_key
         ))
         .map_err(|err| HttpError {
           msg: format!("unable to generate template file {:?}", err),
@@ -199,11 +219,14 @@ pub async fn start(
         services::nginx::reload_config(docker_api)
           .await
           .map_err(docker_error)?;
-        services::dnsmasq::add_dns_entry(
-          &proxy_config.domain_name,
-          &proxy_config.host_ip,
-        )
-        .map_err(|err| err.to_http_error())?;
+        let mut dns_entry = String::new();
+        if let Some(pre_domain) = vars.get("pre_domain") {
+          dns_entry += &(pre_domain.to_owned() + &proxy_config.domain_name);
+        } else {
+          dns_entry += &proxy_config.domain_name;
+        }
+        services::dnsmasq::add_dns_entry(&dns_entry, &proxy_config.host_ip)
+          .map_err(|err| err.to_http_error())?;
         services::dnsmasq::restart(docker_api)
           .await
           .map_err(|err| err.to_http_error())?;

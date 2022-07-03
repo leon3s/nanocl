@@ -4,7 +4,8 @@ use diesel::prelude::*;
 use crate::services;
 use crate::controllers::errors::HttpError;
 use crate::models::{
-  Pool, ClusterNetworkPartial, ClusterNetworkItem, PgDeleteGeneric, ClusterItem,
+  Pool, ClusterNetworkPartial, ClusterNetworkItem, PgDeleteGeneric,
+  ClusterItem, PgGenericCount,
 };
 
 use super::errors::db_blocking_error;
@@ -24,8 +25,30 @@ pub async fn list_for_cluster(
   }
 }
 
+pub async fn count_by_namespace(
+  namespace: String,
+  pool: &web::types::State<Pool>,
+) -> Result<PgGenericCount, HttpError> {
+  use crate::schema::cluster_networks::dsl;
+
+  let conn = services::postgresql::get_pool_conn(pool)?;
+  let res = web::block(move || {
+    dsl::cluster_networks
+      .filter(dsl::namespace.eq(namespace))
+      .count()
+      .get_result(&conn)
+  })
+  .await;
+
+  match res {
+    Err(err) => Err(db_blocking_error(err)),
+    Ok(result) => Ok(PgGenericCount { count: result }),
+  }
+}
+
 pub async fn create_for_cluster(
-  cluster_key: String,
+  namespace_name: String,
+  cluster_name: String,
   item: ClusterNetworkPartial,
   docker_network_id: String,
   pool: &web::types::State<Pool>,
@@ -34,11 +57,13 @@ pub async fn create_for_cluster(
   let conn = services::postgresql::get_pool_conn(pool)?;
 
   let res = web::block(move || {
+    let cluster_key = namespace_name.to_owned() + "-" + &cluster_name;
     let item = ClusterNetworkItem {
       key: cluster_key.to_owned() + "-" + &item.name,
       cluster_key,
       name: item.name,
       docker_network_id,
+      namespace: namespace_name,
     };
     diesel::insert_into(dsl::cluster_networks)
       .values(&item)
@@ -146,9 +171,15 @@ mod cluster_networks {
     let new_network = ClusterNetworkPartial {
       name: String::from("test-dev"),
     };
-    let network = create_for_cluster(cluster.key, new_network, id, &pool_state)
-      .await
-      .unwrap();
+    let network = create_for_cluster(
+      cluster.namespace,
+      cluster.name,
+      new_network,
+      id,
+      &pool_state,
+    )
+    .await
+    .unwrap();
 
     let n_key = network.key.clone();
     // find cluster network

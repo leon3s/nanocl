@@ -1,20 +1,20 @@
 <div align="center">
+  <img
+    src="https://avatars.githubusercontent.com/u/94208118?s=200&v=4"
+  />
   <p><h1>nanocl</h1> </p>
   <p><strong>self-sufficient vms and containers manager</strong> </p>
 </div>
 
 Unlock control of your network using nanocl.
 
-Setup and configure enterprice grade vpn with his own dns server.
+Setup and configure enterprice grade vpn with his own dns server and http proxy.
+Allow vms and containers management on multiple machine.
 Automaticaly test, deploy and scale your services or applications.
-
-Allow vms and containers management on multiple machine
 
 ## State
 
-Currently refactoring everything in rust for better performance stability and scalability.
-And i wanted to learn rust.
-Also because it's fun right ?
+Approching alpha-0.1 release
 
 ## Compatibility
 List of system compatible and tested
@@ -103,4 +103,9 @@ vEthernet (WSL)           Hyper-V Virtual Ethernet Adapter          59 Up
 then update interface dns
 ```powershell
 Set-DnsClientServerAddress -InterfaceIndex 59 -ServerAddresses ("10.0.0.1","10.0.0.2")
+```
+
+## Generate doc .md
+```sh
+pandoc --from man --to markdown < nanocl-namespace.1 > nanocl-namespace.1.md
 ```

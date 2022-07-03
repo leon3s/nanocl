@@ -48,6 +48,7 @@ table! {
     cluster_networks (key) {
         key -> Varchar,
         name -> Varchar,
+        namespace -> Varchar,
         docker_network_id -> Varchar,
         cluster_key -> Varchar,
     }

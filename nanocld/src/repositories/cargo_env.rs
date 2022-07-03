@@ -8,7 +8,8 @@ use crate::{
   services,
 };
 
-pub async fn create(
+// May be needed later
+pub async fn _create(
   item: CargoEnvPartial,
   pool: &web::types::State<Pool>,
 ) -> Result<CargoEnvItem, HttpError> {
@@ -66,7 +67,8 @@ pub async fn create_many(
   }
 }
 
-pub async fn delete_by_key(
+// May be needed later
+pub async fn _delete_by_key(
   key: String,
   pool: &web::types::State<Pool>,
 ) -> Result<PgDeleteGeneric, HttpError> {

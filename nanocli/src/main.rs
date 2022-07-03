@@ -174,11 +174,10 @@ async fn execute_args(args: Cli) -> Result<(), CliError> {
       println!("apply !");
       yml::config::apply(file_path, &client).await?;
     }
-    Commands::Delete(args) => {
+    Commands::Revert(args) => {
       let mut file_path = std::env::current_dir()?;
       file_path.push(&args.file_path);
-      println!("delete !");
-      yml::config::delete(file_path, &client).await?;
+      yml::config::revert(file_path, &client).await?;
     }
   }
   Ok(())

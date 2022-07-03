@@ -22,6 +22,7 @@ use crate::controllers::errors::ApiError;
     cargo::list_cargo,
     cargo::create_cargo,
     cargo::delete_cargo_by_name,
+    cargo::count_cargo,
 
     // Git repository
     git_repository::list_git_repository,
@@ -31,6 +32,7 @@ use crate::controllers::errors::ApiError;
 
     // Cluster
     cluster::list_cluster,
+    cluster::count_cluster,
     cluster::create_cluster,
     cluster::delete_cluster_by_name,
     cluster::inspect_cluster_by_name,
@@ -47,10 +49,12 @@ use crate::controllers::errors::ApiError;
     cluster_network::create_cluster_network,
     cluster_network::delete_cluster_network_by_name,
     cluster_network::inspect_cluster_network_by_name,
+    cluster_network::count_cluster_network_by_namespace,
   ),
   components(
     ApiError,
     PgDeleteGeneric,
+    PgGenericCount,
 
     // Nginx template
     NginxTemplateItem,

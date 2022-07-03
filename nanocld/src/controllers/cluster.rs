@@ -242,6 +242,33 @@ async fn join_cargo_to_cluster(
   Ok(web::HttpResponse::Ok().into())
 }
 
+/// Count cluster
+#[utoipa::path(
+  get,
+  path = "/clusters/count",
+  params(
+    ("namespace" = Option<String>, query, description = "Name of the namespace where the cargo is stored"),
+  ),
+  responses(
+    (status = 200, description = "Generic delete", body = PgGenericCount),
+    (status = 400, description = "Generic database error", body = ApiError),
+    (status = 404, description = "Namespace name not valid", body = ApiError),
+  ),
+)]
+#[web::get("/clusters/count")]
+async fn count_cluster(
+  pool: web::types::State<Pool>,
+  web::types::Query(qs): web::types::Query<ClusterQuery>,
+) -> Result<web::HttpResponse, HttpError> {
+  let nsp = match qs.namespace {
+    None => String::from("global"),
+    Some(nsp) => nsp,
+  };
+  let res = repositories::cluster::count(nsp, &pool).await?;
+
+  Ok(web::HttpResponse::Ok().json(&res))
+}
+
 /// # ntex config
 /// Bind namespace routes to ntex http server
 ///
@@ -262,6 +289,7 @@ pub fn ntex_config(config: &mut web::ServiceConfig) {
   config.service(delete_cluster_by_name);
   config.service(start_cluster_by_name);
   config.service(join_cargo_to_cluster);
+  config.service(count_cluster);
 }
 
 #[cfg(test)]

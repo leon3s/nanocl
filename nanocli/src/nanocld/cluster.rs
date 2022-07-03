@@ -187,9 +187,7 @@ impl Nanocld {
       .post(format!("/clusters/{c_name}/start", c_name = c_name))
       .send()
       .await?;
-
     let status = res.status();
-    println!("res {:?}", res);
     is_api_error(&mut res, &status).await?;
 
     Ok(())

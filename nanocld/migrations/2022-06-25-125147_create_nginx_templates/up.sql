@@ -16,7 +16,7 @@ INSERT INTO "nginx_templates" ("name", "content") VALUES ('nodejs-single', 'serv
       proxy_pass http://{{target_ip}}:{{target_port}};
   }
 
-  if ($host != {{domain_name}}) {
+  if ($host != {{vars.pre_domain}}{{domain_name}}) {
       return 502;
   }
 }');

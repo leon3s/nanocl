@@ -14,7 +14,7 @@ use crate::errors::CliError;
 use super::parser::get_config_type;
 use super::models::{YmlConfigTypes, NamespaceConfig};
 
-async fn delete_namespace(
+async fn revert_namespace(
   namespace: &NamespaceConfig,
   client: &Nanocld,
 ) -> Result<(), CliError> {
@@ -163,6 +163,7 @@ async fn apply_namespace(
           return Ok::<_, CliError>(());
         }
         client.start_cluster(&cluster.name).await?;
+        println!("cluster: {} started.", &cluster.name);
       }
 
       Ok::<_, CliError>(())
@@ -182,7 +183,6 @@ pub async fn apply(
 ) -> Result<(), CliError> {
   let file_content = std::fs::read_to_string(file_path)?;
   let config_type = get_config_type(&file_content)?;
-  println!("config_type : {:#?}", &config_type);
   match config_type {
     YmlConfigTypes::Namespace => {
       let namespace = serde_yaml::from_str::<NamespaceConfig>(&file_content)?;
@@ -194,18 +194,16 @@ pub async fn apply(
   Ok(())
 }
 
-pub async fn delete(
+pub async fn revert(
   file_path: PathBuf,
   client: &Nanocld,
 ) -> Result<(), CliError> {
   let file_content = std::fs::read_to_string(file_path)?;
   let config_type = get_config_type(&file_content)?;
-  println!("config_type : {:#?}", &config_type);
   match config_type {
     YmlConfigTypes::Namespace => {
       let namespace = serde_yaml::from_str::<NamespaceConfig>(&file_content)?;
-      println!("namespace config {:#?}", &namespace);
-      delete_namespace(&namespace, client).await?;
+      revert_namespace(&namespace, client).await?;
     }
     _ => todo!("delete different type of config"),
   }

@@ -5,7 +5,9 @@ use diesel::prelude::*;
 use crate::services;
 use crate::controllers::errors::HttpError;
 use crate::repositories::errors::db_blocking_error;
-use crate::models::{Pool, ClusterItem, ClusterPartial, PgDeleteGeneric};
+use crate::models::{
+  Pool, ClusterItem, ClusterPartial, PgDeleteGeneric, PgGenericCount,
+};
 
 /// # Create cluster for namespace
 /// Return a fresh cluster with id and gen_id for given namespace
@@ -54,6 +56,27 @@ pub async fn create_for_namespace(
   match res {
     Err(err) => Err(db_blocking_error(err)),
     Ok(item) => Ok(item),
+  }
+}
+
+pub async fn count(
+  namespace: String,
+  pool: &web::types::State<Pool>,
+) -> Result<PgGenericCount, HttpError> {
+  use crate::schema::clusters::dsl;
+
+  let conn = services::postgresql::get_pool_conn(pool)?;
+  let res = web::block(move || {
+    dsl::clusters
+      .filter(dsl::namespace.eq(namespace))
+      .count()
+      .get_result(&conn)
+  })
+  .await;
+
+  match res {
+    Err(err) => Err(db_blocking_error(err)),
+    Ok(result) => Ok(PgGenericCount { count: result }),
   }
 }
 
