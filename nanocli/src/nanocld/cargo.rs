@@ -5,7 +5,7 @@ use serde::{Serialize, Deserialize};
 
 use super::{
   client::Nanocld,
-  error::{Error, is_api_error},
+  error::{NanocldError, is_api_error},
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -116,44 +116,38 @@ fn optional_string(s: &Option<String>) -> String {
 }
 
 impl Nanocld {
-  pub async fn list_cargo(&self) -> Result<Vec<CargoItem>, Error> {
-    let mut res = self
-      .get(String::from("/cargoes"))
-      .send()
-      .await
-      .map_err(Error::SendRequest)?;
+  pub async fn list_cargo(&self) -> Result<Vec<CargoItem>, NanocldError> {
+    let mut res = self.get(String::from("/cargoes")).send().await?;
     let status = res.status();
     is_api_error(&mut res, &status).await?;
-    let items = res
-      .json::<Vec<CargoItem>>()
-      .await
-      .map_err(Error::JsonPayload)?;
+    let items = res.json::<Vec<CargoItem>>().await?;
+
     Ok(items)
   }
 
   pub async fn create_cargo(
     &self,
     item: &CargoPartial,
-  ) -> Result<CargoItem, Error> {
-    let mut res = self
-      .post(String::from("/cargoes"))
-      .send_json(item)
-      .await
-      .map_err(Error::SendRequest)?;
+  ) -> Result<CargoItem, NanocldError> {
+    let mut res = self.post(String::from("/cargoes")).send_json(item).await?;
     let status = res.status();
     is_api_error(&mut res, &status).await?;
-    let item = res.json::<CargoItem>().await.map_err(Error::JsonPayload)?;
+    let item = res.json::<CargoItem>().await?;
+
     Ok(item)
   }
 
-  pub async fn delete_cargo(&self, cargo_name: String) -> Result<(), Error> {
+  pub async fn delete_cargo(
+    &self,
+    cargo_name: String,
+  ) -> Result<(), NanocldError> {
     let mut res = self
       .delete(format!("/cargoes/{name}", name = cargo_name))
       .send()
-      .await
-      .map_err(Error::SendRequest)?;
+      .await?;
     let status = res.status();
     is_api_error(&mut res, &status).await?;
+
     Ok(())
   }
 }

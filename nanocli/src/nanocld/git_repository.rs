@@ -6,7 +6,7 @@ use futures::{TryStreamExt, StreamExt};
 
 use super::client::Nanocld;
 
-use super::error::{Error, is_api_error};
+use super::error::{NanocldError, is_api_error};
 
 arg_enum! {
   #[derive(Debug, Tabled, Serialize, Deserialize)]
@@ -41,18 +41,11 @@ pub struct GitRepositoryPartial {
 impl Nanocld {
   pub async fn list_git_repository(
     &self,
-  ) -> Result<Vec<GitRepositoryItem>, Error> {
-    let mut res = self
-      .get(String::from("/git_repositories"))
-      .send()
-      .await
-      .map_err(Error::SendRequest)?;
+  ) -> Result<Vec<GitRepositoryItem>, NanocldError> {
+    let mut res = self.get(String::from("/git_repositories")).send().await?;
     let status = res.status();
     is_api_error(&mut res, &status).await?;
-    let items = res
-      .json::<Vec<GitRepositoryItem>>()
-      .await
-      .map_err(Error::JsonPayload)?;
+    let items = res.json::<Vec<GitRepositoryItem>>().await?;
 
     Ok(items)
   }
@@ -60,27 +53,26 @@ impl Nanocld {
   pub async fn create_git_repository(
     &self,
     item: &GitRepositoryPartial,
-  ) -> Result<GitRepositoryItem, Error> {
+  ) -> Result<GitRepositoryItem, NanocldError> {
     let mut res = self
       .post(String::from("/git_repositories"))
       .send_json(&item)
-      .await
-      .map_err(Error::SendRequest)?;
+      .await?;
     let status = res.status();
     is_api_error(&mut res, &status).await?;
-    let body = res
-      .json::<GitRepositoryItem>()
-      .await
-      .map_err(Error::JsonPayload)?;
+    let body = res.json::<GitRepositoryItem>().await?;
+
     Ok(body)
   }
 
-  pub async fn build_git_repository(&self, name: String) -> Result<(), Error> {
+  pub async fn build_git_repository(
+    &self,
+    name: String,
+  ) -> Result<(), NanocldError> {
     let mut res = self
       .post(format!("/git_repositories/{name}/build", name = name))
       .send()
-      .await
-      .map_err(Error::SendRequest)?;
+      .await?;
     let status = res.status();
     is_api_error(&mut res, &status).await?;
     if status == StatusCode::NOT_MODIFIED {
@@ -88,21 +80,27 @@ impl Nanocld {
     }
     let mut stream = res.into_stream();
     while let Some(result) = stream.next().await {
-      let result = result.map_err(Error::Payload)?;
+      let result = result.map_err(NanocldError::Payload)?;
       let result = &String::from_utf8(result.to_vec()).unwrap();
       let json =
         serde_json::from_str::<GithubRepositoryBuildStream>(result).unwrap();
       print!("{}", json.stream.unwrap_or_default());
     }
+
     Ok(())
   }
 
-  pub async fn delete_git_repository(&self, name: String) -> Result<(), Error> {
-    self
+  pub async fn delete_git_repository(
+    &self,
+    name: String,
+  ) -> Result<(), NanocldError> {
+    let mut res = self
       .delete(format!("/git_repositories/{name}", name = name))
       .send()
-      .await
-      .map_err(Error::SendRequest)?;
+      .await?;
+    let status = res.status();
+    is_api_error(&mut res, &status).await?;
+
     Ok(())
   }
 }

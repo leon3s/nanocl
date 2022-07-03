@@ -18,6 +18,7 @@ impl Nanocld {
           .finish(),
       )
       .finish();
+
     Nanocld {
       client,
       url: String::from("http://localhost"),
