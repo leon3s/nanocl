@@ -8,6 +8,7 @@ use futures::stream::FuturesUnordered;
 use crate::{services, repositories};
 use crate::models::{
   Pool, ClusterItem, CargoItem, ClusterNetworkItem, ClusterCargoPartial,
+  CargoEnvItem,
 };
 
 use crate::controllers::errors::{HttpError, IntoHttpError};
@@ -170,6 +171,11 @@ pub async fn start(
   Ok(())
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MustacheData {
+  pub(crate) vars: HashMap<String, String>,
+}
+
 pub async fn join_cargo(
   opts: &JoinCargoOptions,
   docker_api: &web::types::State<bollard::Docker>,
@@ -183,10 +189,40 @@ pub async fn join_cargo(
   let mut labels: HashMap<String, String> = HashMap::new();
   labels.insert(String::from("cluster"), opts.cluster.key.to_owned());
 
+  let vars = repositories::cluster_variable::list_by_cluster(
+    opts.cluster.key.to_owned(),
+    pool,
+  )
+  .await?;
   let envs =
     repositories::cargo_env::list_by_cargo_key(opts.cargo.key.to_owned(), pool)
       .await?;
 
+  let env_string = serde_json::to_string(&envs).map_err(|err| HttpError {
+    msg: format!("unable to format cargo env items {:#?}", err),
+    status: StatusCode::INTERNAL_SERVER_ERROR,
+  })?;
+
+  let template =
+    mustache::compile_str(&env_string).map_err(|err| HttpError {
+      msg: format!("unable to compile env_string {:#?}", err),
+      status: StatusCode::INTERNAL_SERVER_ERROR,
+    })?;
+
+  let vars = services::cluster_variable::cluster_vars_to_hashmap(vars);
+  let template_data = MustacheData { vars };
+  let env_string_with_vars = template
+    .render_to_string(&template_data)
+    .map_err(|err| HttpError {
+      msg: format!("unable to populate env with cluster variables: {:#?}", err),
+      status: StatusCode::INTERNAL_SERVER_ERROR,
+    })?;
+  let envs = serde_json::from_str::<Vec<CargoEnvItem>>(&env_string_with_vars)
+    .map_err(|err| HttpError {
+    msg: format!("unable to reserialize environements : {:#?}", err),
+    status: StatusCode::INTERNAL_SERVER_ERROR,
+  })?;
+  // template.render_data_to_string(template_data);
   let mut fold_init: Vec<String> = Vec::new();
   let environnements = envs
     .into_iter()
