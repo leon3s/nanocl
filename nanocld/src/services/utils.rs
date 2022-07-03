@@ -87,6 +87,9 @@ pub async fn build_service(
   docker: &Docker,
   service_name: &'static str,
 ) -> Result<(), DockerError> {
+  if image_exists(service_name, docker).await {
+    return Ok(());
+  }
   let git_url = "https://github.com/nxthat/".to_owned();
   let image_url = git_url + service_name + ".git";
   let options = BuildImageOptions {
@@ -118,12 +121,15 @@ pub async fn build_service(
 /// ```rust,norun
 /// use crate::services;
 ///
-/// services::utils::install_service(&docker, "postgresql").await;
+/// services::utils::install_service("postgresql", &docker).await;
 /// ```
 pub async fn install_service(
-  docker: &Docker,
   image_name: &'static str,
+  docker: &Docker,
 ) -> Result<(), DockerError> {
+  if image_exists(image_name, docker).await {
+    return Ok(());
+  }
   let mut stream = docker.create_image(
     Some(CreateImageOptions {
       from_image: image_name,
@@ -138,6 +144,13 @@ pub async fn install_service(
     }
   }
   Ok(())
+}
+
+pub async fn image_exists(image_name: &str, docker: &Docker) -> bool {
+  if docker.inspect_image(image_name).await.is_ok() {
+    return true;
+  }
+  false
 }
 
 /// # Install a service
