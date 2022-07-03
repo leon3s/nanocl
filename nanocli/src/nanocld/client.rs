@@ -13,7 +13,7 @@ impl Nanocld {
       .connector(
         Connector::default()
           .connector(ntex::service::fn_service(|_| async {
-            Ok(rt::unix_connect("/run/nanocl/nanocl.sock").await?)
+            Ok::<_, _>(rt::unix_connect("/run/nanocl/nanocl.sock").await?)
           }))
           .finish(),
       )

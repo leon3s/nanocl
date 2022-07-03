@@ -5,6 +5,7 @@ use serde::{Serialize, Deserialize};
 use super::{
   client::Nanocld,
   error::{NanocldError, is_api_error},
+  models::PgGenericCount,
 };
 
 #[derive(Tabled, Serialize, Deserialize)]
@@ -192,5 +193,27 @@ impl Nanocld {
     is_api_error(&mut res, &status).await?;
 
     Ok(())
+  }
+
+  pub async fn count_cluster(
+    &self,
+    _namespace: &str, // Todo add query
+  ) -> Result<PgGenericCount, NanocldError> {
+    let mut res = self.get(String::from("/clusters/count")).send().await?;
+    let status = res.status();
+    is_api_error(&mut res, &status).await?;
+    let count = res.json::<PgGenericCount>().await?;
+    Ok(count)
+  }
+
+  pub async fn count_cluster_network_by_nsp(
+    &self,
+    _namespace: &str, // Todo add query
+  ) -> Result<PgGenericCount, NanocldError> {
+    let mut res = self.get(String::from("/networks/count")).send().await?;
+    let status = res.status();
+    is_api_error(&mut res, &status).await?;
+    let count = res.json::<PgGenericCount>().await?;
+    Ok(count)
   }
 }

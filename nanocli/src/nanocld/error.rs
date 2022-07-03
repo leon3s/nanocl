@@ -22,13 +22,13 @@ impl std::fmt::Display for ApiError {
 
 #[derive(Debug, Error)]
 pub enum NanocldError {
-  #[error("received daemon error")]
+  #[error(transparent)]
   Api(#[from] ApiError),
-  #[error("got payload error")]
+  #[error(transparent)]
   Payload(#[from] PayloadError),
-  #[error("send request error")]
+  #[error(transparent)]
   SendRequest(#[from] SendRequestError),
-  #[error("json parse error")]
+  #[error(transparent)]
   JsonPayload(#[from] JsonPayloadError),
 }
 

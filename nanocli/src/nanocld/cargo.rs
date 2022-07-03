@@ -6,6 +6,7 @@ use serde::{Serialize, Deserialize};
 use super::{
   client::Nanocld,
   error::{NanocldError, is_api_error},
+  models::PgGenericCount,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -148,5 +149,16 @@ impl Nanocld {
     is_api_error(&mut res, &status).await?;
 
     Ok(())
+  }
+
+  pub async fn count_cargo(
+    &self,
+    namespace: &str,
+  ) -> Result<PgGenericCount, NanocldError> {
+    let mut res = self.get(String::from("/cargoes/count")).send().await?;
+    let status = res.status();
+    is_api_error(&mut res, &status).await?;
+    let count = res.json::<PgGenericCount>().await?;
+    Ok(count)
   }
 }

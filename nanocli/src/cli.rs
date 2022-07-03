@@ -152,6 +152,7 @@ pub struct DockerOptions {
 
 /// manage namespaces
 #[derive(Debug, Parser)]
+#[clap(name = "nanocl-namespace")]
 pub struct NamespaceArgs {
   #[clap(subcommand)]
   pub commands: NamespaceCommands,
@@ -198,6 +199,7 @@ pub struct ApplyArgs {
   pub(crate) file_path: String,
 }
 
+/// revert a configuration file
 #[derive(Debug, Parser)]
 pub struct DeleteArgs {
   #[clap(short)]

@@ -4,10 +4,10 @@ use crate::nanocld::error::NanocldError;
 
 #[derive(Debug, Error)]
 pub enum CliError {
-  #[error("io error")]
+  #[error(transparent)]
   Io(#[from] std::io::Error),
-  #[error("yaml parse error")]
+  #[error(transparent)]
   Parse(#[from] serde_yaml::Error),
-  #[error("got client error")]
+  #[error(transparent)]
   Client(#[from] NanocldError),
 }
