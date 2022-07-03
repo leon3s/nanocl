@@ -1,6 +1,17 @@
 table! {
     use crate::models::exports::*;
 
+    cargo_environnements (key) {
+        key -> Varchar,
+        cargo_key -> Varchar,
+        name -> Varchar,
+        value -> Varchar,
+    }
+}
+
+table! {
+    use crate::models::exports::*;
+
     cargo_proxy_configs (cargo_key) {
         cargo_key -> Varchar,
         domain_name -> Varchar,
@@ -110,6 +121,7 @@ joinable!(cluster_cargoes -> clusters (cluster_key));
 joinable!(cluster_networks -> clusters (cluster_key));
 
 allow_tables_to_appear_in_same_query!(
+    cargo_environnements,
     cargo_proxy_configs,
     cargoes,
     cluster_cargoes,

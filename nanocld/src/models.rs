@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::schema::{
   clusters, namespaces, git_repositories, cluster_networks,
   git_repository_branches, cargoes, cargo_proxy_configs, nginx_templates,
-  cluster_variables, cluster_cargoes,
+  cluster_variables, cluster_cargoes, cargo_environnements,
 };
 
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
@@ -188,6 +188,7 @@ pub struct ClusterNetworkItem {
 pub struct CargoPartial {
   pub(crate) name: String,
   pub(crate) image_name: String,
+  pub(crate) environnements: Option<Vec<String>>,
   pub(crate) proxy_config: Option<CargoProxyConfigPartial>,
 }
 
@@ -319,6 +320,32 @@ pub struct ClusterCargoPartial {
   pub(crate) cargo_key: String,
   pub(crate) cluster_key: String,
   pub(crate) network_key: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct CargoEnvPartial {
+  pub(crate) cargo_key: String,
+  pub(crate) name: String,
+  pub(crate) value: String,
+}
+
+#[derive(
+  Debug,
+  Serialize,
+  Deserialize,
+  Queryable,
+  Insertable,
+  Identifiable,
+  Associations,
+  AsChangeset,
+)]
+#[primary_key(key)]
+#[table_name = "cargo_environnements"]
+pub struct CargoEnvItem {
+  pub(crate) key: String,
+  pub(crate) cargo_key: String,
+  pub(crate) name: String,
+  pub(crate) value: String,
 }
 
 /// Re exports ours enums and diesel sql_types for schema.rs

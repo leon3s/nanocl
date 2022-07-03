@@ -9,20 +9,30 @@ use crate::models::CargoItem;
 use crate::controllers::errors::HttpError;
 use crate::services::errors::docker_error;
 
-pub async fn create_containers(
-  item: &CargoItem,
-  network_key: String,
-  labels: Option<&mut HashMap<String, String>>,
+#[derive(Debug)]
+pub struct CreateCargoContainerOpts<'a> {
+  pub(crate) cargo: &'a CargoItem,
+  pub(crate) network_key: String,
+  pub(crate) environnements: Vec<String>,
+  pub(crate) labels: Option<&'a mut HashMap<String, String>>,
+}
+
+pub async fn create_containers<'a>(
+  opts: CreateCargoContainerOpts<'a>,
   docker_api: &web::types::State<bollard::Docker>,
 ) -> Result<Vec<String>, HttpError> {
   log::debug!(
     "creating containers for cargo {:?} with labels {:?}",
-    &item,
-    &labels
+    &opts.cargo,
+    &opts.labels,
   );
   let mut container_ids: Vec<String> = Vec::new();
-  let image_name = item.image_name.clone();
-  if docker_api.inspect_image(&item.image_name).await.is_err() {
+  let image_name = opts.cargo.image_name.clone();
+  if docker_api
+    .inspect_image(&opts.cargo.image_name)
+    .await
+    .is_err()
+  {
     return Err(HttpError {
       msg: String::from("image name is not valid"),
       status: StatusCode::BAD_REQUEST,
@@ -30,20 +40,24 @@ pub async fn create_containers(
   }
   log::debug!("image name not empty {:?}", &image_name);
   let image = Some(image_name.to_owned());
-  let mut labels: HashMap<String, String> = match labels {
+  let mut labels: HashMap<String, String> = match opts.labels {
     None => HashMap::new(),
     Some(labels) => labels.to_owned(),
   };
-  labels.insert(String::from("namespace"), item.namespace_name.to_owned());
-  labels.insert(String::from("cargo"), item.key.to_owned());
+  labels.insert(
+    String::from("namespace"),
+    opts.cargo.namespace_name.to_owned(),
+  );
+  labels.insert(String::from("cargo"), opts.cargo.key.to_owned());
   let config = bollard::container::Config {
     image,
     tty: Some(true),
     labels: Some(labels),
+    env: Some(opts.environnements),
     attach_stdout: Some(true),
     attach_stderr: Some(true),
     host_config: Some(bollard::models::HostConfig {
-      network_mode: Some(network_key),
+      network_mode: Some(opts.network_key),
       ..Default::default()
     }),
     ..Default::default()

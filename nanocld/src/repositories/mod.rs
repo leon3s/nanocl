@@ -6,6 +6,7 @@ pub mod namespace;
 pub mod nginx_template;
 
 pub mod cargo;
+pub mod cargo_env;
 pub mod cargo_proxy_config;
 
 pub mod cluster;

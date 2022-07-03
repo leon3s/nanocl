@@ -1,8 +1,9 @@
+use ntex::http::StatusCode;
 use ntex::web;
 use serde::{Deserialize, Serialize};
 
 use crate::{services, repositories};
-use crate::models::{Pool, CargoPartial};
+use crate::models::{Pool, CargoPartial, CargoEnvPartial};
 
 use super::errors::HttpError;
 
@@ -69,6 +70,7 @@ async fn create_cargo(
     payload,
   );
   let proxy_config = payload.proxy_config.to_owned();
+  let environnements = payload.environnements.to_owned();
   let item = repositories::cargo::create(nsp, payload, &pool).await?;
   if let Some(proxy_config) = proxy_config {
     log::info!("creating proxy config");
@@ -78,6 +80,29 @@ async fn create_cargo(
       &pool,
     )
     .await?;
+  }
+  if let Some(environnements) = environnements {
+    let mut envs: Vec<CargoEnvPartial> = Vec::new();
+    let cargo_envs = environnements
+      .into_iter()
+      .try_fold(&mut envs, |acc, env_item| {
+        let splited = env_item.split('=').collect::<Vec<&str>>();
+        if splited.len() != 2 {
+          return Err(HttpError {
+            msg: format!("env item {} is not a valid format", env_item),
+            status: StatusCode::BAD_REQUEST,
+          });
+        }
+        let env = CargoEnvPartial {
+          cargo_key: item.key.to_owned(),
+          name: splited[0].into(),
+          value: splited[1].into(),
+        };
+        acc.push(env);
+        Ok::<&mut Vec<CargoEnvPartial>, HttpError>(acc)
+      })?
+      .to_vec();
+    repositories::cargo_env::create_many(cargo_envs, &pool).await?;
   }
   log::info!("cargo succefully created");
   Ok(web::HttpResponse::Created().json(&item))
@@ -121,6 +146,9 @@ async fn delete_cargo_by_name(
   log::info!("deleting cargo");
   let res =
     repositories::cargo::delete_by_key(gen_key.to_owned(), &pool).await?;
+  log::info!("deleting environements");
+  repositories::cargo_env::delete_by_cargo_key(gen_key.to_owned(), &pool)
+    .await?;
   log::info!("deleting containers");
   services::cargo::delete_container(gen_key.to_owned(), &docker_api).await?;
   Ok(web::HttpResponse::Ok().json(&res))

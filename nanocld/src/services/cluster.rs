@@ -12,6 +12,7 @@ use crate::models::{
 
 use crate::controllers::errors::{HttpError, IntoHttpError};
 
+use super::cargo::CreateCargoContainerOpts;
 use super::errors::docker_error;
 
 #[derive(Debug)]
@@ -179,17 +180,31 @@ pub async fn join_cargo(
     cargo_key: opts.cargo.key.to_owned(),
     network_key: opts.network.key.to_owned(),
   };
-  repositories::cluster_cargo::create(cluster_cargo, pool).await?;
-
   let mut labels: HashMap<String, String> = HashMap::new();
   labels.insert(String::from("cluster"), opts.cluster.key.to_owned());
-  let container_ids = services::cargo::create_containers(
-    &opts.cargo,
-    opts.network.key.to_owned(),
-    Some(&mut labels),
-    docker_api,
-  )
-  .await?;
+
+  let envs =
+    repositories::cargo_env::list_by_cargo_key(opts.cargo.key.to_owned(), pool)
+      .await?;
+
+  let mut fold_init: Vec<String> = Vec::new();
+  let environnements = envs
+    .into_iter()
+    .fold(&mut fold_init, |acc, item| {
+      let s = format!("{}={}", item.name, item.value);
+      acc.push(s);
+      acc
+    })
+    .to_vec();
+  let create_opts = CreateCargoContainerOpts {
+    cargo: &opts.cargo,
+    network_key: opts.network.key.to_owned(),
+    labels: Some(&mut labels),
+    environnements,
+  };
+
+  let container_ids =
+    services::cargo::create_containers(create_opts, docker_api).await?;
 
   container_ids
     .into_iter()
@@ -209,6 +224,8 @@ pub async fn join_cargo(
     .await
     .into_iter()
     .collect::<Result<Vec<()>, HttpError>>()?;
+
+  repositories::cluster_cargo::create(cluster_cargo, pool).await?;
 
   Ok(())
 }

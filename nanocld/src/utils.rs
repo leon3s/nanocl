@@ -51,8 +51,8 @@ pub mod test {
     let ip_addr = services::postgresql::get_postgres_ip(&docker)
       .await
       .unwrap();
-    let pool = services::postgresql::create_pool(ip_addr);
-    pool
+
+    services::postgresql::create_pool(ip_addr)
   }
 
   pub async fn generate_server(config: Config) -> test::TestServer {
