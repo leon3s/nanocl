@@ -15,8 +15,8 @@ fi
 sudo mkdir -p /run/nanocl
 sudo mkdir -p ./fake_path/var/lib/nanocl
 
-sudo containerd --config ./fake_path/containerd.conf 2> /dev/null &
-sudo dockerd --config-file ./fake_path/dockerd.json 2> /dev/null &
+sudo containerd --config ./fake_path/etc/nanocl/containerd.conf 2> /dev/null &
+sudo dockerd --config-file ./fake_path/etc/nanocl/dockerd.json 2> /dev/null &
 
 sudo chown root:nanocl -R /run/nanocl
 sudo chmod 070 -R /run/nanocl
