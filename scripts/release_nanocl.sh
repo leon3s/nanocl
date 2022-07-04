@@ -2,25 +2,38 @@
 ## name: release_nanocl.sh
 set -e -x
 
-cargo make release
-mkdir -p target/nanocl_1.0-1_ia64
-mkdir -p target/nanocl_1.0-1_ia64/usr/local/bin
-mkdir -p target/nanocl_1.0-1_ia64/run/nanocl
-mkdir -p target/nanocl_1.0-1_ia64/var/lib/nanocl
-mkdir -p target/nanocl_1.0-1_ia64/var/lib/nanocl
-mkdir -p target/nanocl_1.0-1_ia64/etc
-mkdir -p target/nanocl_1.0-1_ia64/DEBIAN
-cp -r fake_path/etc/nanocl target/nanocl_1.0-1_ia64/etc/nanocl
-cp target/release/nanocli target/nanocl_1.0-1_ia64/usr/local/bin
-cp target/release/nanocld target/nanocl_1.0-1_ia64/usr/local/bin
+# variables
+pkg_name="nanocl"
+arch=`dpkg --print-architecture`
+version=`cat ./nanocli/Cargo.toml | grep -m 1 "version = \"" | sed 's/[^0-9.]*\([0-9.]*\).*/\1/'`
+release_path="../target/${pkg_name}_${version}_${arch}"
 
-cat > target/nanocl_1.0-1_ia64/DEBIAN/control <<- EOM
-Package: nanocl
-Version: 0.1
-Architecture: ia64
-Maintainer: leone leone@next-hat.com
+cd nanocli
+# create directories structure for package
+mkdir -p ${release_path}
+mkdir -p ${release_path}/DEBIAN
+mkdir -p ${release_path}/usr/local/bin
+mkdir -p ${release_path}/usr/local/man/man1
+
+# create and copy release binary
+cargo make release
+cp ../target/release/${pkg_name} ${release_path}/usr/local/bin
+
+# generate man pages
+mkdir -p ../target/man
+cargo make man
+pandoc --from man --to markdown < ../target/man/${pkg_name}.1 > ../man/${pkg_name}.1.md
+gzip -f ../target/man/${pkg_name}.1
+cp ../target/man/${pkg_name}.1.gz ${release_path}/usr/local/man/man1
+
+# generate DEBIAN controll
+cat > ${release_path}/DEBIAN/control <<- EOM
+Package: ${pkg_name}
+Version: ${version}
+Architecture: ${arch}
+Maintainer: next-hat team@next-hat.com
 Description: A self-sufficient vms and containers manager
 EOM
 
-mkdir -p target/debian
-dpkg-deb --build --root-owner-group target/nanocl_1.0-1_ia64 target/debian/nanocl_1.0-1_ia64.deb
+mkdir -p ../target/debian
+dpkg-deb --build --root-owner-group ${release_path} ../target/debian/${pkg_name}_${version}_${arch}.deb

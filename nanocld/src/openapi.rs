@@ -109,9 +109,9 @@ async fn get_api_specs() -> Result<web::HttpResponse, web::Error> {
 
 pub fn ntex_config(config: &mut web::ServiceConfig) {
   config.service(get_api_specs);
-  config.service(
-    fs::Files::new("/explorer", "./static/swagger").index_file("index.html"),
-  );
+  // config.service(
+  //   fs::Files::new("/explorer", "./static/swagger").index_file("index.html"),
+  // );
 }
 
 #[cfg(test)]

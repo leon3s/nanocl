@@ -186,7 +186,6 @@ pub async fn apply(
   match config_type {
     YmlConfigTypes::Namespace => {
       let namespace = serde_yaml::from_str::<NamespaceConfig>(&file_content)?;
-      println!("namespace config {:#?}", &namespace);
       apply_namespace(&namespace, client).await?;
     }
     _ => todo!("apply different type of config"),

@@ -171,7 +171,6 @@ async fn execute_args(args: Cli) -> Result<(), CliError> {
     Commands::Apply(args) => {
       let mut file_path = std::env::current_dir()?;
       file_path.push(&args.file_path);
-      println!("apply !");
       yml::config::apply(file_path, &client).await?;
     }
     Commands::Revert(args) => {
