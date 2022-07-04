@@ -2,8 +2,8 @@
   <img
     src="https://avatars.githubusercontent.com/u/94208118?s=200&v=4"
   />
-  <p><h1>nanocl</h1> </p>
-  <p><italic>nano cloud</italic><p>
+  <p><h1><strong>nanocl</strong></h1> </p>
+  <p><strong>nano cloud</strong><p>
   <p><strong>self-sufficient production ready intranet</strong> </p>
 </div>
 
