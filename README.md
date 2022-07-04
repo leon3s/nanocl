@@ -6,10 +6,12 @@
   <p><strong>self-sufficient production ready intranet</strong> </p>
 </div>
 
-<p style="margin:0px;">Unlock control of your network using nanocl.</p>
-<p style="margin:0px;">Setup and configure enterprice grade vpn with his own dns server and http proxy.</p>
-<p style="margin:0px;">Allow vms and containers management on multiple machine.</p>
-<p style="margin:0px;">Automaticaly test, deploy and scale your services or applications.</p>
+<p style="max-width: 200px">
+Unlock control of your network using nanocl.
+Setup and configure enterprice grade vpn with his own dns server and http proxy.
+Allow vms and containers management on multiple machine.
+Automaticaly test, deploy and scale your services or applications.
+</p>
 
 ## State
 
