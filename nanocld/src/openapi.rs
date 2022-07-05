@@ -113,36 +113,3 @@ pub fn ntex_config(config: &mut web::ServiceConfig) {
   //   fs::Files::new("/explorer", "./static/swagger").index_file("index.html"),
   // );
 }
-
-#[cfg(test)]
-mod test_openapi {
-  use crate::utils::test::*;
-
-  use super::*;
-
-  async fn test_swagger(srv: &TestServer) -> TestReturn {
-    let res = srv.get("/explorer").send().await?;
-    assert!(res.status().is_success());
-    Ok(())
-  }
-
-  async fn test_specs(srv: &TestServer) -> TestReturn {
-    let res = srv.get("/explorer/swagger.json").send().await?;
-    assert!(res.status().is_success());
-    let content_type = match res.header("content-type") {
-      None => "empty",
-      Some(content_type) => content_type.to_str().unwrap(),
-    };
-    assert_eq!(content_type, "application/json");
-    Ok(())
-  }
-
-  #[ntex::test]
-  async fn main() -> TestReturn {
-    let srv = generate_server(ntex_config).await;
-
-    test_swagger(&srv).await?;
-    test_specs(&srv).await?;
-    Ok(())
-  }
-}
