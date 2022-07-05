@@ -38,7 +38,7 @@ async fn main() -> std::io::Result<()> {
   }
   env_logger::Builder::new().parse_env("LOG_LEVEL").init();
 
-  log::info!("booting...");
+  log::info!("daemon booting");
   let state = match boot::boot().await {
     Err(err) => {
       log::error!("Error while trying to boot : {:?}", err);
@@ -46,11 +46,11 @@ async fn main() -> std::io::Result<()> {
     }
     Ok(state) => state,
   };
-  log::info!("booted");
+  log::info!("daemon booted");
   if args.boot_only {
     return Ok(());
   }
-  log::info!("starting http");
+  log::info!("daemon starting");
   server::ntex::start_server(state).await?;
   log::info!("kill received exiting.");
   Ok(())

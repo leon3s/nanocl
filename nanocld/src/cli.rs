@@ -1,5 +1,6 @@
 use clap::{AppSettings, Parser};
-/// A self-sufficient vms and containers manager
+/// nanocl daemon
+/// self-sufficient intranet
 #[derive(Debug, Parser)]
 #[clap(
   about,
@@ -7,9 +8,10 @@ use clap::{AppSettings, Parser};
   global_setting = AppSettings::DeriveDisplayOrder,
 )]
 pub(crate) struct Cli {
-  /// commands
+  /// Boot only then stop. Used to just download required components
   #[clap(long)]
   pub(crate) boot_only: bool,
-  // #[clap(subcommand)]
-  // pub command: Commands,
+  /// Daemon socket(s) to connect to default to unix:///run/nanocl/nanocl.sock
+  #[clap(short, long = "--host")]
+  pub(crate) host: Option<String>,
 }

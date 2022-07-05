@@ -1,3 +1,7 @@
+use std::cell::Cell;
+use std::net;
+use std::sync::Arc;
+
 use ntex::web;
 use ntex_files as fs;
 
@@ -39,8 +43,15 @@ pub async fn start_server(state: DaemonState) -> std::io::Result<()> {
     //     .index_file("index.html"),
     // )
   });
+  log::info!("binding on /run/nanocl/nanocl.sock");
   server = server.bind_uds("/run/nanocl/nanocl.sock")?;
-  server = server.bind("0.0.0.0:8383")?;
-  log::info!("http started on http://0.0.0.0:8383");
+  #[cfg(debug_assertions)]
+  {
+    log::info!("binding on http://0.0.0.0:8383");
+    server = server.bind("0.0.0.0:8383")?;
+  }
+  log::info!("daemon started");
   server.run().await
+  // srv_ptr.run().await
+  // Ok(())
 }

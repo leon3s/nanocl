@@ -12,6 +12,7 @@ use crate::services::errors::docker_error;
 #[derive(Debug)]
 pub struct CreateCargoContainerOpts<'a> {
   pub(crate) cargo: &'a CargoItem,
+  #[allow(dead_code)]
   pub(crate) network_key: String,
   pub(crate) environnements: Vec<String>,
   pub(crate) labels: Option<&'a mut HashMap<String, String>>,
@@ -57,7 +58,8 @@ pub async fn create_containers<'a>(
     attach_stdout: Some(true),
     attach_stderr: Some(true),
     host_config: Some(bollard::models::HostConfig {
-      network_mode: Some(opts.network_key),
+      // This remove internet inside the container need to find a workarround
+      // network_mode: Some(opts.network_key),
       ..Default::default()
     }),
     ..Default::default()
