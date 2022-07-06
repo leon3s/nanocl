@@ -104,7 +104,7 @@ pub async fn restart(docker: &Docker) -> Result<(), DnsmasqError> {
 pub fn gen_dnsmasq_host_conf() -> HostConfig {
   let binds = Some(vec![
     String::from("/var/lib/nanocl/dnsmasq/dnsmasq.conf:/etc/dnsmasq.conf"),
-    String::from("/var/lib/nanocl/dnsmasq/dnsmasq.d:/etc/dnsmasq.d"),
+    String::from("/var/lib/nanocl/dnsmasq/dnsmasq.d/:/etc/dnsmasq.d/"),
   ]);
   let mut port_bindings: HashMap<String, Option<Vec<PortBinding>>> =
     HashMap::new();
@@ -124,7 +124,8 @@ pub fn gen_dnsmasq_host_conf() -> HostConfig {
   );
   HostConfig {
     binds,
-    port_bindings: Some(port_bindings),
+    network_mode: Some(String::from("host")),
+    // port_bindings: Some(port_bindings),
     ..Default::default()
   }
 }
