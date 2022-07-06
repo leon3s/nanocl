@@ -181,7 +181,7 @@ pub async fn start(
           .await;
       if let Ok(proxy_config) = proxy_config {
         let template = repositories::nginx_template::get_by_name(
-          String::from("nodejs-single"),
+          proxy_config.template,
           pool,
         )
         .await?;

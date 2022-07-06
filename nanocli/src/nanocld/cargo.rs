@@ -12,6 +12,7 @@ use super::{
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CargoProxyConfigPartial {
   pub(crate) domain_name: String,
+  pub(crate) template: String,
   pub(crate) host_ip: String,
   pub(crate) target_port: i32,
 }
@@ -33,6 +34,7 @@ impl std::str::FromStr for CargoProxyConfigPartial {
     let item = options.try_fold(
       CargoProxyConfigPartial {
         domain_name: String::from(""),
+        template: String::from(""),
         host_ip: String::from(""),
         target_port: 0,
       },
@@ -41,6 +43,10 @@ impl std::str::FromStr for CargoProxyConfigPartial {
         match args[0] {
           "domain_name" => Ok(CargoProxyConfigPartial {
             domain_name: String::from(args[1]),
+            ..acc
+          }),
+          "template" => Ok(CargoProxyConfigPartial {
+            template: String::from(args[1]),
             ..acc
           }),
           "host_ip" => Ok(CargoProxyConfigPartial {
@@ -153,12 +159,27 @@ impl Nanocld {
 
   pub async fn count_cargo(
     &self,
-    namespace: &str,
+    #[allow(unused_variables)] namespace: &str,
   ) -> Result<PgGenericCount, NanocldError> {
     let mut res = self.get(String::from("/cargoes/count")).send().await?;
     let status = res.status();
     is_api_error(&mut res, &status).await?;
     let count = res.json::<PgGenericCount>().await?;
     Ok(count)
+  }
+
+  pub async fn inspect_cargo(
+    &self,
+    name: &str,
+  ) -> Result<CargoItem, NanocldError> {
+    let mut res = self
+      .get(format!("/cargoes/{name}/inspect", name = name))
+      .send()
+      .await?;
+    let status = res.status();
+    is_api_error(&mut res, &status).await?;
+    let item = res.json::<CargoItem>().await?;
+
+    Ok(item)
   }
 }

@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use futures::StreamExt;
 use futures::stream::FuturesUnordered;
+use ntex::http::StatusCode;
 
 use crate::nanocld::cargo::CargoPartial;
 use crate::nanocld::client::Nanocld;
@@ -10,6 +11,7 @@ use crate::nanocld::cluster::{
 };
 
 use crate::errors::CliError;
+use crate::nanocld::error::NanocldError;
 
 use super::parser::get_config_type;
 use super::models::{YmlConfigTypes, NamespaceConfig};
@@ -23,7 +25,20 @@ async fn revert_namespace(
     .cargoes
     .iter()
     .map(|cargo| async {
-      client.delete_cargo(cargo.name.to_owned()).await?;
+      let result = client.delete_cargo(cargo.name.to_owned()).await;
+      if let Err(err) = result {
+        match err {
+          NanocldError::Api(ref api_err) => {
+            if api_err.status == StatusCode::NOT_FOUND {
+              return Ok::<(), CliError>(());
+            }
+            return Err::<(), CliError>(CliError::Client(err));
+          }
+          _ => {
+            return Err::<(), CliError>(CliError::Client(err));
+          }
+        }
+      }
       Ok::<(), CliError>(())
     })
     .collect::<FuturesUnordered<_>>()
@@ -37,7 +52,20 @@ async fn revert_namespace(
     .clusters
     .iter()
     .map(|cluster| async {
-      client.delete_cluster(cluster.name.to_owned()).await?;
+      let result = client.delete_cluster(cluster.name.to_owned()).await;
+      if let Err(err) = result {
+        match err {
+          NanocldError::Api(ref api_err) => {
+            if api_err.status == StatusCode::NOT_FOUND {
+              return Ok::<(), CliError>(());
+            }
+            return Err::<(), CliError>(CliError::Client(err));
+          }
+          _ => {
+            return Err::<(), CliError>(CliError::Client(err));
+          }
+        }
+      }
       Ok::<(), CliError>(())
     })
     .collect::<FuturesUnordered<_>>()
@@ -45,7 +73,6 @@ async fn revert_namespace(
     .await
     .into_iter()
     .collect::<Result<Vec<()>, CliError>>()?;
-
   Ok(())
 }
 
@@ -63,10 +90,16 @@ async fn apply_namespace(
     .clusters
     .iter()
     .map(|cluster| async {
+      let cluster_exists =
+        client.inspect_cluster(cluster.name.to_owned()).await;
       let item = ClusterPartial {
         name: cluster.name.to_owned(),
       };
-      client.create_cluster(&item).await?;
+      println!("cluster exists : {:#?}", &cluster_exists);
+      if cluster_exists.is_err() {
+        println!("creating cluster !");
+        client.create_cluster(&item).await?;
+      }
       // Create cluster variables
       if let Some(variables) = cluster.variables.to_owned() {
         let variables = &variables;
@@ -74,15 +107,18 @@ async fn apply_namespace(
           .to_owned()
           .into_keys()
           .map(|var_name| async {
+            let result =
+              client.inspect_cluster_var(&cluster.name, &var_name).await;
             let value = variables.get(&var_name).unwrap();
-
             let item = ClusterVarPartial {
               name: var_name,
               value: value.into(),
             };
-            client
-              .create_cluster_var(&cluster.name.to_owned(), item)
-              .await?;
+            if result.is_err() {
+              client
+                .create_cluster_var(&cluster.name.to_owned(), item)
+                .await?;
+            }
             Ok::<_, CliError>(())
           })
           .collect::<FuturesUnordered<_>>()
@@ -96,12 +132,18 @@ async fn apply_namespace(
         .networks
         .iter()
         .map(|network| async {
+          let result = client
+            .inspect_cluster_network(&cluster.name, &network.name)
+            .await;
           let item = ClusterNetworkPartial {
             name: network.name.to_owned(),
           };
-          client
-            .create_cluster_network(cluster.name.to_owned(), &item)
-            .await?;
+          println!("network exists {:#?}", &result);
+          if result.is_err() {
+            client
+              .create_cluster_network(cluster.name.to_owned(), &item)
+              .await?;
+          }
 
           Ok::<_, CliError>(())
         })
@@ -123,13 +165,16 @@ async fn apply_namespace(
     .cargoes
     .iter()
     .map(|cargo| async {
+      let result = client.inspect_cargo(&cargo.name).await;
       let item = CargoPartial {
         name: cargo.name.to_owned(),
         image_name: cargo.image_name.to_owned(),
         proxy_config: cargo.proxy_config.to_owned(),
         environnements: cargo.environnements.to_owned(),
       };
-      client.create_cargo(&item).await?;
+      if result.is_err() {
+        client.create_cargo(&item).await?;
+      }
       // client.join_cluster_cargo(&cluster.name.to_owned(), )
       Ok::<_, CliError>(())
     })

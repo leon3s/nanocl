@@ -117,8 +117,37 @@ async fn delete_cluster_variable(
   Ok(web::HttpResponse::Ok().json(&res))
 }
 
+/// Get cluster variable by it's name
+#[utoipa::path(
+  get,
+  path = "/clusters/{c_name}/variables/{v_name}",
+  params(
+    ("c_name" = String, path, description = "name of the cluster"),
+    ("v_name" = String, path, description = "name of the variable"),
+    ("namespace" = Option<String>, query, description = "Name of the namespace where the cluster is stored is empty we use 'global' as value"),
+  ),
+  responses(
+    (status = 200, description = "Generic delete response", body = PgDeleteGeneric),
+    (status = 400, description = "Generic database error", body = ApiError),
+    (status = 404, description = "Cluster name or Namespace not valid", body = ApiError),
+  ),
+)]
+#[web::get("/clusters/{c_name}/variables/{v_name}")]
+async fn get_cluster_variable_by_name(
+  pool: web::types::State<Pool>,
+  url_path: web::types::Path<ClusterVariablePath>,
+  web::types::Query(qs): web::types::Query<ClusterVaribleQuery>,
+) -> Result<web::HttpResponse, HttpError> {
+  let var_name = format!("{}-{}", &url_path.c_name, &url_path.v_name);
+  let var_key = gen_nsp_key_by_name(&qs.namespace, &var_name);
+
+  let res = repositories::cluster_variable::find_by_key(var_key, &pool).await?;
+  Ok(web::HttpResponse::Ok().json(&res))
+}
+
 pub fn ntex_config(config: &mut web::ServiceConfig) {
   config.service(create_cluster_variable);
   config.service(list_cluster_variable);
   config.service(delete_cluster_variable);
+  config.service(get_cluster_variable_by_name);
 }

@@ -207,17 +207,50 @@ pub struct RevertArgs {
   pub(crate) file_path: String,
 }
 
+#[derive(Debug, Parser)]
+pub struct NginxTemplateOptions {
+  pub(crate) name: String,
+}
+
+#[derive(Debug, Parser)]
+pub struct NginxTemplateCreateOptions {
+  #[clap(long)]
+  pub(crate) name: String,
+  #[clap(long = "-stdi")]
+  pub(crate) is_reading_stdi: bool,
+  #[clap(short)]
+  pub(crate) file_path: Option<String>,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum NginxTemplateCommand {
+  #[clap(alias("ls"))]
+  List,
+  #[clap(alias("rm"))]
+  Remove(NginxTemplateOptions),
+  Create(NginxTemplateCreateOptions),
+  // Todo
+  // Inspect(NginxTemplateOption),
+}
+
+#[derive(Debug, Parser)]
+pub struct NginxTemplateArgs {
+  #[clap(subcommand)]
+  pub(crate) commands: NginxTemplateCommand,
+}
+
 #[derive(Debug, Subcommand)]
 pub enum Commands {
   Docker(DockerOptions),
   Namespace(NamespaceArgs),
   Cluster(ClusterArgs),
-  ClusterNetwork(ClusterNetworkArgs),
   Cargo(CargoArgs),
-  GitRepository(GitRepositoryArgs),
   Apply(ApplyArgs),
   Revert(RevertArgs),
-  // TODO Completion
+  GitRepository(GitRepositoryArgs),
+  NginxTemplate(NginxTemplateArgs),
+  ClusterNetwork(ClusterNetworkArgs),
+  // TODO shell ompletion
   // Completion {
   //   /// Shell to generate completion for
   //   #[clap(arg_enum)]

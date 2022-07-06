@@ -238,6 +238,7 @@ pub struct CargoItem {
 pub struct CargoProxyConfigItem {
   pub(crate) cargo_key: String,
   pub(crate) domain_name: String,
+  pub(crate) template: String,
   pub(crate) host_ip: String,
   pub(crate) target_port: i32,
 }
@@ -245,6 +246,7 @@ pub struct CargoProxyConfigItem {
 #[derive(Debug, Clone, Component, Serialize, Deserialize)]
 pub struct CargoProxyConfigPartial {
   pub(crate) domain_name: String,
+  pub(crate) template: String,
   pub(crate) host_ip: String,
   pub(crate) target_port: i32,
 }

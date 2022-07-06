@@ -9,9 +9,15 @@ use ntex::http::{
   },
 };
 
-#[derive(Debug, Error, Serialize, Deserialize)]
-pub struct ApiError {
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ApiResponseError {
   pub msg: String,
+}
+
+#[derive(Debug, Error)]
+pub struct ApiError {
+  pub(crate) status: StatusCode,
+  pub(crate) msg: String,
 }
 
 impl std::fmt::Display for ApiError {
@@ -37,8 +43,11 @@ pub async fn is_api_error(
   status: &StatusCode,
 ) -> Result<(), NanocldError> {
   if status.is_server_error() || status.is_client_error() {
-    let err = res.json::<ApiError>().await?;
-    return Err(NanocldError::Api(err));
+    let err = res.json::<ApiResponseError>().await?;
+    return Err(NanocldError::Api(ApiError {
+      status: *status,
+      msg: err.msg,
+    }));
   }
   Ok(())
 }

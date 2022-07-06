@@ -93,3 +93,22 @@ pub async fn delete_by_key(
     Ok(result) => Ok(PgDeleteGeneric { count: result }),
   }
 }
+
+pub async fn find_by_key(
+  key: String,
+  pool: &web::types::State<Pool>,
+) -> Result<ClusterVariableItem, HttpError> {
+  use crate::schema::cluster_variables::dsl;
+
+  let conn = services::postgresql::get_pool_conn(pool)?;
+  let res = web::block(move || {
+    dsl::cluster_variables
+      .filter(dsl::key.eq(key))
+      .get_result(&conn)
+  })
+  .await;
+  match res {
+    Err(err) => Err(db_blocking_error(err)),
+    Ok(item) => Ok(item),
+  }
+}

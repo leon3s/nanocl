@@ -59,6 +59,7 @@ chmod 775 ${release_path}/DEBIAN/postinst
 cat > ${release_path}/DEBIAN/postrm <<- EOM
 delgroup nanocl
 rm /etc/systemd/system/nanocl.service
+rm /etc/systemd/nanocl.conf
 EOM
 
 chmod 775 ${release_path}/DEBIAN/postrm

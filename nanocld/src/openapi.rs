@@ -1,6 +1,8 @@
 use ntex::web;
-use ntex_files as fs;
 use utoipa::OpenApi;
+
+#[allow(unused_imports)]
+use ntex_files as fs;
 
 use crate::models::*;
 use crate::controllers::*;

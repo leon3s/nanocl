@@ -8,7 +8,7 @@ use super::{
   models::PgGenericCount,
 };
 
-#[derive(Tabled, Serialize, Deserialize)]
+#[derive(Debug, Tabled, Serialize, Deserialize)]
 pub struct ClusterItem {
   pub(crate) key: String,
   pub(crate) namespace: String,
@@ -65,6 +65,22 @@ impl Nanocld {
       .await?;
     let status = res.status();
     is_api_error(&mut res, &status).await?;
+    let item = res.json::<ClusterItem>().await?;
+
+    Ok(item)
+  }
+
+  pub async fn inspect_cluster(
+    &self,
+    name: String,
+  ) -> Result<ClusterItem, NanocldError> {
+    let mut res = self
+      .get(format!("/clusters/{name}/inspect", name = name))
+      .send()
+      .await?;
+    let status = res.status();
+    is_api_error(&mut res, &status).await?;
+    println!("res {:#?}", res);
     let item = res.json::<ClusterItem>().await?;
 
     Ok(item)
@@ -132,6 +148,26 @@ impl Nanocld {
     Ok(())
   }
 
+  pub async fn inspect_cluster_network(
+    &self,
+    c_name: &str,
+    n_name: &str,
+  ) -> Result<ClusterNetworkItem, NanocldError> {
+    let mut res = self
+      .get(format!(
+        "/clusters/{c_name}/networks/{n_name}/inspect",
+        c_name = c_name,
+        n_name = n_name
+      ))
+      .send()
+      .await?;
+    let status = res.status();
+    is_api_error(&mut res, &status).await?;
+
+    let item = res.json::<ClusterNetworkItem>().await?;
+    Ok(item)
+  }
+
   pub async fn create_cluster_var(
     &self,
     c_name: &str,
@@ -145,6 +181,26 @@ impl Nanocld {
     is_api_error(&mut res, &status).await?;
 
     Ok(())
+  }
+
+  pub async fn inspect_cluster_var(
+    &self,
+    c_name: &str,
+    v_name: &str,
+  ) -> Result<ClusterVarPartial, NanocldError> {
+    let mut res = self
+      .get(format!(
+        "/clusters/{c_name}/variables/{v_name}",
+        c_name = c_name,
+        v_name = v_name
+      ))
+      .send()
+      .await?;
+    let status = res.status();
+    is_api_error(&mut res, &status).await?;
+
+    let item = res.json::<ClusterVarPartial>().await?;
+    Ok(item)
   }
 
   // Todo be edit and delete cluster vars

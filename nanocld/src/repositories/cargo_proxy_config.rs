@@ -42,6 +42,7 @@ pub async fn create_for_cargo(
     let item = CargoProxyConfigItem {
       cargo_key,
       domain_name: item.domain_name,
+      template: item.template,
       host_ip: item.host_ip,
       target_port: item.target_port,
     };

@@ -181,11 +181,44 @@ async fn count_cargo(
   Ok(web::HttpResponse::Ok().json(&res))
 }
 
+/// Delete cargo by it's name
+#[utoipa::path(
+  get,
+  path = "/cargoes/{name}/inspect",
+  params(
+    ("name" = String, path, description = "Name of the cargo"),
+    ("namespace" = Option<String>, query, description = "Name of the namespace where the cargo is stored"),
+  ),
+  responses(
+    (status = 200, description = "Generic delete", body = PgDeleteGeneric),
+    (status = 400, description = "Generic database error", body = ApiError),
+    (status = 404, description = "Namespace name not valid", body = ApiError),
+  ),
+)]
+#[web::get("/cargoes/{name}/inspect")]
+async fn inspect_cargo_by_name(
+  pool: web::types::State<Pool>,
+  name: web::types::Path<String>,
+  web::types::Query(qs): web::types::Query<CargoQuery>,
+) -> Result<web::HttpResponse, HttpError> {
+  log::info!("asking cargo deletion {}", &name);
+  let nsp = match qs.namespace {
+    None => String::from("global"),
+    Some(nsp) => nsp,
+  };
+  let gen_key = nsp + "-" + &name.into_inner();
+
+  let res = repositories::cargo::find_by_key(gen_key.clone(), &pool).await?;
+
+  Ok(web::HttpResponse::Ok().json(&res))
+}
+
 pub fn ntex_config(config: &mut web::ServiceConfig) {
   config.service(list_cargo);
   config.service(create_cargo);
   config.service(count_cargo);
   config.service(delete_cargo_by_name);
+  config.service(inspect_cargo_by_name);
 }
 
 #[cfg(test)]

@@ -21,8 +21,6 @@ pub async fn list(
   }
 }
 
-/// Todo route to create nginx template
-#[allow(dead_code)]
 pub async fn create(
   item: NginxTemplateItem,
   pool: &web::types::State<Pool>,
@@ -63,8 +61,6 @@ pub async fn get_by_name(
   }
 }
 
-/// TODO route to delete nginx template
-#[allow(dead_code)]
 pub async fn delete_by_name(
   name: String,
   pool: &web::types::State<Pool>,

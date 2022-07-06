@@ -1,9 +1,4 @@
-use std::cell::Cell;
-use std::net;
-use std::sync::Arc;
-
 use ntex::web;
-use ntex_files as fs;
 
 use crate::openapi;
 use crate::controllers;
@@ -37,11 +32,6 @@ pub async fn start_server(state: DaemonState) -> std::io::Result<()> {
       .configure(controllers::nginx_template::ntex_config)
       // bind controller cargo
       .configure(controllers::cargo::ntex_config)
-    // TOTO remove it's for test websocket with javascript
-    // .service(
-    //   fs::Files::new("/websocket", "./static/websocket")
-    //     .index_file("index.html"),
-    // )
   });
   log::info!("binding on /run/nanocl/nanocl.sock");
   server = server.bind_uds("/run/nanocl/nanocl.sock")?;
@@ -52,6 +42,4 @@ pub async fn start_server(state: DaemonState) -> std::io::Result<()> {
   }
   log::info!("daemon started");
   server.run().await
-  // srv_ptr.run().await
-  // Ok(())
 }

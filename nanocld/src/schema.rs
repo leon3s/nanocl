@@ -15,6 +15,7 @@ table! {
     cargo_proxy_configs (cargo_key) {
         cargo_key -> Varchar,
         domain_name -> Varchar,
+        template -> Varchar,
         host_ip -> Varchar,
         target_port -> Int4,
     }
@@ -122,15 +123,15 @@ joinable!(cluster_cargoes -> clusters (cluster_key));
 joinable!(cluster_networks -> clusters (cluster_key));
 
 allow_tables_to_appear_in_same_query!(
-    cargo_environnements,
-    cargo_proxy_configs,
-    cargoes,
-    cluster_cargoes,
-    cluster_networks,
-    cluster_variables,
-    clusters,
-    git_repositories,
-    git_repository_branches,
-    namespaces,
-    nginx_templates,
+  cargo_environnements,
+  cargo_proxy_configs,
+  cargoes,
+  cluster_cargoes,
+  cluster_networks,
+  cluster_variables,
+  clusters,
+  git_repositories,
+  git_repository_branches,
+  namespaces,
+  nginx_templates,
 );
