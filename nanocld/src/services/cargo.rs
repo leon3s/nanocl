@@ -45,6 +45,12 @@ pub async fn create_containers<'a>(
     None => HashMap::new(),
     Some(labels) => labels.to_owned(),
   };
+  let mut name = opts.cargo.name.to_owned();
+  let len = container_ids.len();
+  if len != 0 {
+    name += &("-".to_owned() + &len.to_string());
+  }
+  let container_opts = bollard::container::CreateContainerOptions { name };
   labels.insert(
     String::from("namespace"),
     opts.cargo.namespace_name.to_owned(),
@@ -66,10 +72,7 @@ pub async fn create_containers<'a>(
     ..Default::default()
   };
   let res = match docker_api
-    .create_container(
-      None::<bollard::container::CreateContainerOptions<String>>,
-      config,
-    )
+    .create_container(Some(container_opts), config)
     .await
   {
     Err(err) => return Err(docker_error(err)),
