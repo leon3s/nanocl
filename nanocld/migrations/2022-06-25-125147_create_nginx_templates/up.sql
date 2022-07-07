@@ -22,7 +22,7 @@ INSERT INTO "nginx_templates" ("name", "content") VALUES ('nodejs-single', 'serv
 }
 ');
 
-INSERT INTO "nginx_template" ("name", "content") VALUES ('nodejs-single-ssl', 'server {
+INSERT INTO "nginx_templates" ("name", "content") VALUES ('nodejs-single-ssl', 'server {
   server_name {{vars.pre_domain}}{{domain_name}};
   listen 443 ssl;
   location / {
