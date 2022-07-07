@@ -18,7 +18,7 @@ use crate::errors::HttpResponseError;
 /// Err(db_error(err))
 /// ```
 pub fn db_error(err: diesel::result::Error) -> HttpResponseError {
-  println!("got db error : {:#?}", err);
+  log::debug!("got db error : {:#?}", err);
   let default_error = HttpResponseError {
     msg: String::from("unproccesable query"),
     status: StatusCode::BAD_REQUEST,

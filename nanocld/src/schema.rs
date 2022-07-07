@@ -26,9 +26,10 @@ table! {
 
     cargoes (key) {
         key -> Varchar,
+        namespace_name -> Varchar,
         name -> Varchar,
         image_name -> Varchar,
-        namespace_name -> Varchar,
+        binds -> Array<Text>,
     }
 }
 
@@ -123,15 +124,15 @@ joinable!(cluster_cargoes -> clusters (cluster_key));
 joinable!(cluster_networks -> clusters (cluster_key));
 
 allow_tables_to_appear_in_same_query!(
-  cargo_environnements,
-  cargo_proxy_configs,
-  cargoes,
-  cluster_cargoes,
-  cluster_networks,
-  cluster_variables,
-  clusters,
-  git_repositories,
-  git_repository_branches,
-  namespaces,
-  nginx_templates,
+    cargo_environnements,
+    cargo_proxy_configs,
+    cargoes,
+    cluster_cargoes,
+    cluster_networks,
+    cluster_variables,
+    clusters,
+    git_repositories,
+    git_repository_branches,
+    namespaces,
+    nginx_templates,
 );

@@ -58,6 +58,7 @@ pub async fn create_containers<'a>(
     attach_stdout: Some(true),
     attach_stderr: Some(true),
     host_config: Some(bollard::models::HostConfig {
+      binds: Some(opts.cargo.binds.to_owned()),
       // This remove internet inside the container need to find a workarround
       // network_mode: Some(opts.network_key),
       ..Default::default()

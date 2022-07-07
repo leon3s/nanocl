@@ -14,6 +14,7 @@ use crate::errors::DaemonError;
 embed_migrations!("./migrations");
 
 #[derive(Debug)]
+#[allow(dead_code)]
 /// Todo Daemon config as state
 pub struct DaemonConfig {
   root_path: String,
@@ -116,7 +117,7 @@ pub async fn boot(
           op: Ok(op),
           cookie,
         }) => {
-          println!("{:?} {:?} ({:?})", op, path, cookie);
+          log::debug!("watcher event {:?} {:?} ({:?})", op, path, cookie);
           if path.to_string_lossy() != "/var/lib/nanocl/nginx/log/access.log" {
             return;
           }

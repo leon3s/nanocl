@@ -196,6 +196,7 @@ pub struct CargoPartial {
   pub(crate) image_name: String,
   pub(crate) environnements: Option<Vec<String>>,
   pub(crate) proxy_config: Option<CargoProxyConfigPartial>,
+  pub(crate) binds: Option<Vec<String>>,
 }
 
 /// Cargo item is an definition to container create image and start them
@@ -220,6 +221,7 @@ pub struct CargoItem {
   pub(crate) name: String,
   pub(crate) image_name: String,
   pub(crate) namespace_name: String,
+  pub(crate) binds: Vec<String>,
 }
 
 #[derive(

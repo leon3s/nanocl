@@ -7,9 +7,9 @@ args = ["fmt"]
 command = "cargo"
 args = ["clean"]
 
-[tasks.run]
+[tasks.dev]
 command = "cargo"
-args = ["run"]
+args = ["run", "--", "--docker-host", "/run/nanocl/docker.sock"]
 
 [tasks.cov]
 command = "cargo"
