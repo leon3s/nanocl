@@ -71,11 +71,16 @@ fn parse_build_output(
   service_name: &'static str,
   output: Result<bollard::models::BuildInfo, DockerError>,
 ) -> Result<(), DockerError> {
-  log::debug!("{:#?}", output);
   match output {
     Err(err) => return Err(err),
     Ok(build_info) => {
-      log::debug!("[{}] {:#?}", &service_name, &build_info);
+      if let Some(stream) = build_info.stream {
+        print!("{}", stream);
+      }
+      if let Some(progress) = build_info.progress {
+        print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
+        print!("{}", progress)
+      }
       if let Some(err) = build_info.error {
         log::error!("[{}] {:#?}", &service_name, &err);
         return Err(DockerError::DockerResponseServerError {

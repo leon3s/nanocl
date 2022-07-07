@@ -258,6 +258,7 @@ async fn build_git_repository_by_name(
         docker_api,
       )
       .await?;
+
       Ok(
         web::HttpResponse::Ok()
           .content_type("nanocl/streaming-v1")

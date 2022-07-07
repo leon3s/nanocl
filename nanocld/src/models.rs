@@ -218,9 +218,9 @@ pub struct CargoPartial {
 #[table_name = "cargoes"]
 pub struct CargoItem {
   pub(crate) key: String,
+  pub(crate) namespace_name: String,
   pub(crate) name: String,
   pub(crate) image_name: String,
-  pub(crate) namespace_name: String,
   pub(crate) binds: Vec<String>,
 }
 

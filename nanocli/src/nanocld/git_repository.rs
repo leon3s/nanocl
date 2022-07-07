@@ -1,5 +1,6 @@
 use ntex::http::StatusCode;
 use tabled::Tabled;
+use serde_json::Value;
 use clap::{Parser, arg_enum};
 use serde::{Serialize, Deserialize};
 use futures::{TryStreamExt, StreamExt};
@@ -18,9 +19,69 @@ arg_enum! {
   }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct ErrorDetail {
+  #[serde(rename = "code")]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub code: Option<i64>,
+
+  #[serde(rename = "message")]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub message: Option<String>,
+}
+
+/// Image ID or Digest
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct ImageId {
+  #[serde(rename = "ID")]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub id: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct ProgressDetail {
+  #[serde(rename = "current")]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub current: Option<i64>,
+
+  #[serde(rename = "total")]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub total: Option<i64>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct GithubRepositoryBuildStream {
+  #[serde(rename = "id")]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub id: Option<String>,
+
+  #[serde(rename = "stream")]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub stream: Option<String>,
+
+  #[serde(rename = "error")]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub error: Option<String>,
+
+  #[serde(rename = "errorDetail")]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub error_detail: Option<ErrorDetail>,
+
+  #[serde(rename = "status")]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub status: Option<String>,
+
+  #[serde(rename = "progress")]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub progress: Option<String>,
+
+  #[serde(rename = "progressDetail")]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub progress_detail: Option<ProgressDetail>,
+
+  #[serde(rename = "aux")]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub aux: Option<ImageId>,
 }
 
 #[derive(Tabled, Serialize, Deserialize)]
@@ -65,10 +126,14 @@ impl Nanocld {
     Ok(body)
   }
 
-  pub async fn build_git_repository(
+  pub async fn build_git_repository<C>(
     &self,
     name: String,
-  ) -> Result<(), NanocldError> {
+    mut callback: C,
+  ) -> Result<(), NanocldError>
+  where
+    C: FnMut(GithubRepositoryBuildStream),
+  {
     let mut res = self
       .post(format!("/git_repositories/{name}/build", name = name))
       .send()
@@ -84,7 +149,7 @@ impl Nanocld {
       let result = &String::from_utf8(result.to_vec()).unwrap();
       let json =
         serde_json::from_str::<GithubRepositoryBuildStream>(result).unwrap();
-      print!("{}", json.stream.unwrap_or_default());
+      callback(json);
     }
 
     Ok(())

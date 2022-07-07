@@ -35,14 +35,21 @@ pub async fn build_git_repository(
             format!("{:?}", err),
             StatusCode::INTERNAL_SERVER_ERROR,
           ));
-          let _ = tx.send(Err::<_, web::error::Error>(err));
+          let result = tx.send(Err::<_, web::error::Error>(err));
+          if result.is_err() {
+            break;
+          }
         }
         Ok(result) => {
           let data = serde_json::to_string(&result).unwrap();
-          let _ = tx.send(Ok::<_, web::error::Error>(Bytes::from(data)));
+          let result = tx.send(Ok::<_, web::error::Error>(Bytes::from(data)));
+          if result.is_err() {
+            break;
+          }
         }
       }
     }
+    drop(stream);
   });
 
   Ok(rx_body)

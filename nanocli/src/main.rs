@@ -156,7 +156,17 @@ async fn execute_args(args: Cli) -> Result<(), CliError> {
           .await?;
       }
       GitRepositoryCommands::Build(options) => {
-        client.build_git_repository(options.name.to_owned()).await?;
+        client
+          .build_git_repository(options.name.to_owned(), |output| {
+            print!("{}", output.stream.unwrap_or_default());
+            if let Some(status) = output.status {
+              println!("{}", status);
+            }
+            if let Some(err) = output.error {
+              eprintln!("{}", err);
+            }
+          })
+          .await?;
       }
     },
     Commands::Cargo(args) => match &args.commands {
