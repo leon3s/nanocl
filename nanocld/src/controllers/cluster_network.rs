@@ -4,7 +4,7 @@ use ntex::web;
 use ntex::http::StatusCode;
 use serde::{Serialize, Deserialize};
 
-use super::errors::HttpError;
+use crate::errors::HttpResponseError;
 use crate::repositories::{cluster, cluster_network, self};
 use crate::models::{ClusterNetworkPartial, Pool};
 
@@ -32,7 +32,7 @@ async fn list_cluster_network(
   pool: web::types::State<Pool>,
   c_name: web::types::Path<String>,
   web::types::Query(qs): web::types::Query<ClusterNetworkQuery>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let nsp = match qs.namespace {
     None => String::from("global"),
     Some(nsp) => nsp,
@@ -67,7 +67,7 @@ async fn create_cluster_network(
   c_name: web::types::Path<String>,
   web::types::Query(qs): web::types::Query<ClusterNetworkQuery>,
   web::types::Json(payload): web::types::Json<ClusterNetworkPartial>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let name = c_name.into_inner();
   let nsp = match qs.namespace {
     None => String::from("global"),
@@ -84,7 +84,7 @@ async fn create_cluster_network(
       Ok(_) => true,
     };
   if network_existing {
-    return Err(HttpError {
+    return Err(HttpResponseError {
       status: StatusCode::BAD_REQUEST,
       msg: format!("Unable to create network with name {} a similar network have same name", name),
     });
@@ -96,7 +96,7 @@ async fn create_cluster_network(
   };
   let id = match docker_api.create_network(config).await {
     Err(_) => {
-      return Err(HttpError {
+      return Err(HttpResponseError {
         status: StatusCode::BAD_REQUEST,
         msg: format!("Unable to create network with name {}", name),
       })
@@ -105,7 +105,7 @@ async fn create_cluster_network(
   };
   let id = match id {
     None => {
-      return Err(HttpError {
+      return Err(HttpResponseError {
         status: StatusCode::BAD_REQUEST,
         msg: format!("Unable to create network with name {}", name),
       })
@@ -144,7 +144,7 @@ async fn inspect_cluster_network_by_name(
   pool: web::types::State<Pool>,
   url_path: web::types::Path<InspectClusterNetworkPath>,
   web::types::Query(qs): web::types::Query<ClusterNetworkQuery>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let c_name = url_path.c_name.to_owned();
   let n_name = url_path.n_name.to_owned();
   let nsp = match qs.namespace {
@@ -177,7 +177,7 @@ async fn delete_cluster_network_by_name(
   docker_api: web::types::State<bollard::Docker>,
   url_path: web::types::Path<InspectClusterNetworkPath>,
   web::types::Query(qs): web::types::Query<ClusterNetworkQuery>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let c_name = url_path.c_name.to_owned();
   let n_name = url_path.n_name.to_owned();
   let nsp = match qs.namespace {
@@ -189,7 +189,7 @@ async fn delete_cluster_network_by_name(
 
   if let Err(err) = docker_api.remove_network(&network.docker_network_id).await
   {
-    return Err(HttpError {
+    return Err(HttpResponseError {
       status: StatusCode::BAD_REQUEST,
       msg: format!("Unable to delete network {:?}", err),
     });
@@ -216,7 +216,7 @@ async fn delete_cluster_network_by_name(
 async fn count_cluster_network_by_namespace(
   pool: web::types::State<Pool>,
   web::types::Query(qs): web::types::Query<ClusterNetworkQuery>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let nsp = match qs.namespace {
     None => String::from("global"),
     Some(nsp) => nsp,

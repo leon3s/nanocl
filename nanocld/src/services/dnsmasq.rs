@@ -15,7 +15,7 @@ use thiserror::Error;
 use regex::Error as RegexError;
 use std::io::Error as IoError;
 
-use crate::controllers::errors::{HttpError, IntoHttpError};
+use crate::errors::{HttpResponseError, IntoHttpResponseError};
 
 use super::utils::*;
 
@@ -31,14 +31,14 @@ pub enum DnsmasqError {
   Docker(#[from] DockerError),
 }
 
-impl IntoHttpError for DnsmasqError {
-  fn to_http_error(&self) -> HttpError {
+impl IntoHttpResponseError for DnsmasqError {
+  fn to_http_error(&self) -> HttpResponseError {
     match self {
-      DnsmasqError::Io(err) => HttpError {
+      DnsmasqError::Io(err) => HttpResponseError {
         msg: format!("dnsmasq io error {:#?}", err),
         status: StatusCode::INTERNAL_SERVER_ERROR,
       },
-      DnsmasqError::Regex(err) => HttpError {
+      DnsmasqError::Regex(err) => HttpResponseError {
         msg: format!("dnsmasq regex error {:#?}", err),
         status: StatusCode::INTERNAL_SERVER_ERROR,
       },

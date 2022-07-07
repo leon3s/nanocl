@@ -10,7 +10,7 @@ use crate::models::{
   Pool, ClusterJoinBody, ClusterPartial, ClusterItemWithRelation,
 };
 
-use super::errors::HttpError;
+use crate::errors::HttpResponseError;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct ClusterQuery {
@@ -34,7 +34,7 @@ struct ClusterQuery {
 async fn list_cluster(
   pool: web::types::State<Pool>,
   web::types::Query(qs): web::types::Query<ClusterQuery>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let nsp = match qs.namespace {
     None => String::from("global"),
     Some(namespace) => namespace,
@@ -63,7 +63,7 @@ async fn create_cluster(
   pool: web::types::State<Pool>,
   web::types::Query(qs): web::types::Query<ClusterQuery>,
   web::types::Json(json): web::types::Json<ClusterPartial>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let nsp = match qs.namespace {
     None => String::from("global"),
     Some(namespace) => namespace,
@@ -93,7 +93,7 @@ async fn delete_cluster_by_name(
   docker_api: web::types::State<bollard::Docker>,
   name: web::types::Path<String>,
   web::types::Query(qs): web::types::Query<ClusterQuery>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let nsp = match qs.namespace {
     None => String::from("global"),
     Some(namespace) => namespace,
@@ -138,7 +138,7 @@ async fn inspect_cluster_by_name(
   pool: web::types::State<Pool>,
   name: web::types::Path<String>,
   web::types::Query(qs): web::types::Query<ClusterQuery>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let name = name.into_inner();
   let nsp = match qs.namespace {
     None => String::from("global"),
@@ -179,7 +179,7 @@ async fn start_cluster_by_name(
   docker_api: web::types::State<bollard::Docker>,
   name: web::types::Path<String>,
   web::types::Query(qs): web::types::Query<ClusterQuery>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let name = name.into_inner();
   let nsp = match qs.namespace {
     None => String::from("global"),
@@ -213,7 +213,7 @@ async fn join_cargo_to_cluster(
   name: web::types::Path<String>,
   web::types::Query(qs): web::types::Query<ClusterQuery>,
   web::types::Json(payload): web::types::Json<ClusterJoinBody>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let name = name.into_inner();
   let nsp = match qs.namespace {
     None => String::from("global"),
@@ -259,7 +259,7 @@ async fn join_cargo_to_cluster(
 async fn count_cluster(
   pool: web::types::State<Pool>,
   web::types::Query(qs): web::types::Query<ClusterQuery>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let nsp = match qs.namespace {
     None => String::from("global"),
     Some(nsp) => nsp,

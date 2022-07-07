@@ -1,6 +1,4 @@
 //! File to export controller
-/// Manage http errors
-pub mod errors;
 /// Some utils
 pub mod utils;
 /// Manage namespace

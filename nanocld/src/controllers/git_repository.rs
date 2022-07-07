@@ -11,7 +11,7 @@ use crate::models::{
 };
 use crate::services::github::GithubApi;
 
-use super::errors::HttpError;
+use crate::errors::HttpResponseError;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct GitRepositoryQuery {
@@ -29,7 +29,7 @@ struct GitRepositoryQuery {
 #[web::get("/git_repositories")]
 async fn list_git_repository(
   pool: web::types::State<Pool>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let items = git_repository::list(&pool).await?;
 
   Ok(web::HttpResponse::Ok().json(&items))
@@ -51,23 +51,22 @@ async fn list_git_repository(
 async fn create_git_repository(
   pool: web::types::State<Pool>,
   web::types::Json(payload): web::types::Json<GitRepositoryPartial>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let github_api = GithubApi::new();
-  let repo = github_api
-    .sync_repo(&payload)
-    .await
-    .map_err(|err| HttpError {
-      msg: format!("{:?}", err),
-      status: StatusCode::BAD_REQUEST,
-    })?;
-  let branches =
+  let repo =
     github_api
-      .list_branches(&payload)
+      .sync_repo(&payload)
       .await
-      .map_err(|err| HttpError {
+      .map_err(|err| HttpResponseError {
         msg: format!("{:?}", err),
         status: StatusCode::BAD_REQUEST,
       })?;
+  let branches = github_api.list_branches(&payload).await.map_err(|err| {
+    HttpResponseError {
+      msg: format!("{:?}", err),
+      status: StatusCode::BAD_REQUEST,
+    }
+  })?;
 
   let item =
     git_repository::create(payload, repo.default_branch, &pool).await?;
@@ -103,7 +102,7 @@ async fn create_git_repository(
 async fn delete_git_repository_by_name(
   pool: web::types::State<Pool>,
   req_path: web::types::Path<String>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let id = req_path.into_inner();
   let repository = git_repository::find_by_name(id, &pool).await?;
   git_repository_branch::delete_by_repository_id(
@@ -140,7 +139,7 @@ async fn build_git_repository_by_name(
   pool: web::types::State<Pool>,
   docker_api: web::types::State<bollard::Docker>,
   name: web::types::Path<String>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let name = name.into_inner();
   let github_api = GithubApi::new();
   log::info!("requesting build git repository {}", name.to_owned());
@@ -149,7 +148,7 @@ async fn build_git_repository_by_name(
   let live_branch = github_api
     .inspect_branch(&item, item.default_branch.to_owned())
     .await
-    .map_err(|err| HttpError {
+    .map_err(|err| HttpResponseError {
       msg: format!("{:?}", err),
       status: StatusCode::INTERNAL_SERVER_ERROR,
     })?;
@@ -187,20 +186,20 @@ async fn build_git_repository_by_name(
       log::info!("we found an image");
       let image_id = res
         .id
-        .ok_or_else(|| HttpError {
+        .ok_or_else(|| HttpResponseError {
           msg: String::from("Image is found but we cannot read his id"),
           status: StatusCode::INTERNAL_SERVER_ERROR,
         })?
         .replace("sha256:", "");
-      let config = res.config.ok_or_else(|| HttpError {
+      let config = res.config.ok_or_else(|| HttpResponseError {
         msg: String::from("Image is found but we cannot read his config"),
         status: StatusCode::INTERNAL_SERVER_ERROR,
       })?;
-      let labels = config.labels.ok_or_else(|| HttpError {
+      let labels = config.labels.ok_or_else(|| HttpResponseError {
         msg: String::from("Image is found but we cannot read his labels"),
         status: StatusCode::INTERNAL_SERVER_ERROR,
       })?;
-      let commit = labels.get("commit").ok_or_else(|| HttpError {
+      let commit = labels.get("commit").ok_or_else(|| HttpResponseError {
         msg: String::from("Image is found but we cannot get his commit"),
         status: StatusCode::INTERNAL_SERVER_ERROR,
       })?;
@@ -222,7 +221,7 @@ async fn build_git_repository_by_name(
             repo: item.name.to_owned(),
           });
           docker_api.tag_image(&image_id, tag_options).await.map_err(
-            |err| HttpError {
+            |err| HttpResponseError {
               msg: format!("tag error {:?}", err),
               status: StatusCode::INTERNAL_SERVER_ERROR,
             },
@@ -234,7 +233,7 @@ async fn build_git_repository_by_name(
           docker_api
             .remove_image(&backup_image_name, None, None)
             .await
-            .map_err(|err| HttpError {
+            .map_err(|err| HttpResponseError {
               msg: format!("unable to remove image {:?}", err),
               status: StatusCode::INTERNAL_SERVER_ERROR,
             })?;
@@ -244,7 +243,7 @@ async fn build_git_repository_by_name(
             repo: item.name.to_owned(),
           });
           docker_api.tag_image(&image_id, tag_options).await.map_err(
-            |err| HttpError {
+            |err| HttpResponseError {
               msg: format!("Unable to tag image {:?}", err),
               status: StatusCode::INTERNAL_SERVER_ERROR,
             },

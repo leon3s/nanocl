@@ -1,10 +1,10 @@
 use ntex::http::StatusCode;
-use crate::controllers::errors::HttpError;
+use crate::errors::HttpResponseError;
 
-pub fn _get_free_port() -> Result<u16, HttpError> {
+pub fn _get_free_port() -> Result<u16, HttpResponseError> {
   let socket = match std::net::UdpSocket::bind("127.0.0.1:0") {
     Err(err) => {
-      return Err(HttpError {
+      return Err(HttpResponseError {
         msg: format!("unable to find a free port {:?}", err),
         status: StatusCode::INTERNAL_SERVER_ERROR,
       })
@@ -13,7 +13,7 @@ pub fn _get_free_port() -> Result<u16, HttpError> {
   };
   let port = match socket.local_addr() {
     Err(err) => {
-      return Err(HttpError {
+      return Err(HttpResponseError {
         msg: format!("unable to find a free port {:?}", err),
         status: StatusCode::INTERNAL_SERVER_ERROR,
       })

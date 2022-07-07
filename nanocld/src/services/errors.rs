@@ -1,27 +1,29 @@
 use ntex::http::StatusCode;
 
-use crate::controllers::errors::HttpError;
+use crate::errors::HttpResponseError;
 
-pub fn docker_error_ref(err: &bollard::errors::Error) -> HttpError {
+pub fn docker_error_ref(err: &bollard::errors::Error) -> HttpResponseError {
   match err {
     bollard::errors::Error::DockerResponseServerError {
       status_code,
       message,
-    } => HttpError {
+    } => HttpResponseError {
       msg: message.to_owned(),
       status: StatusCode::from_u16(status_code.to_owned()).unwrap(),
     },
-    bollard::errors::Error::JsonDataError { message, .. } => HttpError {
-      msg: message.to_owned(),
-      status: StatusCode::INTERNAL_SERVER_ERROR,
-    },
-    _ => HttpError {
+    bollard::errors::Error::JsonDataError { message, .. } => {
+      HttpResponseError {
+        msg: message.to_owned(),
+        status: StatusCode::INTERNAL_SERVER_ERROR,
+      }
+    }
+    _ => HttpResponseError {
       msg: format!("unexpected docker api error {:#?}", err),
       status: StatusCode::INTERNAL_SERVER_ERROR,
     },
   }
 }
 
-pub fn docker_error(err: bollard::errors::Error) -> HttpError {
+pub fn docker_error(err: bollard::errors::Error) -> HttpResponseError {
   docker_error_ref(&err)
 }

@@ -3,7 +3,7 @@ use ntex::web;
 use crate::repositories;
 use crate::models::{Pool, NginxTemplateItem};
 
-use super::errors::HttpError;
+use crate::errors::HttpResponseError;
 
 /// List all nginx template
 #[utoipa::path(
@@ -16,7 +16,7 @@ use super::errors::HttpError;
 #[web::get("/nginx_templates")]
 async fn list_nginx_template(
   pool: web::types::State<Pool>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let items = repositories::nginx_template::list(&pool).await?;
 
   Ok(web::HttpResponse::Ok().json(&items))
@@ -34,7 +34,7 @@ async fn list_nginx_template(
 async fn create_nginx_template(
   pool: web::types::State<Pool>,
   web::types::Json(payload): web::types::Json<NginxTemplateItem>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let res = repositories::nginx_template::create(payload, &pool).await?;
 
   Ok(web::HttpResponse::Created().json(&res))
@@ -45,7 +45,7 @@ async fn create_nginx_template(
 async fn delete_nginx_template_by_name(
   pool: web::types::State<Pool>,
   name: web::types::Path<String>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let res =
     repositories::nginx_template::delete_by_name(name.into_inner(), &pool)
       .await?;
@@ -58,7 +58,7 @@ async fn delete_nginx_template_by_name(
 async fn inspect_nginx_template_by_name(
   pool: web::types::State<Pool>,
   name: web::types::Path<String>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let res =
     repositories::nginx_template::get_by_name(name.into_inner(), &pool).await?;
 

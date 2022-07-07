@@ -4,12 +4,12 @@ use diesel::prelude::*;
 use crate::services;
 use crate::models::{Pool, NginxTemplateItem, PgDeleteGeneric};
 
-use crate::controllers::errors::HttpError;
+use crate::errors::HttpResponseError;
 use crate::repositories::errors::db_blocking_error;
 
 pub async fn list(
   pool: &web::types::State<Pool>,
-) -> Result<Vec<NginxTemplateItem>, HttpError> {
+) -> Result<Vec<NginxTemplateItem>, HttpResponseError> {
   use crate::schema::nginx_templates::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -24,7 +24,7 @@ pub async fn list(
 pub async fn create(
   item: NginxTemplateItem,
   pool: &web::types::State<Pool>,
-) -> Result<NginxTemplateItem, HttpError> {
+) -> Result<NginxTemplateItem, HttpResponseError> {
   use crate::schema::nginx_templates::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -44,7 +44,7 @@ pub async fn create(
 pub async fn get_by_name(
   name: String,
   pool: &web::types::State<Pool>,
-) -> Result<NginxTemplateItem, HttpError> {
+) -> Result<NginxTemplateItem, HttpResponseError> {
   use crate::schema::nginx_templates::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -64,7 +64,7 @@ pub async fn get_by_name(
 pub async fn delete_by_name(
   name: String,
   pool: &web::types::State<Pool>,
-) -> Result<PgDeleteGeneric, HttpError> {
+) -> Result<PgDeleteGeneric, HttpResponseError> {
   use crate::schema::nginx_templates::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;

@@ -11,7 +11,7 @@ use crate::models::{
   CargoEnvItem,
 };
 
-use crate::controllers::errors::{HttpError, IntoHttpError};
+use crate::errors::{HttpResponseError, IntoHttpResponseError};
 
 use super::cargo::CreateCargoContainerOpts;
 use super::errors::docker_error;
@@ -37,7 +37,7 @@ pub async fn delete_networks(
   cluster: ClusterItem,
   docker_api: &web::types::State<bollard::Docker>,
   pool: &web::types::State<Pool>,
-) -> Result<(), HttpError> {
+) -> Result<(), HttpResponseError> {
   let networks =
     repositories::cluster_network::list_for_cluster(cluster, pool).await?;
 
@@ -47,18 +47,18 @@ pub async fn delete_networks(
       docker_api
         .remove_network(&network.docker_network_id)
         .await
-        .map_err(|err| HttpError {
+        .map_err(|err| HttpResponseError {
           msg: format!("unable to remove network {:#?}", err),
           status: StatusCode::INTERNAL_SERVER_ERROR,
         })?;
       repositories::cluster_network::delete_by_key(network.key, pool).await?;
-      Ok::<_, HttpError>(())
+      Ok::<_, HttpResponseError>(())
     })
     .collect::<FuturesUnordered<_>>()
     .collect::<Vec<_>>()
     .await
     .into_iter()
-    .collect::<Result<Vec<_>, HttpError>>()?;
+    .collect::<Result<Vec<_>, HttpResponseError>>()?;
 
   Ok(())
 }
@@ -67,7 +67,7 @@ pub async fn list_containers(
   cluster_key: &str,
   cargo_key: &str,
   docker_api: &web::types::State<bollard::Docker>,
-) -> Result<Vec<bollard::models::ContainerSummary>, HttpError> {
+) -> Result<Vec<bollard::models::ContainerSummary>, HttpResponseError> {
   let target_cluster = &format!("cluster={}", &cluster_key);
   let target_cargo = &format!("cargo={}", &cargo_key);
   let mut filters = HashMap::new();
@@ -90,7 +90,7 @@ pub async fn start(
   cluster: &ClusterItem,
   docker_api: &web::types::State<bollard::Docker>,
   pool: &web::types::State<Pool>,
-) -> Result<(), HttpError> {
+) -> Result<(), HttpResponseError> {
   let cluster_cargoes = repositories::cluster_cargo::get_by_cluster_key(
     cluster.key.to_owned(),
     pool,
@@ -139,7 +139,7 @@ pub async fn start(
             .map_err(docker_error)?;
           let networks = container
             .network_settings
-            .ok_or(HttpError {
+            .ok_or(HttpResponseError {
               msg: format!(
                 "unable to get network settings for container {:#?}",
                 &container_id,
@@ -147,34 +147,35 @@ pub async fn start(
               status: StatusCode::INTERNAL_SERVER_ERROR,
             })?
             .networks
-            .ok_or(HttpError {
+            .ok_or(HttpResponseError {
               msg: format!(
                 "unable to get networks for container {:#?}",
                 &container_id
               ),
               status: StatusCode::INTERNAL_SERVER_ERROR,
             })?;
-          let network = networks.get(network_key).ok_or(HttpError {
+          let network = networks.get(network_key).ok_or(HttpResponseError {
             msg: format!(
               "unable to get network {} for container {}",
               &network_key, &container_id
             ),
             status: StatusCode::INTERNAL_SERVER_ERROR,
           })?;
-          let ip_address = network.ip_address.as_ref().ok_or(HttpError {
-            msg: format!(
-              "unable to get ip_address of container {}",
-              &container_id
-            ),
-            status: StatusCode::INTERNAL_SERVER_ERROR,
-          })?;
-          Ok::<String, HttpError>(ip_address.into())
+          let ip_address =
+            network.ip_address.as_ref().ok_or(HttpResponseError {
+              msg: format!(
+                "unable to get ip_address of container {}",
+                &container_id
+              ),
+              status: StatusCode::INTERNAL_SERVER_ERROR,
+            })?;
+          Ok::<String, HttpResponseError>(ip_address.into())
         })
         .collect::<FuturesUnordered<_>>()
         .collect::<Vec<_>>()
         .await
         .into_iter()
-        .collect::<Result<Vec<String>, HttpError>>()?;
+        .collect::<Result<Vec<String>, HttpResponseError>>()?;
       println!("setup proxy config");
       let proxy_config =
         repositories::cargo_proxy_config::get_for_cargo(cargo_key.into(), pool)
@@ -187,7 +188,7 @@ pub async fn start(
         .await?;
         let content = &template.content;
         let template =
-          mustache::compile_str(content).map_err(|err| HttpError {
+          mustache::compile_str(content).map_err(|err| HttpResponseError {
             msg: format!("mustache template error: {:?}", err),
             status: StatusCode::INTERNAL_SERVER_ERROR,
           })?;
@@ -205,17 +206,19 @@ pub async fn start(
           "/var/lib/nanocl/nginx/sites-enabled/{name}.conf",
           name = &cluster_cargo_key
         ))
-        .map_err(|err| HttpError {
+        .map_err(|err| HttpResponseError {
           msg: format!("unable to generate template file {:?}", err),
           status: StatusCode::INTERNAL_SERVER_ERROR,
         })?;
-        template.render(&mut file, &data).map_err(|err| HttpError {
-          msg: format!(
-            "unable to render nginx template for cargo {} : {:#?}",
-            &cargo_key, err
-          ),
-          status: StatusCode::INTERNAL_SERVER_ERROR,
-        })?;
+        template
+          .render(&mut file, &data)
+          .map_err(|err| HttpResponseError {
+            msg: format!(
+              "unable to render nginx template for cargo {} : {:#?}",
+              &cargo_key, err
+            ),
+            status: StatusCode::INTERNAL_SERVER_ERROR,
+          })?;
         services::nginx::reload_config(docker_api)
           .await
           .map_err(docker_error)?;
@@ -231,13 +234,13 @@ pub async fn start(
           .await
           .map_err(|err| err.to_http_error())?;
       }
-      Ok::<_, HttpError>(())
+      Ok::<_, HttpResponseError>(())
     })
     .collect::<FuturesUnordered<_>>()
     .collect::<Vec<_>>()
     .await
     .into_iter()
-    .collect::<Result<Vec<()>, HttpError>>()?;
+    .collect::<Result<Vec<()>, HttpResponseError>>()?;
   Ok(())
 }
 
@@ -250,7 +253,7 @@ pub async fn join_cargo(
   opts: &JoinCargoOptions,
   docker_api: &web::types::State<bollard::Docker>,
   pool: &web::types::State<Pool>,
-) -> Result<(), HttpError> {
+) -> Result<(), HttpResponseError> {
   let cluster_cargo = ClusterCargoPartial {
     cluster_key: opts.cluster.key.to_owned(),
     cargo_key: opts.cargo.key.to_owned(),
@@ -268,13 +271,14 @@ pub async fn join_cargo(
     repositories::cargo_env::list_by_cargo_key(opts.cargo.key.to_owned(), pool)
       .await?;
 
-  let env_string = serde_json::to_string(&envs).map_err(|err| HttpError {
-    msg: format!("unable to format cargo env items {:#?}", err),
-    status: StatusCode::INTERNAL_SERVER_ERROR,
-  })?;
+  let env_string =
+    serde_json::to_string(&envs).map_err(|err| HttpResponseError {
+      msg: format!("unable to format cargo env items {:#?}", err),
+      status: StatusCode::INTERNAL_SERVER_ERROR,
+    })?;
 
   let template =
-    mustache::compile_str(&env_string).map_err(|err| HttpError {
+    mustache::compile_str(&env_string).map_err(|err| HttpResponseError {
       msg: format!("unable to compile env_string {:#?}", err),
       status: StatusCode::INTERNAL_SERVER_ERROR,
     })?;
@@ -283,12 +287,12 @@ pub async fn join_cargo(
   let template_data = MustacheData { vars };
   let env_string_with_vars = template
     .render_to_string(&template_data)
-    .map_err(|err| HttpError {
+    .map_err(|err| HttpResponseError {
       msg: format!("unable to populate env with cluster variables: {:#?}", err),
       status: StatusCode::INTERNAL_SERVER_ERROR,
     })?;
   let envs = serde_json::from_str::<Vec<CargoEnvItem>>(&env_string_with_vars)
-    .map_err(|err| HttpError {
+    .map_err(|err| HttpResponseError {
     msg: format!("unable to reserialize environements : {:#?}", err),
     status: StatusCode::INTERNAL_SERVER_ERROR,
   })?;
@@ -323,13 +327,13 @@ pub async fn join_cargo(
         .connect_network(&opts.network.key, config)
         .await
         .map_err(docker_error)?;
-      Ok::<(), HttpError>(())
+      Ok::<(), HttpResponseError>(())
     })
     .collect::<FuturesUnordered<_>>()
     .collect::<Vec<_>>()
     .await
     .into_iter()
-    .collect::<Result<Vec<()>, HttpError>>()?;
+    .collect::<Result<Vec<()>, HttpResponseError>>()?;
 
   repositories::cluster_cargo::create(cluster_cargo, pool).await?;
 

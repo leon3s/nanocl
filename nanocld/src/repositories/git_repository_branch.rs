@@ -6,7 +6,7 @@ use crate::models::{
   Pool, GitRepositoryBranchPartial, GitRepositoryBranchItem, PgDeleteGeneric,
 };
 
-use crate::controllers::errors::HttpError;
+use crate::errors::HttpResponseError;
 
 use super::errors::db_blocking_error;
 
@@ -30,7 +30,7 @@ use super::errors::db_blocking_error;
 pub async fn create_many(
   items: Vec<GitRepositoryBranchPartial>,
   pool: &web::types::State<Pool>,
-) -> Result<Vec<GitRepositoryBranchItem>, HttpError> {
+) -> Result<Vec<GitRepositoryBranchItem>, HttpResponseError> {
   use crate::schema::git_repository_branches::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -73,7 +73,7 @@ pub async fn create_many(
 pub async fn delete_by_repository_id(
   repository_name: String,
   pool: &web::types::State<Pool>,
-) -> Result<PgDeleteGeneric, HttpError> {
+) -> Result<PgDeleteGeneric, HttpResponseError> {
   use crate::schema::git_repository_branches::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -93,7 +93,7 @@ pub async fn delete_by_repository_id(
 pub async fn get_by_key(
   key: String,
   pool: &web::types::State<Pool>,
-) -> Result<GitRepositoryBranchItem, HttpError> {
+) -> Result<GitRepositoryBranchItem, HttpResponseError> {
   use crate::schema::git_repository_branches::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -113,7 +113,7 @@ pub async fn get_by_key(
 pub async fn update_item(
   item: GitRepositoryBranchItem,
   pool: &web::types::State<Pool>,
-) -> Result<(), HttpError> {
+) -> Result<(), HttpResponseError> {
   use crate::schema::git_repository_branches::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;

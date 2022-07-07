@@ -1,18 +1,17 @@
 use ntex::web;
 use diesel::prelude::*;
 
-use crate::{
-  models::{Pool, CargoEnvPartial, CargoEnvItem, PgDeleteGeneric},
-  controllers::errors::HttpError,
-  repositories::errors::db_blocking_error,
-  services,
-};
+use crate::services;
+use crate::models::{Pool, CargoEnvPartial, CargoEnvItem, PgDeleteGeneric};
+
+use crate::errors::HttpResponseError;
+use super::errors::db_blocking_error;
 
 // May be needed later
 pub async fn _create(
   item: CargoEnvPartial,
   pool: &web::types::State<Pool>,
-) -> Result<CargoEnvItem, HttpError> {
+) -> Result<CargoEnvItem, HttpResponseError> {
   use crate::schema::cargo_environnements::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -39,7 +38,7 @@ pub async fn _create(
 pub async fn create_many(
   items: Vec<CargoEnvPartial>,
   pool: &web::types::State<Pool>,
-) -> Result<Vec<CargoEnvItem>, HttpError> {
+) -> Result<Vec<CargoEnvItem>, HttpResponseError> {
   use crate::schema::cargo_environnements::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -71,7 +70,7 @@ pub async fn create_many(
 pub async fn _delete_by_key(
   key: String,
   pool: &web::types::State<Pool>,
-) -> Result<PgDeleteGeneric, HttpError> {
+) -> Result<PgDeleteGeneric, HttpResponseError> {
   use crate::schema::cargo_environnements::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -90,7 +89,7 @@ pub async fn _delete_by_key(
 pub async fn delete_by_cargo_key(
   cargo_key: String,
   pool: &web::types::State<Pool>,
-) -> Result<PgDeleteGeneric, HttpError> {
+) -> Result<PgDeleteGeneric, HttpResponseError> {
   use crate::schema::cargo_environnements::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -110,7 +109,7 @@ pub async fn delete_by_cargo_key(
 pub async fn list_by_cargo_key(
   cargo_key: String,
   pool: &web::types::State<Pool>,
-) -> Result<Vec<CargoEnvItem>, HttpError> {
+) -> Result<Vec<CargoEnvItem>, HttpResponseError> {
   use crate::schema::cargo_environnements::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;

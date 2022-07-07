@@ -4,13 +4,13 @@ use diesel::prelude::*;
 use crate::services;
 use crate::models::{Pool, ClusterCargoPartial, ClusterCargoItem, PgDeleteGeneric};
 
-use crate::controllers::errors::HttpError;
+use crate::errors::HttpResponseError;
 use crate::repositories::errors::db_blocking_error;
 
 pub async fn create(
   item: ClusterCargoPartial,
   pool: &web::types::State<Pool>,
-) -> Result<ClusterCargoItem, HttpError> {
+) -> Result<ClusterCargoItem, HttpResponseError> {
   use crate::schema::cluster_cargoes::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -36,7 +36,7 @@ pub async fn create(
 pub async fn get_by_cluster_key(
   cluster_key: String,
   pool: &web::types::State<Pool>,
-) -> Result<Vec<ClusterCargoItem>, HttpError> {
+) -> Result<Vec<ClusterCargoItem>, HttpResponseError> {
   use crate::schema::cluster_cargoes::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -57,7 +57,7 @@ pub async fn get_by_cluster_key(
 pub async fn delete_by_key(
   key: String,
   pool: &web::types::State<Pool>,
-) -> Result<PgDeleteGeneric, HttpError> {
+) -> Result<PgDeleteGeneric, HttpResponseError> {
   use crate::schema::cluster_cargoes::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -74,7 +74,7 @@ pub async fn delete_by_key(
 pub async fn delete_by_cargo_key(
   cargo_key: String,
   pool: &web::types::State<Pool>,
-) -> Result<PgDeleteGeneric, HttpError> {
+) -> Result<PgDeleteGeneric, HttpResponseError> {
   use crate::schema::cluster_cargoes::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;

@@ -6,7 +6,7 @@ use crate::models::{
   Pool, ClusterVariablePartial, ClusterVariableItem, PgDeleteGeneric,
 };
 
-use crate::controllers::errors::HttpError;
+use crate::errors::HttpResponseError;
 
 use super::errors::db_blocking_error;
 
@@ -14,7 +14,7 @@ pub async fn create(
   cluster_key: String,
   item: ClusterVariablePartial,
   pool: &web::types::State<Pool>,
-) -> Result<ClusterVariableItem, HttpError> {
+) -> Result<ClusterVariableItem, HttpResponseError> {
   use crate::schema::cluster_variables::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -40,7 +40,7 @@ pub async fn create(
 pub async fn list_by_cluster(
   cluster_key: String,
   pool: &web::types::State<Pool>,
-) -> Result<Vec<ClusterVariableItem>, HttpError> {
+) -> Result<Vec<ClusterVariableItem>, HttpResponseError> {
   use crate::schema::cluster_variables::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -59,7 +59,7 @@ pub async fn list_by_cluster(
 pub async fn delete_by_cluster_key(
   cluster_key: String,
   pool: &web::types::State<Pool>,
-) -> Result<PgDeleteGeneric, HttpError> {
+) -> Result<PgDeleteGeneric, HttpResponseError> {
   use crate::schema::cluster_variables::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -79,7 +79,7 @@ pub async fn delete_by_cluster_key(
 pub async fn delete_by_key(
   key: String,
   pool: &web::types::State<Pool>,
-) -> Result<PgDeleteGeneric, HttpError> {
+) -> Result<PgDeleteGeneric, HttpResponseError> {
   use crate::schema::cluster_variables::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -97,7 +97,7 @@ pub async fn delete_by_key(
 pub async fn find_by_key(
   key: String,
   pool: &web::types::State<Pool>,
-) -> Result<ClusterVariableItem, HttpError> {
+) -> Result<ClusterVariableItem, HttpResponseError> {
   use crate::schema::cluster_variables::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;

@@ -3,7 +3,7 @@ use ntex::web;
 use diesel::prelude::*;
 
 use crate::services;
-use crate::controllers::errors::HttpError;
+use crate::errors::HttpResponseError;
 use crate::repositories::errors::db_blocking_error;
 use crate::models::{
   Pool, ClusterItem, ClusterPartial, PgDeleteGeneric, PgGenericCount,
@@ -34,7 +34,7 @@ pub async fn create_for_namespace(
   nsp: String,
   item: ClusterPartial,
   pool: &web::types::State<Pool>,
-) -> Result<ClusterItem, HttpError> {
+) -> Result<ClusterItem, HttpResponseError> {
   use crate::schema::clusters::dsl;
   let conn = services::postgresql::get_pool_conn(pool)?;
 
@@ -62,7 +62,7 @@ pub async fn create_for_namespace(
 pub async fn count(
   namespace: String,
   pool: &web::types::State<Pool>,
-) -> Result<PgGenericCount, HttpError> {
+) -> Result<PgGenericCount, HttpResponseError> {
   use crate::schema::clusters::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -98,7 +98,7 @@ pub async fn count(
 pub async fn find_by_key(
   key: String,
   pool: &web::types::State<Pool>,
-) -> Result<ClusterItem, HttpError> {
+) -> Result<ClusterItem, HttpResponseError> {
   use crate::schema::clusters::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -131,7 +131,7 @@ pub async fn find_by_key(
 pub async fn find_by_namespace(
   nsp: String,
   pool: &web::types::State<Pool>,
-) -> Result<Vec<ClusterItem>, HttpError> {
+) -> Result<Vec<ClusterItem>, HttpResponseError> {
   use crate::schema::clusters::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -163,7 +163,7 @@ pub async fn find_by_namespace(
 pub async fn delete_by_key(
   key: String,
   pool: &web::types::State<Pool>,
-) -> Result<PgDeleteGeneric, HttpError> {
+) -> Result<PgDeleteGeneric, HttpResponseError> {
   use crate::schema::clusters::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;

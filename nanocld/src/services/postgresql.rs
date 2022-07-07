@@ -11,7 +11,7 @@ use bollard::{
 };
 
 use crate::models::{Pool, DBConn};
-use crate::controllers::errors::HttpError;
+use crate::errors::HttpResponseError;
 
 use super::utils::*;
 use super::errors::docker_error;
@@ -70,7 +70,9 @@ pub async fn boot(docker: &Docker) -> Result<(), DockerError> {
   Ok(())
 }
 
-pub async fn get_postgres_ip(docker: &Docker) -> Result<String, HttpError> {
+pub async fn get_postgres_ip(
+  docker: &Docker,
+) -> Result<String, HttpResponseError> {
   let container = docker
     .inspect_container("nanocl-db-postgre", None)
     .await
@@ -78,25 +80,25 @@ pub async fn get_postgres_ip(docker: &Docker) -> Result<String, HttpError> {
 
   let networks = container
     .network_settings
-    .ok_or(HttpError {
+    .ok_or(HttpResponseError {
       msg: String::from("unable to get nanocl-db-postgre network nettings"),
       status: StatusCode::INTERNAL_SERVER_ERROR,
     })?
     .networks
-    .ok_or(HttpError {
+    .ok_or(HttpResponseError {
       msg: String::from("unable to get nanocl-db-postgre networks"),
       status: StatusCode::INTERNAL_SERVER_ERROR,
     })?;
 
   let ip_address = networks
     .get("nanocl")
-    .ok_or(HttpError {
+    .ok_or(HttpResponseError {
       msg: String::from("unable to get nanocl-db-postgre network nanocl"),
       status: StatusCode::INTERNAL_SERVER_ERROR,
     })?
     .ip_address
     .as_ref()
-    .ok_or(HttpError {
+    .ok_or(HttpResponseError {
       msg: String::from("unable to get nanocl-db-postgre network nanocl"),
       status: StatusCode::INTERNAL_SERVER_ERROR,
     })?;
@@ -129,11 +131,11 @@ pub fn create_pool(host: String) -> Pool {
 ///
 pub fn get_pool_conn(
   pool: &web::types::State<Pool>,
-) -> Result<DBConn, HttpError> {
+) -> Result<DBConn, HttpResponseError> {
   let conn = match pool.get() {
     Ok(conn) => conn,
     Err(_) => {
-      return Err(HttpError {
+      return Err(HttpResponseError {
         msg: String::from("unable to connect to nanocl-db"),
         status: StatusCode::INTERNAL_SERVER_ERROR,
       });

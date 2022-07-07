@@ -6,7 +6,7 @@ use ntex_files as fs;
 
 use crate::models::*;
 use crate::controllers::*;
-use crate::controllers::errors::ApiError;
+use crate::errors::ApiError;
 
 #[derive(OpenApi)]
 #[openapi(

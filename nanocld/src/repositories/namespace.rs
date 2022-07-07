@@ -6,7 +6,7 @@ use diesel::prelude::*;
 use crate::services;
 use crate::models::{Pool, NamespacePartial, NamespaceItem, PgDeleteGeneric};
 
-use crate::controllers::errors::HttpError;
+use crate::errors::HttpResponseError;
 use super::errors::db_blocking_error;
 
 /// Create new namespace
@@ -30,7 +30,7 @@ use super::errors::db_blocking_error;
 pub async fn create(
   item: NamespacePartial,
   pool: &web::types::State<Pool>,
-) -> Result<NamespaceItem, HttpError> {
+) -> Result<NamespaceItem, HttpResponseError> {
   use crate::schema::namespaces::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -64,7 +64,7 @@ pub async fn create(
 /// ```
 pub async fn list(
   pool: &web::types::State<Pool>,
-) -> Result<Vec<NamespaceItem>, HttpError> {
+) -> Result<Vec<NamespaceItem>, HttpResponseError> {
   use crate::schema::namespaces::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -93,7 +93,7 @@ pub async fn list(
 pub async fn inspect_by_name(
   name: String,
   pool: &web::types::State<Pool>,
-) -> Result<NamespaceItem, HttpError> {
+) -> Result<NamespaceItem, HttpResponseError> {
   use crate::schema::namespaces::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -125,7 +125,7 @@ pub async fn inspect_by_name(
 pub async fn delete_by_name(
   name: String,
   pool: &web::types::State<Pool>,
-) -> Result<PgDeleteGeneric, HttpError> {
+) -> Result<PgDeleteGeneric, HttpResponseError> {
   use crate::schema::namespaces::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -143,7 +143,7 @@ pub async fn delete_by_name(
 pub async fn find_by_name(
   name: String,
   pool: &web::types::State<Pool>,
-) -> Result<NamespaceItem, HttpError> {
+) -> Result<NamespaceItem, HttpResponseError> {
   use crate::schema::namespaces::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -164,7 +164,7 @@ mod test_namespace {
 
   use crate::utils::test::*;
   #[ntex::test]
-  async fn main() -> Result<(), HttpError> {
+  async fn main() -> Result<(), HttpResponseError> {
     let pool = gen_postgre_pool().await;
     let pool_state = web::types::State::new(pool);
 
