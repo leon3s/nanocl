@@ -67,6 +67,48 @@ pub async fn start_service(
   Ok(())
 }
 
+fn parse_build_output(
+  service_name: &'static str,
+  output: Result<bollard::models::BuildInfo, DockerError>,
+) -> Result<(), DockerError> {
+  log::debug!("{:#?}", output);
+  match output {
+    Err(err) => return Err(err),
+    Ok(build_info) => {
+      log::debug!("[{}] {:#?}", &service_name, &build_info);
+      if let Some(err) = build_info.error {
+        log::error!("[{}] {:#?}", &service_name, &err);
+        return Err(DockerError::DockerResponseServerError {
+          status_code: 400,
+          message: format!("Error while building {}: {}", &service_name, &err),
+        });
+      }
+    }
+  }
+  Ok(())
+}
+
+fn parse_create_output(
+  service_name: &'static str,
+  output: Result<bollard::models::CreateImageInfo, DockerError>,
+) -> Result<bollard::models::CreateImageInfo, DockerError> {
+  log::debug!("{:#?}", output);
+  let output = match output {
+    Err(err) => return Err(err),
+    Ok(create_info) => {
+      if let Some(err) = create_info.error {
+        log::error!("[{}] {:#?}", &service_name, &err);
+        return Err(DockerError::DockerResponseServerError {
+          status_code: 400,
+          message: format!("Error while building {}: {}", &service_name, &err),
+        });
+      }
+      create_info
+    }
+  };
+  Ok(output)
+}
+
 /// # Build a service
 /// Build a nxthat service from github
 ///
@@ -84,8 +126,8 @@ pub async fn start_service(
 /// services::utils::build_service(&docker, "nanocl-proxy-nginx").await;
 /// ```
 pub async fn build_service(
-  docker: &Docker,
   service_name: &'static str,
+  docker: &Docker,
 ) -> Result<(), DockerError> {
   if image_exists(service_name, docker).await {
     return Ok(());
@@ -93,17 +135,16 @@ pub async fn build_service(
   let git_url = "https://github.com/nxthat/".to_owned();
   let image_url = git_url + service_name + ".git";
   let options = BuildImageOptions {
-    dockerfile: "Dockerfile",
     t: service_name,
     remote: &image_url,
     ..Default::default()
   };
+  log::info!("building service [{}]", &service_name);
   let mut stream = docker.build_image(options, None, None);
   while let Some(output) = stream.next().await {
-    if let Err(err) = output {
-      return Err(err);
-    }
+    parse_build_output(service_name, output)?;
   }
+  log::info!("successfully builded service [{}]", &service_name);
   Ok(())
 }
 
@@ -130,6 +171,7 @@ pub async fn install_service(
   if image_exists(image_name, docker).await {
     return Ok(());
   }
+  log::info!("starting install service [{}]", image_name);
   let mut stream = docker.create_image(
     Some(CreateImageOptions {
       from_image: image_name,
@@ -139,10 +181,9 @@ pub async fn install_service(
     None,
   );
   while let Some(output) = stream.next().await {
-    if let Err(err) = output {
-      return Err(err);
-    }
+    parse_create_output(image_name, output)?;
   }
+  log::info!("successfully installed service [{}]", image_name);
   Ok(())
 }
 

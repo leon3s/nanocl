@@ -14,12 +14,10 @@ use crate::errors::DaemonError;
 embed_migrations!("./migrations");
 
 #[derive(Debug)]
-#[allow(dead_code)]
 /// Todo Daemon config as state
 pub struct DaemonConfig {
   root_path: String,
   state_path: String,
-  pidfile: String,
   hosts: Vec<String>,
 }
 
@@ -71,7 +69,6 @@ pub async fn create_default_network(
 async fn boot_docker_services(
   docker: &bollard::Docker,
 ) -> Result<(), DaemonError> {
-  log::info!("ensuring nanocl network");
   create_default_network(docker).await?;
   // Boot postgresql service to ensure database connection
   services::postgresql::boot(docker).await?;
@@ -84,15 +81,10 @@ async fn boot_docker_services(
 
 /// Boot function called before http server start to
 /// initialize his state and some background task
-pub async fn boot() -> Result<DaemonState, DaemonError> {
-  // Boot services
+pub async fn boot(
+  docker_api: &bollard::Docker,
+) -> Result<DaemonState, DaemonError> {
   log::info!("booting");
-  log::info!("connecting to docker on /run/nanocl/docker.sock");
-  let docker_api = bollard::Docker::connect_with_unix(
-    "/run/nanocl/docker.sock",
-    120,
-    bollard::API_DEFAULT_VERSION,
-  )?;
   boot_docker_services(&docker_api).await?;
   // Connect to postgresql
   let postgres_ip = services::postgresql::get_postgres_ip(&docker_api).await?;
@@ -102,10 +94,8 @@ pub async fn boot() -> Result<DaemonState, DaemonError> {
   log::info!("creating postgresql migration pool");
   let conn = services::postgresql::get_pool_conn(&pool)?;
   // wrap into state to be abble to use our functions
-  log::info!("running migration script");
   embedded_migrations::run(&conn)?;
   // Create default namesapce
-  log::info!("ensuring namespace 'global' presence");
   create_default_nsp(&pool).await?;
 
   ntex::rt::spawn(async move {
@@ -151,16 +141,6 @@ pub async fn boot() -> Result<DaemonState, DaemonError> {
   // Return state
   Ok(DaemonState {
     pool: db_pool,
-    docker_api,
+    docker_api: docker_api.to_owned(),
   })
-}
-
-#[cfg(test)]
-mod test_boot {
-  use super::boot;
-
-  #[ntex::test]
-  async fn test_boot() {
-    boot().await.unwrap();
-  }
 }

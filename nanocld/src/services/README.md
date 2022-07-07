@@ -1,7 +1,7 @@
 # Services
 
-Services can be http request to other api or self managed container
-required by the daemon to work correctly
+Services are function helpers relative to an external api or to wrap
+repositories with other actions
 
 - dnsmasq handle dns queries
 - nginx proxy http request

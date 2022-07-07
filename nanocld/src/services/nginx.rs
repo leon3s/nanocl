@@ -60,9 +60,7 @@ async fn create_nginx_container(
 
 pub async fn boot(docker: &Docker) -> Result<(), DockerError> {
   let container_name = "nanocl-proxy-nginx";
-  build_service(docker, "nanocl-proxy-nginx").await?;
   let s_state = get_service_state(docker, container_name).await;
-
   if s_state == ServiceState::Uninstalled {
     create_nginx_container(docker, container_name).await?;
   }

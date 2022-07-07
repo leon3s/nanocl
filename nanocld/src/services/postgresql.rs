@@ -56,7 +56,6 @@ async fn create_postgre_container(
 
 pub async fn boot(docker: &Docker) -> Result<(), DockerError> {
   let container_name = "nanocl-db-postgre";
-  install_service("postgres:latest", docker).await?;
   let s_state = get_service_state(docker, container_name).await;
 
   if s_state == ServiceState::Uninstalled {

@@ -153,7 +153,6 @@ async fn create_dnsmasq_container(
 
 pub async fn boot(docker: &Docker) -> Result<(), DockerError> {
   let container_name = "nanocl-dns-dnsmasq";
-  build_service(docker, "nanocl-dns-dnsmasq").await?;
   let s_state = get_service_state(docker, container_name).await;
 
   if s_state == ServiceState::Uninstalled {
