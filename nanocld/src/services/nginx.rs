@@ -28,6 +28,7 @@ fn gen_nginx_host_conf() -> HostConfig {
       "/var/lib/nanocl/nginx/sites-enabled:/etc/nginx/sites-enabled",
     ),
     String::from("/var/lib/nanocl/nginx/log:/var/log/nginx"),
+    String::from("/var/lib/nanocl/nginx/letsencrypt:/etc/letsencrypt"),
   ]);
   let network_mode = Some(String::from("host"));
   HostConfig {

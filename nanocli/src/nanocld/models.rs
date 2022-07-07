@@ -9,3 +9,8 @@ pub struct PgGenericDelete {
 pub struct PgGenericCount {
   pub(crate) count: usize,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GenericNamespaceQuery {
+  pub(crate) namespace: Option<String>,
+}

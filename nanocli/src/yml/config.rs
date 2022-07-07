@@ -25,7 +25,9 @@ async fn revert_namespace(
     .cargoes
     .iter()
     .map(|cargo| async {
-      let result = client.delete_cargo(cargo.name.to_owned()).await;
+      let result = client
+        .delete_cargo(&cargo.name, Some(namespace.name.to_owned()))
+        .await;
       if let Err(err) = result {
         match err {
           NanocldError::Api(ref api_err) => {
@@ -52,7 +54,9 @@ async fn revert_namespace(
     .clusters
     .iter()
     .map(|cluster| async {
-      let result = client.delete_cluster(cluster.name.to_owned()).await;
+      let result = client
+        .delete_cluster(&cluster.name, Some(namespace.name.to_owned()))
+        .await;
       if let Err(err) = result {
         match err {
           NanocldError::Api(ref api_err) => {
@@ -90,15 +94,18 @@ async fn apply_namespace(
     .clusters
     .iter()
     .map(|cluster| async {
-      let cluster_exists =
-        client.inspect_cluster(cluster.name.to_owned()).await;
+      let cluster_exists = client
+        .inspect_cluster(&cluster.name, Some(namespace.name.to_owned()))
+        .await;
       let item = ClusterPartial {
         name: cluster.name.to_owned(),
       };
       println!("cluster exists : {:#?}", &cluster_exists);
       if cluster_exists.is_err() {
         println!("creating cluster !");
-        client.create_cluster(&item).await?;
+        client
+          .create_cluster(&item, Some(namespace.name.to_owned()))
+          .await?;
       }
       // Create cluster variables
       if let Some(variables) = cluster.variables.to_owned() {
@@ -107,8 +114,13 @@ async fn apply_namespace(
           .to_owned()
           .into_keys()
           .map(|var_name| async {
-            let result =
-              client.inspect_cluster_var(&cluster.name, &var_name).await;
+            let result = client
+              .inspect_cluster_var(
+                &cluster.name,
+                &var_name,
+                Some(namespace.name.to_owned()),
+              )
+              .await;
             let value = variables.get(&var_name).unwrap();
             let item = ClusterVarPartial {
               name: var_name,
@@ -116,7 +128,11 @@ async fn apply_namespace(
             };
             if result.is_err() {
               client
-                .create_cluster_var(&cluster.name.to_owned(), item)
+                .create_cluster_var(
+                  &cluster.name.to_owned(),
+                  &item,
+                  Some(namespace.name.to_owned()),
+                )
                 .await?;
             }
             Ok::<_, CliError>(())
@@ -133,7 +149,11 @@ async fn apply_namespace(
         .iter()
         .map(|network| async {
           let result = client
-            .inspect_cluster_network(&cluster.name, &network.name)
+            .inspect_cluster_network(
+              &cluster.name,
+              &network.name,
+              Some(namespace.name.to_owned()),
+            )
             .await;
           let item = ClusterNetworkPartial {
             name: network.name.to_owned(),
@@ -141,7 +161,11 @@ async fn apply_namespace(
           println!("network exists {:#?}", &result);
           if result.is_err() {
             client
-              .create_cluster_network(cluster.name.to_owned(), &item)
+              .create_cluster_network(
+                &cluster.name,
+                &item,
+                Some(namespace.name.to_owned()),
+              )
               .await?;
           }
 
@@ -165,7 +189,9 @@ async fn apply_namespace(
     .cargoes
     .iter()
     .map(|cargo| async {
-      let result = client.inspect_cargo(&cargo.name).await;
+      let result = client
+        .inspect_cargo(&cargo.name, Some(namespace.name.to_owned()))
+        .await;
       let item = CargoPartial {
         name: cargo.name.to_owned(),
         image_name: cargo.image_name.to_owned(),
@@ -173,9 +199,10 @@ async fn apply_namespace(
         environnements: cargo.environnements.to_owned(),
       };
       if result.is_err() {
-        client.create_cargo(&item).await?;
+        client
+          .create_cargo(&item, Some(namespace.name.to_owned()))
+          .await?;
       }
-      // client.join_cluster_cargo(&cluster.name.to_owned(), )
       Ok::<_, CliError>(())
     })
     .collect::<FuturesUnordered<_>>()
@@ -192,7 +219,13 @@ async fn apply_namespace(
         joins
           .iter()
           .map(|join| async {
-            client.join_cluster_cargo(&cluster.name, join).await?;
+            client
+              .join_cluster_cargo(
+                &cluster.name,
+                join,
+                Some(namespace.name.to_owned()),
+              )
+              .await?;
 
             Ok::<_, CliError>(())
           })
@@ -207,7 +240,9 @@ async fn apply_namespace(
         if !auto_start {
           return Ok::<_, CliError>(());
         }
-        client.start_cluster(&cluster.name).await?;
+        client
+          .start_cluster(&cluster.name, Some(namespace.name.to_owned()))
+          .await?;
         println!("cluster: {} started.", &cluster.name);
       }
 

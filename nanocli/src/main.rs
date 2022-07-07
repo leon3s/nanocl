@@ -79,10 +79,13 @@ async fn execute_args(args: Cli) -> Result<(), CliError> {
         let namespaces = items
           .iter()
           .map(|item| async {
-            let cargo_count = client.count_cargo(&item.name).await?;
-            let cluster_count = client.count_cluster(&item.name).await?;
-            let network_count =
-              client.count_cluster_network_by_nsp(&item.name).await?;
+            let cargo_count =
+              client.count_cargo(Some(item.name.to_owned())).await?;
+            let cluster_count =
+              client.count_cluster(Some(item.name.to_owned())).await?;
+            let network_count = client
+              .count_cluster_network_by_nsp(Some(item.name.to_owned()))
+              .await?;
             let new_item = NamespaceWithCount {
               name: item.name.to_owned(),
               cargoes: cargo_count.count,
@@ -106,37 +109,49 @@ async fn execute_args(args: Cli) -> Result<(), CliError> {
     },
     Commands::Cluster(args) => match &args.commands {
       ClusterCommands::List => {
-        let items = client.list_cluster().await?;
+        let items = client.list_cluster(args.namespace.to_owned()).await?;
         print_table(items);
       }
       ClusterCommands::Create(item) => {
-        let item = client.create_cluster(item).await?;
+        let item = client
+          .create_cluster(item, args.namespace.to_owned())
+          .await?;
         println!("{}", item.key);
       }
       ClusterCommands::Remove(options) => {
-        client.delete_cluster(options.name.to_owned()).await?;
+        client
+          .delete_cluster(&options.name, args.namespace.to_owned())
+          .await?;
       }
       ClusterCommands::Start(options) => {
-        client.start_cluster(&options.name).await?;
+        client
+          .start_cluster(&options.name, args.namespace.to_owned())
+          .await?;
       }
     },
     Commands::ClusterNetwork(args) => match &args.commands {
       ClusterNetworkCommands::List => {
-        let items =
-          client.list_cluster_network(args.cluster.to_owned()).await?;
+        let items = client
+          .list_cluster_network(&args.cluster, args.namespace.to_owned())
+          .await?;
         print_table(items);
       }
       ClusterNetworkCommands::Create(item) => {
         let item = client
-          .create_cluster_network(args.cluster.to_owned(), item)
+          .create_cluster_network(
+            &args.cluster,
+            item,
+            args.namespace.to_owned(),
+          )
           .await?;
         println!("{}", item.key);
       }
       ClusterNetworkCommands::Remove(options) => {
         client
           .delete_cluster_network(
-            args.cluster.to_owned(),
-            options.name.to_owned(),
+            &args.cluster,
+            &options.name,
+            args.namespace.to_owned(),
           )
           .await?;
       }
@@ -171,15 +186,17 @@ async fn execute_args(args: Cli) -> Result<(), CliError> {
     },
     Commands::Cargo(args) => match &args.commands {
       CargoCommands::List => {
-        let items = client.list_cargo().await?;
+        let items = client.list_cargo(args.namespace.to_owned()).await?;
         print_table(items);
       }
       CargoCommands::Create(item) => {
-        let item = client.create_cargo(item).await?;
+        let item = client.create_cargo(item, args.namespace.to_owned()).await?;
         println!("{}", item.key);
       }
       CargoCommands::Remove(options) => {
-        client.delete_cargo(options.name.to_owned()).await?;
+        client
+          .delete_cargo(&options.name, args.namespace.to_owned())
+          .await?;
       }
     },
     Commands::NginxTemplate(args) => match &args.commands {
