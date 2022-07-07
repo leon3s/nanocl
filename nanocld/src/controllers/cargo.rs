@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{services, repositories};
 use crate::models::{Pool, CargoPartial, CargoEnvPartial};
 
-use super::errors::HttpError;
+use crate::errors::HttpResponseError;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CargoQuery {
@@ -29,7 +29,7 @@ pub struct CargoQuery {
 async fn list_cargo(
   pool: web::types::State<Pool>,
   web::types::Query(qs): web::types::Query<CargoQuery>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let nsp = match qs.namespace {
     None => String::from("global"),
     Some(nsp) => nsp,
@@ -59,7 +59,7 @@ async fn create_cargo(
   pool: web::types::State<Pool>,
   web::types::Query(qs): web::types::Query<CargoQuery>,
   web::types::Json(payload): web::types::Json<CargoPartial>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let nsp = match qs.namespace {
     None => String::from("global"),
     Some(nsp) => nsp,
@@ -88,7 +88,7 @@ async fn create_cargo(
       .try_fold(&mut envs, |acc, env_item| {
         let splited = env_item.split('=').collect::<Vec<&str>>();
         if splited.len() != 2 {
-          return Err(HttpError {
+          return Err(HttpResponseError {
             msg: format!("env item {} is not a valid format", env_item),
             status: StatusCode::BAD_REQUEST,
           });
@@ -99,7 +99,7 @@ async fn create_cargo(
           value: splited[1].into(),
         };
         acc.push(env);
-        Ok::<&mut Vec<CargoEnvPartial>, HttpError>(acc)
+        Ok::<&mut Vec<CargoEnvPartial>, HttpResponseError>(acc)
       })?
       .to_vec();
     repositories::cargo_env::create_many(cargo_envs, &pool).await?;
@@ -128,7 +128,7 @@ async fn delete_cargo_by_name(
   docker_api: web::types::State<bollard::Docker>,
   name: web::types::Path<String>,
   web::types::Query(qs): web::types::Query<CargoQuery>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   log::info!("asking cargo deletion {}", &name);
   let nsp = match qs.namespace {
     None => String::from("global"),
@@ -171,7 +171,7 @@ async fn delete_cargo_by_name(
 async fn count_cargo(
   pool: web::types::State<Pool>,
   web::types::Query(qs): web::types::Query<CargoQuery>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let nsp = match qs.namespace {
     None => String::from("global"),
     Some(nsp) => nsp,
@@ -200,7 +200,7 @@ async fn inspect_cargo_by_name(
   pool: web::types::State<Pool>,
   name: web::types::Path<String>,
   web::types::Query(qs): web::types::Query<CargoQuery>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   log::info!("asking cargo deletion {}", &name);
   let nsp = match qs.namespace {
     None => String::from("global"),

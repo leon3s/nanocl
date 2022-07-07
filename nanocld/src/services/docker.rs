@@ -7,14 +7,14 @@ use ntex::http::StatusCode;
 use futures::StreamExt;
 
 use crate::models::{GitRepositoryItem, GitRepositoryBranchItem};
-use crate::controllers::errors::HttpError;
+use crate::errors::HttpResponseError;
 
 pub async fn build_git_repository(
   image_name: String,
   item: GitRepositoryItem,
   branch: GitRepositoryBranchItem,
   docker_api: web::types::State<bollard::Docker>,
-) -> Result<Receiver<Result<Bytes, web::error::Error>>, HttpError> {
+) -> Result<Receiver<Result<Bytes, web::error::Error>>, HttpResponseError> {
   let image_url = item.url + ".git#" + &branch.name;
   let mut labels: HashMap<String, String> = HashMap::new();
   labels.insert(String::from("commit"), branch.last_commit_sha);
@@ -52,7 +52,7 @@ pub async fn build_git_repository(
 pub async fn build_image(
   image_name: String,
   docker_api: web::types::State<bollard::Docker>,
-) -> Result<Receiver<Result<Bytes, web::error::Error>>, HttpError> {
+) -> Result<Receiver<Result<Bytes, web::error::Error>>, HttpResponseError> {
   let (tx, rx_body) = mpsc::channel();
   rt::spawn(async move {
     let mut stream = docker_api.create_image(

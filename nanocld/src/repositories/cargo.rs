@@ -2,17 +2,17 @@ use ntex::web;
 use diesel::prelude::*;
 
 use crate::services;
-use crate::controllers::errors::HttpError;
 use crate::models::{
   Pool, CargoItem, CargoPartial, PgDeleteGeneric, NamespaceItem, PgGenericCount,
 };
 
+use crate::errors::HttpResponseError;
 use super::errors::db_blocking_error;
 
 pub async fn find_by_namespace(
   nsp: NamespaceItem,
   pool: &web::types::State<Pool>,
-) -> Result<Vec<CargoItem>, HttpError> {
+) -> Result<Vec<CargoItem>, HttpResponseError> {
   let conn = services::postgresql::get_pool_conn(pool)?;
 
   let res = web::block(move || CargoItem::belonging_to(&nsp).load(&conn)).await;
@@ -26,7 +26,7 @@ pub async fn create(
   nsp: String,
   item: CargoPartial,
   pool: &web::types::State<Pool>,
-) -> Result<CargoItem, HttpError> {
+) -> Result<CargoItem, HttpResponseError> {
   use crate::schema::cargoes::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -52,7 +52,7 @@ pub async fn create(
 pub async fn count(
   namespace: String,
   pool: &web::types::State<Pool>,
-) -> Result<PgGenericCount, HttpError> {
+) -> Result<PgGenericCount, HttpResponseError> {
   use crate::schema::cargoes::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -73,7 +73,7 @@ pub async fn count(
 pub async fn delete_by_key(
   key: String,
   pool: &web::types::State<Pool>,
-) -> Result<PgDeleteGeneric, HttpError> {
+) -> Result<PgDeleteGeneric, HttpResponseError> {
   use crate::schema::cargoes::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -92,7 +92,7 @@ pub async fn delete_by_key(
 pub async fn find_by_key(
   key: String,
   pool: &web::types::State<Pool>,
-) -> Result<CargoItem, HttpError> {
+) -> Result<CargoItem, HttpResponseError> {
   use crate::schema::cargoes::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -109,6 +109,6 @@ pub async fn find_by_key(
 // pub async fn list_by_image_name(
 //   image_name: String,
 //   pool: &web::types::State<Pool>,
-// ) -> Result<Vec<CargoItem>, HttpError> {
+// ) -> Result<Vec<CargoItem>, HttpResponseError> {
 
 // }

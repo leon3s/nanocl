@@ -7,7 +7,7 @@ use crate::models::{
   GitRepositorySourceType,
 };
 
-use crate::controllers::errors::HttpError;
+use crate::errors::HttpResponseError;
 use super::errors::db_blocking_error;
 
 /// Create fresh git repository
@@ -30,7 +30,7 @@ pub async fn create(
   item: GitRepositoryPartial,
   default_branch: String,
   pool: &web::types::State<Pool>,
-) -> Result<GitRepositoryItem, HttpError> {
+) -> Result<GitRepositoryItem, HttpResponseError> {
   use crate::schema::git_repositories::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -72,7 +72,7 @@ pub async fn create(
 pub async fn delete_by_name(
   id: String,
   pool: &web::types::State<Pool>,
-) -> Result<PgDeleteGeneric, HttpError> {
+) -> Result<PgDeleteGeneric, HttpResponseError> {
   use crate::schema::git_repositories::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -106,7 +106,7 @@ pub async fn delete_by_name(
 pub async fn find_by_name(
   id_or_name: String,
   pool: &web::types::State<Pool>,
-) -> Result<GitRepositoryItem, HttpError> {
+) -> Result<GitRepositoryItem, HttpResponseError> {
   use crate::schema::git_repositories::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -139,7 +139,7 @@ pub async fn find_by_name(
 /// ```
 pub async fn list(
   pool: &web::types::State<Pool>,
-) -> Result<Vec<GitRepositoryItem>, HttpError> {
+) -> Result<Vec<GitRepositoryItem>, HttpResponseError> {
   use crate::schema::git_repositories::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;

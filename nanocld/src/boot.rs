@@ -1,21 +1,17 @@
 //! File used to describe daemon boot
 use ntex::web;
+use serde_json::Value;
+use std::sync::mpsc::channel;
+use notify::{Watcher, RecursiveMode, RawEvent, raw_watcher, Op};
+
+use bollard::errors::Error as DockerError;
 
 use crate::{services, repositories};
 use crate::models::{Pool, NamespacePartial};
-use crate::controllers::errors::HttpError;
 
-use bollard::errors::Error as DockerError;
-use diesel_migrations::RunMigrationsError;
+use crate::errors::DaemonError;
 
 embed_migrations!("./migrations");
-
-#[derive(Debug)]
-pub enum BootError {
-  Errorhttp(HttpError),
-  Errordocker(DockerError),
-  Errormigration(RunMigrationsError),
-}
 
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -45,7 +41,7 @@ pub struct DaemonState {
 /// ```
 async fn create_default_nsp(
   pool: &web::types::State<Pool>,
-) -> Result<(), BootError> {
+) -> Result<(), DaemonError> {
   const NSP_NAME: &str = "global";
   match repositories::namespace::inspect_by_name(NSP_NAME.to_string(), pool)
     .await
@@ -54,10 +50,8 @@ async fn create_default_nsp(
       let new_nsp = NamespacePartial {
         name: NSP_NAME.to_string(),
       };
-      match repositories::namespace::create(new_nsp, pool).await {
-        Err(err) => Err(BootError::Errorhttp(err)),
-        Ok(_nsp) => Ok(()),
-      }
+      repositories::namespace::create(new_nsp, pool).await?;
+      Ok(())
     }
     Ok(_) => Ok(()),
   }
@@ -76,33 +70,21 @@ pub async fn create_default_network(
 
 async fn boot_docker_services(
   docker: &bollard::Docker,
-) -> Result<(), BootError> {
+) -> Result<(), DaemonError> {
   log::info!("ensuring nanocl network");
-  create_default_network(docker)
-    .await
-    .map_err(BootError::Errordocker)?;
-  log::info!("ensuring postgresql boot");
+  create_default_network(docker).await?;
   // Boot postgresql service to ensure database connection
-  services::postgresql::boot(docker)
-    .await
-    .map_err(BootError::Errordocker)?;
-
-  log::info!("ensuring dnsmasq boot");
+  services::postgresql::boot(docker).await?;
   // Boot dnsmasq service to manage domain names
-  services::dnsmasq::boot(docker)
-    .await
-    .map_err(BootError::Errordocker)?;
-
-  log::info!("ensuring nginx boot");
+  services::dnsmasq::boot(docker).await?;
   // Boot nginx service to manage proxy
-  services::nginx::boot(docker)
-    .await
-    .map_err(BootError::Errordocker)?;
+  services::nginx::boot(docker).await?;
   Ok(())
 }
 
-/// Boot function called before server start to initialize his state
-pub async fn boot() -> Result<DaemonState, BootError> {
+/// Boot function called before http server start to
+/// initialize his state and some background task
+pub async fn boot() -> Result<DaemonState, DaemonError> {
   // Boot services
   log::info!("booting");
   log::info!("connecting to docker on /run/nanocl/docker.sock");
@@ -110,25 +92,60 @@ pub async fn boot() -> Result<DaemonState, BootError> {
     "/run/nanocl/docker.sock",
     120,
     bollard::API_DEFAULT_VERSION,
-  )
-  .map_err(BootError::Errordocker)?;
+  )?;
   boot_docker_services(&docker_api).await?;
   // Connect to postgresql
-  let postgres_ip = services::postgresql::get_postgres_ip(&docker_api)
-    .await
-    .map_err(BootError::Errorhttp)?;
+  let postgres_ip = services::postgresql::get_postgres_ip(&docker_api).await?;
   log::info!("creating postgresql state pool");
   let db_pool = services::postgresql::create_pool(postgres_ip.to_owned());
   let pool = web::types::State::new(db_pool.to_owned());
   log::info!("creating postgresql migration pool");
-  let conn =
-    services::postgresql::get_pool_conn(&pool).map_err(BootError::Errorhttp)?;
+  let conn = services::postgresql::get_pool_conn(&pool)?;
   // wrap into state to be abble to use our functions
   log::info!("running migration script");
-  embedded_migrations::run(&conn).map_err(BootError::Errormigration)?;
+  embedded_migrations::run(&conn)?;
   // Create default namesapce
   log::info!("ensuring namespace 'global' presence");
   create_default_nsp(&pool).await?;
+
+  ntex::rt::spawn(async move {
+    // Create a channel to receive the events.
+    let (tx, rx) = channel();
+    // Create a watcher object, delivering raw events.
+    // The notification back-end is selected based on the platform.
+    let mut watcher = raw_watcher(tx).unwrap();
+    // Add a path to be watched. All files and directories at that path and
+    // below will be monitored for changes.
+    watcher
+      .watch("/var/lib/nanocl/nginx/log", RecursiveMode::Recursive)
+      .unwrap();
+    loop {
+      match rx.recv() {
+        Ok(RawEvent {
+          path: Some(path),
+          op: Ok(op),
+          cookie,
+        }) => {
+          println!("{:?} {:?} ({:?})", op, path, cookie);
+          if path.to_string_lossy() != "/var/lib/nanocl/nginx/log/access.log" {
+            return;
+          }
+          if op == Op::WRITE {
+            log::info!("Reading new nginx log entry");
+            let output = std::process::Command::new("tail")
+              .args(["-n", "1", "/var/lib/nanocl/nginx/log/access.log"])
+              .output()
+              .expect("unable to get last nginx log entry.");
+            let str = String::from_utf8(output.stdout).unwrap();
+            let json: Value = serde_json::from_str(&str).unwrap();
+            log::info!("Parsed nginx log entry {:#?}", &json);
+          }
+        }
+        Ok(event) => log::warn!("Received broken event {:#?}", event),
+        Err(e) => log::error!("Received error event {:#?}", e),
+      }
+    }
+  });
 
   log::info!("booted");
   // Return state
@@ -140,7 +157,6 @@ pub async fn boot() -> Result<DaemonState, BootError> {
 
 #[cfg(test)]
 mod test_boot {
-
   use super::boot;
 
   #[ntex::test]

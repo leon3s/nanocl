@@ -6,13 +6,13 @@ use crate::models::{
   Pool, CargoProxyConfigItem, CargoProxyConfigPartial, PgDeleteGeneric,
 };
 
-use crate::controllers::errors::HttpError;
-use crate::repositories::errors::db_blocking_error;
+use crate::errors::HttpResponseError;
+use super::errors::db_blocking_error;
 
 pub async fn get_for_cargo(
   cargo_key: String,
   pool: &web::types::State<Pool>,
-) -> Result<CargoProxyConfigItem, HttpError> {
+) -> Result<CargoProxyConfigItem, HttpResponseError> {
   use crate::schema::cargo_proxy_configs::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -33,7 +33,7 @@ pub async fn create_for_cargo(
   cargo_key: String,
   item: CargoProxyConfigPartial,
   pool: &web::types::State<Pool>,
-) -> Result<CargoProxyConfigItem, HttpError> {
+) -> Result<CargoProxyConfigItem, HttpResponseError> {
   use crate::schema::cargo_proxy_configs::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -61,7 +61,7 @@ pub async fn create_for_cargo(
 pub async fn delete_for_cargo(
   cargo_key: String,
   pool: &web::types::State<Pool>,
-) -> Result<PgDeleteGeneric, HttpError> {
+) -> Result<PgDeleteGeneric, HttpResponseError> {
   use crate::schema::cargo_proxy_configs::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;

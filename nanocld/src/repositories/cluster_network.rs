@@ -2,7 +2,7 @@ use ntex::web;
 use diesel::prelude::*;
 
 use crate::services;
-use crate::controllers::errors::HttpError;
+use crate::errors::HttpResponseError;
 use crate::models::{
   Pool, ClusterNetworkPartial, ClusterNetworkItem, PgDeleteGeneric,
   ClusterItem, PgGenericCount,
@@ -14,7 +14,7 @@ use super::errors::db_blocking_error;
 pub async fn list_for_cluster(
   cluster: ClusterItem,
   pool: &web::types::State<Pool>,
-) -> Result<Vec<ClusterNetworkItem>, HttpError> {
+) -> Result<Vec<ClusterNetworkItem>, HttpResponseError> {
   let conn = services::postgresql::get_pool_conn(pool)?;
   let res =
     web::block(move || ClusterNetworkItem::belonging_to(&cluster).load(&conn))
@@ -28,7 +28,7 @@ pub async fn list_for_cluster(
 pub async fn count_by_namespace(
   namespace: String,
   pool: &web::types::State<Pool>,
-) -> Result<PgGenericCount, HttpError> {
+) -> Result<PgGenericCount, HttpResponseError> {
   use crate::schema::cluster_networks::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
@@ -52,7 +52,7 @@ pub async fn create_for_cluster(
   item: ClusterNetworkPartial,
   docker_network_id: String,
   pool: &web::types::State<Pool>,
-) -> Result<ClusterNetworkItem, HttpError> {
+) -> Result<ClusterNetworkItem, HttpResponseError> {
   use crate::schema::cluster_networks::dsl;
   let conn = services::postgresql::get_pool_conn(pool)?;
 
@@ -81,7 +81,7 @@ pub async fn create_for_cluster(
 pub async fn delete_by_key(
   key: String,
   pool: &web::types::State<Pool>,
-) -> Result<PgDeleteGeneric, HttpError> {
+) -> Result<PgDeleteGeneric, HttpResponseError> {
   use crate::schema::cluster_networks::dsl;
   let conn = services::postgresql::get_pool_conn(pool)?;
 
@@ -101,7 +101,7 @@ pub async fn delete_by_key(
 pub async fn find_by_key(
   key: String,
   pool: &web::types::State<Pool>,
-) -> Result<ClusterNetworkItem, HttpError> {
+) -> Result<ClusterNetworkItem, HttpResponseError> {
   use crate::schema::cluster_networks::dsl;
   let conn = services::postgresql::get_pool_conn(pool)?;
 

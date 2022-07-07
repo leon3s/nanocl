@@ -6,7 +6,7 @@ use crate::models::{Pool, ClusterVariablePartial};
 
 use super::utils::gen_nsp_key_by_name;
 
-use super::errors::HttpError;
+use crate::errors::HttpResponseError;
 
 #[derive(Serialize, Deserialize)]
 pub struct ClusterVaribleQuery {
@@ -34,7 +34,7 @@ async fn create_cluster_variable(
   c_name: web::types::Path<String>,
   web::types::Query(qs): web::types::Query<ClusterVaribleQuery>,
   web::types::Json(payload): web::types::Json<ClusterVariablePartial>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let name = c_name.into_inner();
   let cluster_key = gen_nsp_key_by_name(&qs.namespace, &name);
 
@@ -68,7 +68,7 @@ async fn list_cluster_variable(
   pool: web::types::State<Pool>,
   c_name: web::types::Path<String>,
   web::types::Query(qs): web::types::Query<ClusterVaribleQuery>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let name = c_name.into_inner();
 
   let cluster_key = gen_nsp_key_by_name(&qs.namespace, &name);
@@ -108,7 +108,7 @@ async fn delete_cluster_variable(
   pool: web::types::State<Pool>,
   url_path: web::types::Path<ClusterVariablePath>,
   web::types::Query(qs): web::types::Query<ClusterVaribleQuery>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let var_name = format!("{}-{}", &url_path.c_name, &url_path.v_name);
   let var_key = gen_nsp_key_by_name(&qs.namespace, &var_name);
 
@@ -137,7 +137,7 @@ async fn get_cluster_variable_by_name(
   pool: web::types::State<Pool>,
   url_path: web::types::Path<ClusterVariablePath>,
   web::types::Query(qs): web::types::Query<ClusterVaribleQuery>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let var_name = format!("{}-{}", &url_path.c_name, &url_path.v_name);
   let var_key = gen_nsp_key_by_name(&qs.namespace, &var_name);
 

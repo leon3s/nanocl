@@ -6,7 +6,7 @@ use futures::stream::FuturesUnordered;
 
 use crate::models::CargoItem;
 
-use crate::controllers::errors::HttpError;
+use crate::errors::HttpResponseError;
 use crate::services::errors::docker_error;
 
 #[derive(Debug)]
@@ -21,7 +21,7 @@ pub struct CreateCargoContainerOpts<'a> {
 pub async fn create_containers<'a>(
   opts: CreateCargoContainerOpts<'a>,
   docker_api: &web::types::State<bollard::Docker>,
-) -> Result<Vec<String>, HttpError> {
+) -> Result<Vec<String>, HttpResponseError> {
   log::debug!(
     "creating containers for cargo {:?} with labels {:?}",
     &opts.cargo,
@@ -34,7 +34,7 @@ pub async fn create_containers<'a>(
     .await
     .is_err()
   {
-    return Err(HttpError {
+    return Err(HttpResponseError {
       msg: String::from("image name is not valid"),
       status: StatusCode::BAD_REQUEST,
     });
@@ -81,7 +81,7 @@ pub async fn create_containers<'a>(
 pub async fn list_containers(
   cargo_key: String,
   docker_api: &web::types::State<bollard::Docker>,
-) -> Result<Vec<bollard::models::ContainerSummary>, HttpError> {
+) -> Result<Vec<bollard::models::ContainerSummary>, HttpResponseError> {
   let target_cluster = &format!("cargo={}", &cargo_key);
   let mut filters = HashMap::new();
   filters.insert("label", vec![target_cluster.as_str()]);
@@ -100,13 +100,13 @@ pub async fn list_containers(
 pub async fn delete_container(
   cargo_key: String,
   docker_api: &web::types::State<bollard::Docker>,
-) -> Result<(), HttpError> {
+) -> Result<(), HttpResponseError> {
   let containers = list_containers(cargo_key, docker_api).await?;
 
   containers
     .into_iter()
     .map(|container| async move {
-      let id = container.id.ok_or(HttpError {
+      let id = container.id.ok_or(HttpResponseError {
         msg: String::from("unable to get container id"),
         status: StatusCode::INTERNAL_SERVER_ERROR,
       })?;
@@ -118,13 +118,13 @@ pub async fn delete_container(
         .remove_container(&id, options)
         .await
         .map_err(docker_error)?;
-      Ok::<_, HttpError>(())
+      Ok::<_, HttpResponseError>(())
     })
     .collect::<FuturesUnordered<_>>()
     .collect::<Vec<_>>()
     .await
     .into_iter()
-    .collect::<Result<Vec<()>, HttpError>>()?;
+    .collect::<Result<Vec<()>, HttpResponseError>>()?;
 
   Ok(())
 }

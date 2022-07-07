@@ -4,7 +4,7 @@ use ntex::web;
 use crate::repositories::namespace;
 use crate::models::{NamespacePartial, Pool};
 
-use super::errors::HttpError;
+use crate::errors::HttpResponseError;
 
 /// List all namespace
 #[utoipa::path(
@@ -17,7 +17,7 @@ use super::errors::HttpError;
 #[web::get("/namespaces")]
 async fn list_namespace(
   pool: web::types::State<Pool>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let items = namespace::list(&pool).await?;
 
   Ok(web::HttpResponse::Ok().json(&items))
@@ -38,7 +38,7 @@ async fn list_namespace(
 async fn create_namespace(
   pool: web::types::State<Pool>,
   web::types::Json(payload): web::types::Json<NamespacePartial>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let item = namespace::create(payload, &pool).await?;
 
   Ok(web::HttpResponse::Created().json(&item))
@@ -59,7 +59,7 @@ async fn create_namespace(
 async fn delete_namespace_by_name(
   pool: web::types::State<Pool>,
   id: web::types::Path<String>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let id_or_name = id.into_inner();
   let res = namespace::delete_by_name(id_or_name, &pool).await?;
   Ok(web::HttpResponse::Ok().json(&res))
@@ -81,7 +81,7 @@ async fn delete_namespace_by_name(
 async fn inspect_namespace_by_name(
   name: web::types::Path<String>,
   pool: web::types::State<Pool>,
-) -> Result<web::HttpResponse, HttpError> {
+) -> Result<web::HttpResponse, HttpResponseError> {
   let name = name.into_inner();
   let item = namespace::inspect_by_name(name, &pool).await?;
 
