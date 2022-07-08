@@ -14,7 +14,7 @@ pub struct ClusterNetworkQuery {
 }
 
 /// List network for given cluster
-#[utoipa::path(
+#[cfg_attr(feature = "openapi", utoipa::path(
   get,
   path = "/clusters/{c_name}/networks",
   params(
@@ -26,7 +26,7 @@ pub struct ClusterNetworkQuery {
     (status = 400, description = "Generic database error", body = ApiError),
     (status = 404, description = "Namespace name not valid", body = ApiError),
   ),
-)]
+))]
 #[web::get("/clusters/{c_name}/networks")]
 async fn list_cluster_network(
   pool: web::types::State<Pool>,
@@ -46,7 +46,7 @@ async fn list_cluster_network(
 }
 
 /// Create a network for given cluster
-#[utoipa::path(
+#[cfg_attr(feature = "openapi", utoipa::path(
   post,
   request_body = ClusterNetworkPartial,
   path = "/clusters/{c_name}/networks",
@@ -59,7 +59,7 @@ async fn list_cluster_network(
     (status = 400, description = "Generic database error", body = ApiError),
     (status = 404, description = "Namespace name not valid", body = ApiError),
   ),
-)]
+))]
 #[web::post("/clusters/{c_name}/networks")]
 async fn create_cluster_network(
   pool: web::types::State<Pool>,
@@ -125,7 +125,7 @@ struct InspectClusterNetworkPath {
 }
 
 /// Inspect network by it's name for given cluster in given namespace
-#[utoipa::path(
+#[cfg_attr(feature = "openapi", utoipa::path(
   get,
   path = "/clusters/{c_name}/networks/{n_name}/inspect",
   params(
@@ -138,7 +138,7 @@ struct InspectClusterNetworkPath {
     (status = 400, description = "Generic database error", body = ApiError),
     (status = 404, description = "Namespace name not valid", body = ApiError),
   ),
-)]
+))]
 #[web::get("/clusters/{c_name}/networks/{n_name}/inspect")]
 async fn inspect_cluster_network_by_name(
   pool: web::types::State<Pool>,
@@ -157,7 +157,7 @@ async fn inspect_cluster_network_by_name(
 }
 
 /// Delete network by it's name for given cluster in given namespace
-#[utoipa::path(
+#[cfg_attr(feature = "openapi", utoipa::path(
   delete,
   path = "/clusters/{c_name}/networks/{n_name}",
   params(
@@ -170,7 +170,7 @@ async fn inspect_cluster_network_by_name(
     (status = 400, description = "Generic database error", body = ApiError),
     (status = 404, description = "Cluster network not found", body = ApiError),
   ),
-)]
+))]
 #[web::delete("/clusters/{c_name}/networks/{n_name}")]
 async fn delete_cluster_network_by_name(
   pool: web::types::State<Pool>,
@@ -200,7 +200,7 @@ async fn delete_cluster_network_by_name(
 }
 
 /// Count cluster
-#[utoipa::path(
+#[cfg_attr(feature = "openapi", utoipa::path(
   get,
   path = "/networks/count",
   params(
@@ -211,7 +211,7 @@ async fn delete_cluster_network_by_name(
     (status = 400, description = "Generic database error", body = ApiError),
     (status = 404, description = "Namespace name not valid", body = ApiError),
   ),
-)]
+))]
 #[web::get("/networks/count")]
 async fn count_cluster_network_by_namespace(
   pool: web::types::State<Pool>,

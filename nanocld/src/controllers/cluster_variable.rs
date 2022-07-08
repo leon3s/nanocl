@@ -14,7 +14,7 @@ pub struct ClusterVaribleQuery {
 }
 
 /// Create cluster variable
-#[utoipa::path(
+#[cfg_attr(feature = "openapi", utoipa::path(
   post,
   path = "/clusters/{c_name}/variables",
   request_body = ClusterVariablePartial,
@@ -27,7 +27,7 @@ pub struct ClusterVaribleQuery {
     (status = 400, description = "Generic database error", body = ApiError),
     (status = 404, description = "Cluster name or Namespace not valid", body = ApiError),
   ),
-)]
+))]
 #[web::post("/clusters/{c_name}/variables")]
 async fn create_cluster_variable(
   pool: web::types::State<Pool>,
@@ -50,7 +50,7 @@ async fn create_cluster_variable(
 }
 
 /// List variable of a cluster
-#[utoipa::path(
+#[cfg_attr(feature = "openapi", utoipa::path(
   get,
   path = "/clusters/{c_name}/variables",
   params(
@@ -62,7 +62,7 @@ async fn create_cluster_variable(
     (status = 400, description = "Generic database error", body = ApiError),
     (status = 404, description = "Cluster name or Namespace not valid", body = ApiError),
   ),
-)]
+))]
 #[web::get("/clusters/{c_name}/variables")]
 async fn list_cluster_variable(
   pool: web::types::State<Pool>,
@@ -89,7 +89,7 @@ pub struct ClusterVariablePath {
 }
 
 /// Delete cluster variable by it's name
-#[utoipa::path(
+#[cfg_attr(feature = "openapi", utoipa::path(
   delete,
   path = "/clusters/{c_name}/variables/{v_name}",
   params(
@@ -102,7 +102,7 @@ pub struct ClusterVariablePath {
     (status = 400, description = "Generic database error", body = ApiError),
     (status = 404, description = "Cluster name or Namespace not valid", body = ApiError),
   ),
-)]
+))]
 #[web::delete("/clusters/{c_name}/variables/{v_name}")]
 async fn delete_cluster_variable(
   pool: web::types::State<Pool>,
@@ -118,7 +118,7 @@ async fn delete_cluster_variable(
 }
 
 /// Get cluster variable by it's name
-#[utoipa::path(
+#[cfg_attr(feature = "openapi", utoipa::path(
   get,
   path = "/clusters/{c_name}/variables/{v_name}",
   params(
@@ -131,7 +131,7 @@ async fn delete_cluster_variable(
     (status = 400, description = "Generic database error", body = ApiError),
     (status = 404, description = "Cluster name or Namespace not valid", body = ApiError),
   ),
-)]
+))]
 #[web::get("/clusters/{c_name}/variables/{v_name}")]
 async fn get_cluster_variable_by_name(
   pool: web::types::State<Pool>,

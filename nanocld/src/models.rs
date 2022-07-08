@@ -1,7 +1,8 @@
-use utoipa::Component;
+use ntex::web;
 use r2d2::PooledConnection;
 use diesel_derive_enum::DbEnum;
 use diesel::{r2d2::ConnectionManager, PgConnection};
+
 use serde::{Deserialize, Serialize};
 
 use crate::schema::{
@@ -10,16 +11,22 @@ use crate::schema::{
   cluster_variables, cluster_cargoes, cargo_environnements,
 };
 
-pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
 pub type DBConn = PooledConnection<ConnectionManager<PgConnection>>;
+pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
+pub type StatePool = web::types::State<Pool>;
+
+#[cfg(feature = "openapi")]
+use utoipa::Component;
 
 /// Generic postgresql delete response
-#[derive(Debug, Component, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(Component))]
 pub struct PgDeleteGeneric {
   pub(crate) count: usize,
 }
 
-#[derive(Debug, Component, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(Component))]
 pub struct PgGenericCount {
   pub(crate) count: i64,
 }
@@ -28,7 +35,6 @@ pub struct PgGenericCount {
 /// this structure ensure read and write in database
 #[derive(
   Debug,
-  Component,
   Serialize,
   Deserialize,
   Identifiable,
@@ -38,12 +44,14 @@ pub struct PgGenericCount {
 )]
 #[primary_key(name)]
 #[table_name = "namespaces"]
+#[cfg_attr(feature = "openapi", derive(Component))]
 pub struct NamespaceItem {
   pub(crate) name: String,
 }
 
 /// Partial namespace
-#[derive(Component, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(Component))]
 pub struct NamespacePartial {
   pub(crate) name: String,
 }
@@ -55,11 +63,10 @@ pub struct NamespacePartial {
 /// GitRepositorySourceType::Gitlab; // for gitlab.com
 /// GitRepositorySourceType::Local; // for nanocl managed git repository
 /// ```
-#[derive(
-  Component, Serialize, Deserialize, Debug, PartialEq, DbEnum, Clone,
-)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, DbEnum, Clone)]
 #[serde(rename_all = "snake_case")]
 #[DieselType = "Git_repository_source_type"]
+#[cfg_attr(feature = "openapi", derive(Component))]
 pub enum GitRepositorySourceType {
   Github,
   Gitlab,
@@ -70,10 +77,11 @@ pub enum GitRepositorySourceType {
 /// this structure ensure read and write entity in database
 /// we also support git hooks such as create/delete branch
 #[derive(
-  Component, Clone, Serialize, Deserialize, Insertable, Queryable, Identifiable,
+  Clone, Serialize, Deserialize, Insertable, Queryable, Identifiable,
 )]
 #[primary_key(name)]
 #[table_name = "git_repositories"]
+#[cfg_attr(feature = "openapi", derive(Component))]
 pub struct GitRepositoryItem {
   pub(crate) name: String,
   pub(crate) url: String,
@@ -83,7 +91,8 @@ pub struct GitRepositoryItem {
 
 /// Partial Git repository
 /// this structure ensure write entity in database
-#[derive(Component, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(Component))]
 pub struct GitRepositoryPartial {
   pub(crate) url: String,
   pub(crate) name: String,
@@ -92,17 +101,11 @@ pub struct GitRepositoryPartial {
 /// Git repository branch
 /// this structure ensure read and write entity in database
 #[derive(
-  Debug,
-  Clone,
-  Component,
-  Serialize,
-  Deserialize,
-  Queryable,
-  Identifiable,
-  Insertable,
+  Debug, Clone, Serialize, Deserialize, Queryable, Identifiable, Insertable,
 )]
 #[primary_key(key)]
 #[table_name = "git_repository_branches"]
+#[cfg_attr(feature = "openapi", derive(Component))]
 pub struct GitRepositoryBranchItem {
   pub(crate) key: String,
   pub(crate) name: String,
@@ -112,7 +115,8 @@ pub struct GitRepositoryBranchItem {
 
 /// Partial git repository branch
 /// this structure ensure write in database
-#[derive(Component, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(Component))]
 pub struct GitRepositoryBranchPartial {
   pub(crate) name: String,
   pub(crate) last_commit_sha: String,
@@ -121,7 +125,8 @@ pub struct GitRepositoryBranchPartial {
 
 /// Partial cluster
 /// this structure ensure write in database
-#[derive(Component, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(Component))]
 pub struct ClusterPartial {
   pub(crate) name: String,
 }
@@ -131,7 +136,6 @@ pub struct ClusterPartial {
 #[derive(
   Debug,
   Clone,
-  Component,
   Serialize,
   Deserialize,
   Identifiable,
@@ -142,6 +146,7 @@ pub struct ClusterPartial {
 )]
 #[primary_key(key)]
 #[table_name = "clusters"]
+#[cfg_attr(feature = "openapi", derive(Component))]
 pub struct ClusterItem {
   pub(crate) key: String,
   pub(crate) name: String,
@@ -149,7 +154,8 @@ pub struct ClusterItem {
 }
 
 /// Cluster item with his relations
-#[derive(Component, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(Component))]
 pub struct ClusterItemWithRelation {
   pub(crate) key: String,
   pub(crate) name: String,
@@ -159,7 +165,8 @@ pub struct ClusterItemWithRelation {
 
 /// Cluster network partial
 /// this structure ensure write in database
-#[derive(Component, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(Component))]
 pub struct ClusterNetworkPartial {
   pub(crate) name: String,
 }
@@ -168,7 +175,6 @@ pub struct ClusterNetworkPartial {
 /// this structure ensure read and write in database
 #[derive(
   Debug,
-  Component,
   Serialize,
   Deserialize,
   Queryable,
@@ -180,6 +186,7 @@ pub struct ClusterNetworkPartial {
 #[primary_key(key)]
 #[belongs_to(ClusterItem, foreign_key = "cluster_key")]
 #[table_name = "cluster_networks"]
+#[cfg_attr(feature = "openapi", derive(Component))]
 pub struct ClusterNetworkItem {
   pub(crate) key: String,
   pub(crate) name: String,
@@ -190,7 +197,8 @@ pub struct ClusterNetworkItem {
 
 /// Cargo partial
 /// this structure ensure write in database
-#[derive(Debug, Component, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(Component))]
 pub struct CargoPartial {
   pub(crate) name: String,
   pub(crate) image_name: String,
@@ -204,7 +212,6 @@ pub struct CargoPartial {
 #[derive(
   Debug,
   Clone,
-  Component,
   Serialize,
   Deserialize,
   Queryable,
@@ -216,6 +223,7 @@ pub struct CargoPartial {
 #[primary_key(key)]
 #[belongs_to(NamespaceItem, foreign_key = "namespace_name")]
 #[table_name = "cargoes"]
+#[cfg_attr(feature = "openapi", derive(Component))]
 pub struct CargoItem {
   pub(crate) key: String,
   pub(crate) namespace_name: String,
@@ -226,7 +234,6 @@ pub struct CargoItem {
 
 #[derive(
   Debug,
-  Component,
   Serialize,
   Deserialize,
   Queryable,
@@ -237,6 +244,7 @@ pub struct CargoItem {
 )]
 #[primary_key(cargo_key)]
 #[table_name = "cargo_proxy_configs"]
+#[cfg_attr(feature = "openapi", derive(Component))]
 pub struct CargoProxyConfigItem {
   pub(crate) cargo_key: String,
   pub(crate) domain_name: String,
@@ -245,7 +253,8 @@ pub struct CargoProxyConfigItem {
   pub(crate) target_port: i32,
 }
 
-#[derive(Debug, Clone, Component, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(Component))]
 pub struct CargoProxyConfigPartial {
   pub(crate) domain_name: String,
   pub(crate) template: String,
@@ -254,23 +263,18 @@ pub struct CargoProxyConfigPartial {
 }
 
 #[derive(
-  Debug,
-  Clone,
-  Component,
-  Serialize,
-  Deserialize,
-  Queryable,
-  Identifiable,
-  Insertable,
+  Debug, Clone, Serialize, Deserialize, Queryable, Identifiable, Insertable,
 )]
 #[primary_key(name)]
 #[table_name = "nginx_templates"]
+#[cfg_attr(feature = "openapi", derive(Component))]
 pub struct NginxTemplateItem {
   pub(crate) name: String,
   pub(crate) content: String,
 }
 
-#[derive(Debug, Component, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(Component))]
 pub struct ClusterJoinBody {
   pub(crate) cargo: String,
   pub(crate) network: String,
@@ -278,7 +282,6 @@ pub struct ClusterJoinBody {
 
 #[derive(
   Debug,
-  Component,
   Serialize,
   Deserialize,
   Queryable,
@@ -290,6 +293,7 @@ pub struct ClusterJoinBody {
 #[primary_key(key)]
 #[table_name = "cluster_variables"]
 #[belongs_to(ClusterItem, foreign_key = "cluster_key")]
+#[cfg_attr(feature = "openapi", derive(Component))]
 pub struct ClusterVariableItem {
   pub(crate) key: String,
   pub(crate) cluster_key: String,
@@ -297,7 +301,8 @@ pub struct ClusterVariableItem {
   pub(crate) value: String,
 }
 
-#[derive(Debug, Component, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(Component))]
 pub struct ClusterVariablePartial {
   pub(crate) name: String,
   pub(crate) value: String,
@@ -318,6 +323,7 @@ pub struct ClusterVariablePartial {
 #[belongs_to(CargoItem, foreign_key = "cargo_key")]
 #[belongs_to(ClusterItem, foreign_key = "cluster_key")]
 #[belongs_to(ClusterNetworkItem, foreign_key = "network_key")]
+#[cfg_attr(feature = "openapi", derive(Component))]
 pub struct ClusterCargoItem {
   pub(crate) key: String,
   pub(crate) cargo_key: String,
@@ -326,6 +332,7 @@ pub struct ClusterCargoItem {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(Component))]
 pub struct ClusterCargoPartial {
   pub(crate) cargo_key: String,
   pub(crate) cluster_key: String,
@@ -333,6 +340,7 @@ pub struct ClusterCargoPartial {
 }
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "openapi", derive(Component))]
 pub struct CargoEnvPartial {
   pub(crate) cargo_key: String,
   pub(crate) name: String,
@@ -351,6 +359,7 @@ pub struct CargoEnvPartial {
 )]
 #[primary_key(key)]
 #[table_name = "cargo_environnements"]
+#[cfg_attr(feature = "openapi", derive(Component))]
 pub struct CargoEnvItem {
   pub(crate) key: String,
   pub(crate) cargo_key: String,

@@ -13,7 +13,7 @@ pub struct CargoQuery {
 }
 
 /// List cargo
-#[utoipa::path(
+#[cfg_attr(feature = "openapi", utoipa::path(
   get,
   path = "/cargoes",
   params(
@@ -24,7 +24,7 @@ pub struct CargoQuery {
     (status = 400, description = "Generic database error", body = ApiError),
     (status = 404, description = "Namespace name not valid", body = ApiError),
   ),
-)]
+))]
 #[web::get("/cargoes")]
 async fn list_cargo(
   pool: web::types::State<Pool>,
@@ -41,7 +41,7 @@ async fn list_cargo(
 }
 
 /// Create new cargo
-#[utoipa::path(
+#[cfg_attr(feature = "openapi", utoipa::path(
   post,
   request_body = CargoPartial,
   path = "/cargoes",
@@ -53,7 +53,7 @@ async fn list_cargo(
     (status = 400, description = "Generic database error", body = ApiError),
     (status = 404, description = "Namespace name not valid", body = ApiError),
   ),
-)]
+))]
 #[web::post("/cargoes")]
 async fn create_cargo(
   pool: web::types::State<Pool>,
@@ -109,7 +109,7 @@ async fn create_cargo(
 }
 
 /// Delete cargo by it's name
-#[utoipa::path(
+#[cfg_attr(feature = "openapi", utoipa::path(
   delete,
   path = "/cargoes/{name}",
   params(
@@ -121,7 +121,7 @@ async fn create_cargo(
     (status = 400, description = "Generic database error", body = ApiError),
     (status = 404, description = "Namespace name not valid", body = ApiError),
   ),
-)]
+))]
 #[web::delete("/cargoes/{name}")]
 async fn delete_cargo_by_name(
   pool: web::types::State<Pool>,
@@ -155,7 +155,7 @@ async fn delete_cargo_by_name(
 }
 
 /// Count cargo
-#[utoipa::path(
+#[cfg_attr(feature = "openapi", utoipa::path(
   get,
   path = "/cargoes/count",
   params(
@@ -166,7 +166,7 @@ async fn delete_cargo_by_name(
     (status = 400, description = "Generic database error", body = ApiError),
     (status = 404, description = "Namespace name not valid", body = ApiError),
   ),
-)]
+))]
 #[web::get("/cargoes/count")]
 async fn count_cargo(
   pool: web::types::State<Pool>,
@@ -182,7 +182,7 @@ async fn count_cargo(
 }
 
 /// Delete cargo by it's name
-#[utoipa::path(
+#[cfg_attr(feature = "openapi", utoipa::path(
   get,
   path = "/cargoes/{name}/inspect",
   params(
@@ -194,7 +194,7 @@ async fn count_cargo(
     (status = 400, description = "Generic database error", body = ApiError),
     (status = 404, description = "Namespace name not valid", body = ApiError),
   ),
-)]
+))]
 #[web::get("/cargoes/{name}/inspect")]
 async fn inspect_cargo_by_name(
   pool: web::types::State<Pool>,

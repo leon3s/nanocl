@@ -18,7 +18,7 @@ struct ClusterQuery {
 }
 
 /// List all cluster
-#[utoipa::path(
+#[cfg_attr(feature = "openapi", utoipa::path(
   get,
   path = "/clusters",
   params(
@@ -29,7 +29,7 @@ struct ClusterQuery {
     (status = 400, description = "Generic database error"),
     (status = 404, description = "Namespace name not valid"),
   ),
-)]
+))]
 #[web::get("/clusters")]
 async fn list_cluster(
   pool: web::types::State<Pool>,
@@ -45,7 +45,7 @@ async fn list_cluster(
 }
 
 /// Create new cluster
-#[utoipa::path(
+#[cfg_attr(feature = "openapi", utoipa::path(
   post,
   request_body = ClusterPartial,
   path = "/clusters",
@@ -57,7 +57,7 @@ async fn list_cluster(
     (status = 400, description = "Generic database error"),
     (status = 404, description = "Namespace name not valid"),
   ),
-)]
+))]
 #[web::post("/clusters")]
 async fn create_cluster(
   pool: web::types::State<Pool>,
@@ -74,7 +74,7 @@ async fn create_cluster(
 }
 
 /// Delete cluster by it's name
-#[utoipa::path(
+#[cfg_attr(feature = "openapi", utoipa::path(
   delete,
   path = "/clusters/{name}",
   params(
@@ -86,7 +86,7 @@ async fn create_cluster(
     (status = 400, description = "Generic database error", body = ApiError),
     (status = 404, description = "Namespace name not valid", body = ApiError),
   ),
-)]
+))]
 #[web::delete("clusters/{name}")]
 async fn delete_cluster_by_name(
   pool: web::types::State<Pool>,
@@ -120,7 +120,7 @@ async fn delete_cluster_by_name(
 }
 
 /// Inspect cluster by it's name
-#[utoipa::path(
+#[cfg_attr(feature = "openapi", utoipa::path(
   get,
   path = "/clusters/{name}/inspect",
   params(
@@ -132,7 +132,7 @@ async fn delete_cluster_by_name(
     (status = 400, description = "Generic database error", body = ApiError),
     (status = 404, description = "id name or namespace name not valid", body = ApiError),
   ),
-)]
+))]
 #[web::get("/clusters/{name}/inspect")]
 async fn inspect_cluster_by_name(
   pool: web::types::State<Pool>,
@@ -160,7 +160,7 @@ async fn inspect_cluster_by_name(
 }
 
 /// Start all cargo inside cluster
-#[utoipa::path(
+#[cfg_attr(feature = "openapi", utoipa::path(
   post,
   path = "/clusters/{name}/start",
   params(
@@ -172,7 +172,7 @@ async fn inspect_cluster_by_name(
     (status = 400, description = "Generic database error", body = ApiError),
     (status = 404, description = "Cluster name of namespace invalid", body = ApiError),
   ),
-)]
+))]
 #[web::post("/clusters/{name}/start")]
 async fn start_cluster_by_name(
   pool: web::types::State<Pool>,
@@ -192,7 +192,7 @@ async fn start_cluster_by_name(
 }
 
 /// join cargo inside a cluster
-#[utoipa::path(
+#[cfg_attr(feature = "openapi", utoipa::path(
   post,
   path = "/clusters/{name}/join",
   request_body = ClusterJoinBody,
@@ -205,7 +205,7 @@ async fn start_cluster_by_name(
     (status = 400, description = "Generic database error", body = ApiError),
     (status = 404, description = "Cluster name of namespace invalid", body = ApiError),
   ),
-)]
+))]
 #[web::post("/clusters/{name}/join")]
 async fn join_cargo_to_cluster(
   pool: web::types::State<Pool>,
@@ -243,7 +243,7 @@ async fn join_cargo_to_cluster(
 }
 
 /// Count cluster
-#[utoipa::path(
+#[cfg_attr(feature = "openapi", utoipa::path(
   get,
   path = "/clusters/count",
   params(
@@ -254,7 +254,7 @@ async fn join_cargo_to_cluster(
     (status = 400, description = "Generic database error", body = ApiError),
     (status = 404, description = "Namespace name not valid", body = ApiError),
   ),
-)]
+))]
 #[web::get("/clusters/count")]
 async fn count_cluster(
   pool: web::types::State<Pool>,

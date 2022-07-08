@@ -1,15 +1,19 @@
 use ntex::web;
-use utoipa::OpenApi;
+use serde_json::json;
 
-#[allow(unused_imports)]
+#[cfg(feature = "openapi")]
 use ntex_files as fs;
-
+#[cfg(feature = "openapi")]
+use utoipa::OpenApi;
+#[cfg(feature = "openapi")]
 use crate::models::*;
+#[cfg(feature = "openapi")]
 use crate::controllers::*;
+#[cfg(feature = "openapi")]
 use crate::errors::ApiError;
 
-#[derive(OpenApi)]
-#[openapi(
+#[cfg_attr(feature = "openapi", derive(OpenApi))]
+#[cfg_attr(feature = "openapi", openapi(
   handlers(
     // Namespace
     namespace::list_namespace,
@@ -96,22 +100,43 @@ use crate::errors::ApiError;
     // IpamConfig,
     // NetworkContainer,
   )
-)]
+))]
+#[cfg(feature = "openapi")]
 struct ApiDoc;
 
 #[web::get("/explorer/swagger.json")]
 async fn get_api_specs() -> Result<web::HttpResponse, web::Error> {
-  let api_spec = ApiDoc::openapi().to_pretty_json().unwrap();
-  Ok(
-    web::HttpResponse::Ok()
-      .content_type("application/json")
-      .body(&api_spec),
-  )
+  #[cfg(feature = "openapi")]
+  {
+    let api_spec = ApiDoc::openapi().to_pretty_json().unwrap();
+    return Ok(
+      web::HttpResponse::Ok()
+        .content_type("application/json")
+        .body(api_spec),
+    );
+  }
+  Ok(web::HttpResponse::NotImplemented().json(&json!({
+    "msg": "to use this route you must build with openapi feature"
+  })))
+}
+
+#[web::get("/explorer")]
+async fn explorer_default() -> Result<web::HttpResponse, web::Error> {
+  Ok(web::HttpResponse::NotImplemented().json(&json!({
+    "msg": "to use this route you must build with openapi feature"
+  })))
 }
 
 pub fn ntex_config(config: &mut web::ServiceConfig) {
   config.service(get_api_specs);
-  // config.service(
-  //   fs::Files::new("/explorer", "./static/swagger").index_file("index.html"),
-  // );
+  #[cfg(feature = "openapi")]
+  {
+    config.service(
+      fs::Files::new("/explorer", "./static/swagger").index_file("index.html"),
+    );
+  }
+  #[cfg(not(feature = "openapi"))]
+  {
+    config.service(explorer_default);
+  }
 }

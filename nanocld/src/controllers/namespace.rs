@@ -7,13 +7,13 @@ use crate::models::{NamespacePartial, Pool};
 use crate::errors::HttpResponseError;
 
 /// List all namespace
-#[utoipa::path(
+#[cfg_attr(feature = "openapi", utoipa::path(
   get,
   path = "/namespaces",
   responses(
       (status = 200, description = "Array of namespace", body = [NamespaceItem]),
   ),
-)]
+))]
 #[web::get("/namespaces")]
 async fn list_namespace(
   pool: web::types::State<Pool>,
@@ -24,7 +24,7 @@ async fn list_namespace(
 }
 
 /// Create new namespace
-#[utoipa::path(
+#[cfg_attr(feature = "openapi", utoipa::path(
   post,
   path = "/namespaces",
   request_body = NamespacePartial,
@@ -33,7 +33,7 @@ async fn list_namespace(
     (status = 400, description = "generic database error", body = ApiError),
     (status = 422, description = "the provided payload is not valid", body = ApiError),
   ),
-)]
+))]
 #[web::post("/namespaces")]
 async fn create_namespace(
   pool: web::types::State<Pool>,
@@ -45,7 +45,7 @@ async fn create_namespace(
 }
 
 /// Delete namespace by it's name
-#[utoipa::path(
+#[cfg_attr(feature = "openapi", utoipa::path(
     delete,
     path = "/namespaces/{name}",
     responses(
@@ -54,7 +54,7 @@ async fn create_namespace(
     params(
         ("name" = String, path, description = "name of the namespace"),
     )
-)]
+))]
 #[web::delete("/namespaces/{name}")]
 async fn delete_namespace_by_name(
   pool: web::types::State<Pool>,
@@ -66,7 +66,7 @@ async fn delete_namespace_by_name(
 }
 
 /// Inspect namespace by it's name
-#[utoipa::path(
+#[cfg_attr(feature = "openapi", utoipa::path(
   get,
   path = "/namespaces/{name}/inspect",
   responses(
@@ -76,7 +76,7 @@ async fn delete_namespace_by_name(
   params(
     ("name" = String, path, description = "name of the namespace"),
   )
-)]
+))]
 #[web::get("/namespaces/{id}/inspect")]
 async fn inspect_namespace_by_name(
   name: web::types::Path<String>,

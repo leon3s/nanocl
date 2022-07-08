@@ -5,6 +5,7 @@ use thiserror::Error;
 
 use bollard::errors::Error as DockerError;
 use diesel_migrations::RunMigrationsError;
+#[cfg(feature = "openapi")]
 use utoipa::Component;
 
 /// Http response error
@@ -33,7 +34,7 @@ impl web::WebResponseError for HttpResponseError {
   }
 }
 
-#[derive(Component)]
+#[cfg_attr(feature = "openapi", derive(Component))]
 pub struct ApiError {
   #[allow(dead_code)]
   pub(crate) msg: String,

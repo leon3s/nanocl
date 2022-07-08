@@ -10,7 +10,6 @@ clusters:
       - cargo: forum
         network: next-hat-forum
     vars:
-      pre_domain: dev.
       CLUSTER: DEV
 
 networks:
@@ -43,7 +42,7 @@ cargoes:
       - "REAL_IP_HEADER=X-Forwarded-For"
       - "LOG_IP_VAR=remote_addr"
       - "FLARUM_DEBUG=false"
-      - "FLARUM_BASE_URL=http://dev.forum.express-test.com"
+      - "FLARUM_BASE_URL=http://forum.express-test.com"
     proxy_config:
       target_port: 8000
       domain_name: "forum.express-test.com"

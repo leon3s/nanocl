@@ -19,13 +19,13 @@ struct GitRepositoryQuery {
 }
 
 /// List all git repository
-#[utoipa::path(
+#[cfg_attr(feature = "openapi", utoipa::path(
   get,
   path = "/git_repositories",
   responses(
       (status = 200, description = "Array of git_repository", body = [GitRepositoryItem]),
   ),
-)]
+))]
 #[web::get("/git_repositories")]
 async fn list_git_repository(
   pool: web::types::State<Pool>,
@@ -36,7 +36,7 @@ async fn list_git_repository(
 }
 
 /// Create new git repository
-#[utoipa::path(
+#[cfg_attr(feature = "openapi", utoipa::path(
   post,
   path = "/git_repositories",
   request_body = GitRepositoryPartial,
@@ -46,7 +46,7 @@ async fn list_git_repository(
     (status = 404, description = "Namespace name not valid"),
     (status = 422, description = "The provided payload is not valid"),
   ),
-)]
+))]
 #[web::post("/git_repositories")]
 async fn create_git_repository(
   pool: web::types::State<Pool>,
@@ -86,7 +86,7 @@ async fn create_git_repository(
 }
 
 /// Delete git repository by it's name
-#[utoipa::path(
+#[cfg_attr(feature = "openapi", utoipa::path(
   delete,
   path = "/git_repositories/{name}",
   params(
@@ -97,7 +97,7 @@ async fn create_git_repository(
     (status = 400, description = "Generic database error"),
     (status = 404, description = "Namespace name not valid"),
   ),
-)]
+))]
 #[web::delete("/git_repositories/{id}")]
 async fn delete_git_repository_by_name(
   pool: web::types::State<Pool>,
@@ -121,7 +121,7 @@ pub struct GitRepositoryBuildQuery {
 }
 
 /// Build docker image for given git repository name
-#[utoipa::path(
+#[cfg_attr(feature = "openapi", utoipa::path(
   post,
   path = "/git_repositories/{name}/build",
   params(
@@ -133,7 +133,7 @@ pub struct GitRepositoryBuildQuery {
     (status = 400, description = "Generic database error"),
     (status = 404, description = "Namespace name or git repository name not valid"),
   ),
-)]
+))]
 #[web::post("/git_repositories/{name}/build")]
 async fn build_git_repository_by_name(
   pool: web::types::State<Pool>,

@@ -3,6 +3,10 @@ name = "nanocld"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = []
+openapi = ["dep:utoipa"]
+
 [profile.dev]
 opt-level = 0
 
@@ -26,8 +30,9 @@ clap = { version = "3.1.8", features = ["derive"] }
 url = { version = "2", features = ["serde"] }
 serde = { version = "1.0", features = ["derive"] }
 uuid = { version = "0.8", features = ["serde", "v4"] }
-utoipa = { version = "1.0.2", features = ["uuid", "chrono"] }
 ntex = { version = "0.5.18", features = ["openssl", "rustls", "tokio"] }
 diesel_migrations = "1.4.0"
 diesel-derive-enum = { version = "1.1.2", features = ["postgres"] }
 diesel = { version = "1.4.8", features = ["postgres", "uuidv07", "r2d2", "chrono"] }
+
+utoipa = { version = "1.0.2", features = ["uuid", "chrono"], optional = true }

@@ -86,14 +86,14 @@ pub async fn boot(
   docker_api: &bollard::Docker,
 ) -> Result<DaemonState, DaemonError> {
   log::info!("booting");
-  boot_docker_services(&docker_api).await?;
+  boot_docker_services(docker_api).await?;
   // Connect to postgresql
-  let postgres_ip = services::postgresql::get_postgres_ip(&docker_api).await?;
+  let postgres_ip = services::postgresql::get_postgres_ip(docker_api).await?;
   log::info!("creating postgresql state pool");
   let db_pool = services::postgresql::create_pool(postgres_ip.to_owned());
   let pool = web::types::State::new(db_pool.to_owned());
-  log::info!("creating postgresql migration pool");
   let conn = services::postgresql::get_pool_conn(&pool)?;
+  log::info!("runing migration");
   // wrap into state to be abble to use our functions
   embedded_migrations::run(&conn)?;
   // Create default namesapce
