@@ -8,6 +8,7 @@ use futures::{TryStreamExt, StreamExt};
 use super::client::Nanocld;
 
 use super::error::{NanocldError, is_api_error};
+use super::models::ProgressDetail;
 
 arg_enum! {
   #[derive(Debug, Tabled, Serialize, Deserialize)]
@@ -36,17 +37,6 @@ pub struct ImageId {
   #[serde(rename = "ID")]
   #[serde(skip_serializing_if = "Option::is_none")]
   pub id: Option<String>,
-}
-
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-pub struct ProgressDetail {
-  #[serde(rename = "current")]
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub current: Option<i64>,
-
-  #[serde(rename = "total")]
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub total: Option<i64>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

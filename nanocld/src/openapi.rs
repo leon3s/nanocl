@@ -102,22 +102,30 @@ use crate::errors::ApiError;
   )
 ))]
 #[cfg(feature = "openapi")]
-struct ApiDoc;
+pub struct ApiDoc;
+
+#[cfg(feature = "openapi")]
+pub fn to_json() -> String {
+  ApiDoc::openapi().to_pretty_json().unwrap()
+}
 
 #[web::get("/explorer/swagger.json")]
 async fn get_api_specs() -> Result<web::HttpResponse, web::Error> {
   #[cfg(feature = "openapi")]
   {
-    let api_spec = ApiDoc::openapi().to_pretty_json().unwrap();
+    let api_spec = to_json();
     return Ok(
       web::HttpResponse::Ok()
         .content_type("application/json")
         .body(api_spec),
     );
   }
-  Ok(web::HttpResponse::NotImplemented().json(&json!({
-    "msg": "to use this route you must build with openapi feature"
-  })))
+  #[cfg(not(feature = "openapi"))]
+  {
+    Ok(web::HttpResponse::NotImplemented().json(&json!({
+      "msg": "to use this route you must build with openapi feature"
+    })))
+  }
 }
 
 #[web::get("/explorer")]

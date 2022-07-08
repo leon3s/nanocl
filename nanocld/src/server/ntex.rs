@@ -22,6 +22,8 @@ pub async fn start_server(state: DaemonState) -> std::io::Result<()> {
       .configure(controllers::namespace::ntex_config)
       // bind controller git repository
       .configure(controllers::git_repository::ntex_config)
+      // bind controller container_image
+      .configure(controllers::container_image::ntex_config)
       // bind controller cluster
       .configure(controllers::cluster::ntex_config)
       // bind controller cluster variables

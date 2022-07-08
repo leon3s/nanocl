@@ -9,6 +9,8 @@ use clap::{AppSettings, Parser};
   global_setting = AppSettings::DeriveDisplayOrder,
 )]
 pub(crate) struct Cli {
+  #[cfg_attr(feature = "openapi", clap(long))]
+  pub(crate) genopenapi: bool,
   /// Only instally required services this have to be called before any boot
   #[clap(long)]
   pub(crate) install_services: bool,

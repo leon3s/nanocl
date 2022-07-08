@@ -2,6 +2,7 @@ use clap::Parser;
 use errors::CliError;
 use futures::StreamExt;
 use futures::stream::FuturesUnordered;
+use indicatif::{MultiProgress, ProgressBar, ProgressDrawTarget, ProgressStyle};
 use nanocld::nginx_template::NginxTemplatePartial;
 use serde::{Serialize, Deserialize};
 
@@ -252,6 +253,53 @@ async fn execute_args(args: Cli) -> Result<(), CliError> {
       file_path.push(&args.file_path);
       yml::config::revert(file_path, &client).await?;
     }
+    Commands::ContainerImage(args) => match &args.commands {
+      ContainerImageCommands::List => {
+        let items = client.list_container_image().await?;
+        print_table(items);
+      }
+      ContainerImageCommands::Create(options) => {
+        let mut stream = client.create_container_image(&options.name).await?;
+        let style = ProgressStyle::default_spinner();
+        let pg = ProgressBar::new(0);
+        pg.set_style(style);
+        let mut is_new_action = false;
+        while let Some(info) = stream.next().await {
+          let status = info.status.unwrap_or_default();
+          let id = info.id.unwrap_or_default();
+          match status.as_str() {
+            "Downloading" => {
+              if !is_new_action {
+                is_new_action = true;
+                pg.println(format!("{} {}", &status, &id));
+              }
+            }
+            "Extracting" => {
+              if !is_new_action {
+                is_new_action = true;
+                pg.println(format!("{} {}", &status, &id));
+              } else {
+              }
+            }
+            "Pull complete" => {
+              is_new_action = false;
+              pg.println(format!("{} {}", &status, &id));
+            }
+            "Download complete" => {
+              is_new_action = false;
+              pg.println(format!("{} {}", &status, &id));
+            }
+            _ => pg.println(format!("{} {}", &status, &id)),
+          };
+          if let Some(error) = info.error {
+            eprintln!("{}", error);
+            break;
+          }
+          pg.tick();
+        }
+        pg.finish_and_clear();
+      }
+    },
   }
   Ok(())
 }

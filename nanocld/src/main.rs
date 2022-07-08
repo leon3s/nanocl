@@ -42,6 +42,14 @@ async fn main() -> std::io::Result<()> {
   }
   env_logger::Builder::new().parse_env("LOG_LEVEL").init();
 
+  #[cfg(feature = "openapi")]
+  {
+    if args.genopenapi {
+      let result = openapi::to_json();
+      println!("{}", result);
+      std::process::exit(0);
+    }
+  }
   let docker_api = match bollard::Docker::connect_with_unix(
     &args.docker_host,
     120,

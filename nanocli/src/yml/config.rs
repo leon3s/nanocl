@@ -100,9 +100,7 @@ async fn apply_namespace(
       let item = ClusterPartial {
         name: cluster.name.to_owned(),
       };
-      println!("cluster exists : {:#?}", &cluster_exists);
       if cluster_exists.is_err() {
-        println!("creating cluster !");
         client
           .create_cluster(&item, Some(namespace.name.to_owned()))
           .await?;
@@ -158,7 +156,6 @@ async fn apply_namespace(
           let item = ClusterNetworkPartial {
             name: network.name.to_owned(),
           };
-          println!("network exists {:#?}", &result);
           if result.is_err() {
             client
               .create_cluster_network(
@@ -243,7 +240,6 @@ async fn apply_namespace(
         client
           .start_cluster(&cluster.name, Some(namespace.name.to_owned()))
           .await?;
-        println!("cluster: {} started.", &cluster.name);
       }
 
       Ok::<_, CliError>(())

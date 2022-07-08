@@ -7,6 +7,7 @@ use crate::nanocld::{
   namespace::NamespacePartial,
   cluster::{ClusterPartial, ClusterNetworkPartial},
   cargo::CargoPartial,
+  container_image::ContainerImagePartial,
 };
 
 /// A self-sufficient vms and containers manager
@@ -240,6 +241,19 @@ pub struct NginxTemplateArgs {
 }
 
 #[derive(Debug, Subcommand)]
+pub enum ContainerImageCommands {
+  #[clap(alias("ls"))]
+  List,
+  Create(ContainerImagePartial),
+}
+
+#[derive(Debug, Parser)]
+pub struct ContainerImageArgs {
+  #[clap(subcommand)]
+  pub(crate) commands: ContainerImageCommands,
+}
+
+#[derive(Debug, Subcommand)]
 pub enum Commands {
   Docker(DockerOptions),
   Namespace(NamespaceArgs),
@@ -250,6 +264,7 @@ pub enum Commands {
   GitRepository(GitRepositoryArgs),
   NginxTemplate(NginxTemplateArgs),
   ClusterNetwork(ClusterNetworkArgs),
+  ContainerImage(ContainerImageArgs),
   // TODO shell ompletion
   // Completion {
   //   /// Shell to generate completion for

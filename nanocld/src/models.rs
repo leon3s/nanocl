@@ -367,6 +367,12 @@ pub struct CargoEnvItem {
   pub(crate) value: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(Component))]
+pub struct ContainerImagePartial {
+  pub(crate) name: String,
+}
+
 /// Re exports ours enums and diesel sql_types for schema.rs
 pub mod exports {
   pub use diesel::sql_types::*;

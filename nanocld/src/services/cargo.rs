@@ -45,7 +45,7 @@ pub async fn create_containers<'a>(
     None => HashMap::new(),
     Some(labels) => labels.to_owned(),
   };
-  let mut name = opts.cargo.name.to_owned();
+  let mut name = opts.cargo.key.to_owned();
   let len = container_ids.len();
   if len != 0 {
     name += &("-".to_owned() + &len.to_string());
