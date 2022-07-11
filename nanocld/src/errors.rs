@@ -34,9 +34,10 @@ impl web::WebResponseError for HttpResponseError {
   }
 }
 
+/// Api Error Structure that server send to client
 #[cfg_attr(feature = "openapi", derive(Component))]
+#[allow(dead_code)]
 pub struct ApiError {
-  #[allow(dead_code)]
   pub(crate) msg: String,
 }
 

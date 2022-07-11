@@ -1,6 +1,5 @@
 use ntex::http::StatusCode;
 use tabled::Tabled;
-use serde_json::Value;
 use clap::{Parser, arg_enum};
 use serde::{Serialize, Deserialize};
 use futures::{TryStreamExt, StreamExt};

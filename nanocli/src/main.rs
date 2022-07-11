@@ -2,7 +2,7 @@ use clap::Parser;
 use errors::CliError;
 use futures::StreamExt;
 use futures::stream::FuturesUnordered;
-use indicatif::{MultiProgress, ProgressBar, ProgressDrawTarget, ProgressStyle};
+use indicatif::{ProgressBar, ProgressStyle};
 use nanocld::nginx_template::NginxTemplatePartial;
 use serde::{Serialize, Deserialize};
 

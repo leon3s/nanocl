@@ -1,4 +1,3 @@
-use ntex::web;
 use r2d2::PooledConnection;
 use diesel_derive_enum::DbEnum;
 use diesel::{r2d2::ConnectionManager, PgConnection};
@@ -13,7 +12,6 @@ use crate::schema::{
 
 pub type DBConn = PooledConnection<ConnectionManager<PgConnection>>;
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
-pub type StatePool = web::types::State<Pool>;
 
 #[cfg(feature = "openapi")]
 use utoipa::Component;
