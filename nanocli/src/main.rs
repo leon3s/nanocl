@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate lazy_static;
-
 use clap::Parser;
 use errors::CliError;
 use futures::StreamExt;

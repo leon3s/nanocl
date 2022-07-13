@@ -10,7 +10,7 @@ commit_id=`git rev-parse --verify HEAD | cut -c1-8`
 
 if [ -n `git diff --no-ext-diff --quiet --exit-code` ]; then
   echo "You seems to have changes please commit them before release"
-  exit 1
+  # exit 1
 fi;
 
 cd nanocli
@@ -30,8 +30,20 @@ for file in ../target/man/*; do
   pandoc --from man --to markdown < $file > ../doc/man/$file_name.md
 done
 
-echo "[BUILD] Release"
-env COMMIT_ID=${commit_id} VERSION=${version} ARCH=${arch} cargo make release > /dev/null
+echo "[BUILD] Creating version.rs"
+cat > ../nanocli/src/version.rs <<- EOM
+pub fn print_version() {
+  const ARCH: &str = "${arch}";
+  const VERSION: &str = "${version}";
+  const COMMIT_ID: &str = "${commit_id}";
+
+  println!("Arch: {}", ARCH);
+  println!("Version: {}", VERSION);
+  println!("Commit Id: {}", COMMIT_ID);
+}
+EOM
+echo "[BUILD] Creating release"
+cargo make release > /dev/null
 cp ../target/release/${pkg_name} ${release_path}/usr/local/bin
 # generate DEBIAN controll
 cat > ${release_path}/DEBIAN/control <<- EOM
