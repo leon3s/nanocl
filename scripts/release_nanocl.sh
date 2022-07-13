@@ -27,7 +27,7 @@ cargo make man > /dev/null
 for file in ../target/man/*; do
   file_name=`basename ${file}`
   gzip < $file > ${release_path}/usr/local/man/man1/$file_name.gz
-  pandoc --from man --to markdown < $file > ../doc/man/$file_name.md
+  pandoc --from man --to markdown < $file > ../doc/man/cli/${file_name%.1}.md
 done
 
 echo "[BUILD] Creating version.rs"
