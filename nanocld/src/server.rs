@@ -2,16 +2,21 @@ use ntex::web;
 
 use crate::openapi;
 use crate::controllers;
-use crate::boot::DaemonState;
+use crate::boot::BootState;
+use crate::config::DaemonConfig;
 
-pub async fn start_server(state: DaemonState) -> std::io::Result<()> {
+pub async fn start(
+  config: DaemonConfig,
+  boot_state: BootState,
+) -> std::io::Result<()> {
   let mut server = web::HttpServer::new(move || {
     web::App::new()
+      // bind config state
+      .state(config.clone())
       // bind postgre pool to state
-      .state(state.pool.clone())
-      // bind docker connection to state
-      .state(state.docker_api.clone())
+      .state(boot_state.pool.clone())
       // bind docker api
+      .state(boot_state.docker_api.clone())
       // Default logger middleware
       .wrap(web::middleware::Logger::default())
       // Set Json body max size

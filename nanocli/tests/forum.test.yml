@@ -31,7 +31,7 @@ cargoes:
       - "TZ=Europe/Paris"
       - "PUID=1000"
       - "PGID=1000"
-      - "DB_HOST=forum-db"
+      - "DB_HOST=next-hat-forum-forum-db"
       - "DB_NAME=flarum"
       - "DB_USER=flarum"
       - "DB_PASSWORD=flarum"
@@ -46,5 +46,5 @@ cargoes:
     proxy_config:
       target_port: 8000
       domain_name: "forum.express-test.com"
-      host_ip: 172.29.152.156
+      host_ip: 172.30.233.52
       template: nodejs-single

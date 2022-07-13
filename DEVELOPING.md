@@ -108,3 +108,8 @@ Set-DnsClientServerAddress -InterfaceIndex 59 -ServerAddresses ("10.0.0.1","10.0
 ```sh
 pandoc --from man --to markdown < nanocl-namespace.1 > nanocl-namespace.1.md
 ```
+
+```sh
+nanocl docker -- exec nanocl-proxy-nginx certbot --nginx --email email@email.com
+--agree-tos -d fs.next-hat.com
+```

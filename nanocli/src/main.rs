@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate lazy_static;
+
 use clap::Parser;
 use errors::CliError;
 use futures::StreamExt;
@@ -19,14 +22,29 @@ use tabled::{
 mod cli;
 mod yml;
 mod errors;
+mod version;
 mod nanocld;
 #[cfg(feature = "genman")]
 mod man;
 
 use cli::*;
 
-fn process_error(err: errors::CliError) {
-  eprintln!("{}", err);
+fn process_error(args: &Cli, err: errors::CliError) {
+  match err {
+    CliError::Client(err) => match err {
+      nanocld::error::NanocldError::SendRequest(err) => match err {
+        ntex::http::client::error::SendRequestError::Connect(_) => {
+          println!(
+            "Cannot connect to the nanocl daemon at {host}. Is the nanocl daemon running?",
+            host = args.host
+          )
+        }
+        _ => println!("{}", err),
+      },
+      _ => println!("{}", err),
+    },
+    _ => println!("{}", err),
+  }
   std::process::exit(1);
 }
 
@@ -54,7 +72,7 @@ pub struct NamespaceWithCount {
   networks: usize,
 }
 
-async fn execute_args(args: Cli) -> Result<(), CliError> {
+async fn execute_args(args: &Cli) -> Result<(), CliError> {
   let client = nanocld::client::Nanocld::connect_with_unix_default().await;
   match &args.command {
     Commands::Docker(options) => {
@@ -309,11 +327,13 @@ async fn main() -> std::io::Result<()> {
   #[cfg(feature = "genman")]
   {
     man::generate_man()?;
-    std::process::exit(0);
   }
-  let args = Cli::parse();
-  if let Err(err) = execute_args(args).await {
-    process_error(err);
+  #[cfg(not(feature = "genman"))]
+  {
+    let args = Cli::parse();
+    if let Err(err) = execute_args(&args).await {
+      process_error(&args, err);
+    }
   }
   Ok(())
 }

@@ -11,7 +11,9 @@ pub struct NamespaceItem {
 }
 
 #[derive(Debug, Parser)]
+#[clap(name = "nanocl-namespace-create")]
 pub struct NamespacePartial {
+  /// name of the namespace to create
   pub name: String,
 }
 

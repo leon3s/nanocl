@@ -110,6 +110,33 @@ table! {
 table! {
     use crate::models::exports::*;
 
+    nginx_logs (key) {
+        key -> Uuid,
+        date_gmt -> Timestamptz,
+        uri -> Varchar,
+        host -> Varchar,
+        remote_addr -> Varchar,
+        realip_remote_addr -> Varchar,
+        server_protocol -> Varchar,
+        request_method -> Varchar,
+        content_length -> Int8,
+        status -> Int4,
+        request_time -> Float8,
+        body_bytes_sent -> Int8,
+        proxy_host -> Nullable<Varchar>,
+        upstream_addr -> Nullable<Varchar>,
+        query_string -> Nullable<Varchar>,
+        request_body -> Nullable<Varchar>,
+        content_type -> Nullable<Varchar>,
+        http_user_agent -> Nullable<Varchar>,
+        http_referrer -> Nullable<Varchar>,
+        http_accept_language -> Nullable<Varchar>,
+    }
+}
+
+table! {
+    use crate::models::exports::*;
+
     nginx_templates (name) {
         name -> Varchar,
         content -> Text,
@@ -134,5 +161,6 @@ allow_tables_to_appear_in_same_query!(
     git_repositories,
     git_repository_branches,
     namespaces,
+    nginx_logs,
     nginx_templates,
 );

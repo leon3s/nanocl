@@ -14,10 +14,13 @@ use crate::nanocld::{
 #[derive(Debug, Parser)]
 #[clap(
   about,
-  version,
+  name = "nanocl",
   global_setting = AppSettings::DeriveDisplayOrder,
 )]
 pub struct Cli {
+  /// nanocld host
+  #[clap(long, short = 'H', default_value = "unix://run/nanocl/nanocl.sock")]
+  pub host: String,
   /// commands
   #[clap(subcommand)]
   pub command: Commands,
@@ -135,7 +138,7 @@ pub enum CargoCommands {
 
 /// manage cargoes
 #[derive(Debug, Parser)]
-#[clap(name = "nanocl cargo")]
+#[clap(name = "nanocl-cargo")]
 pub struct CargoArgs {
   /// namespace to target by default global is used
   #[clap(long)]
@@ -194,6 +197,7 @@ pub struct ClusterNetworkArgs {
 
 /// apply a configuration file
 #[derive(Debug, Parser)]
+#[clap(name = "nanocl-apply")]
 pub struct ApplyArgs {
   #[clap(short)]
   /// .yml conf file to apply
@@ -202,6 +206,7 @@ pub struct ApplyArgs {
 
 /// revert a configuration file
 #[derive(Debug, Parser)]
+#[clap(name = "nanocl-revert")]
 pub struct RevertArgs {
   #[clap(short)]
   /// .yml conf file to revert

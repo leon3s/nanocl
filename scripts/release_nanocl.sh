@@ -1,12 +1,17 @@
 #!/bin/sh
 ## name: release_nanocl.sh
-set -e -x
 
 # variables
 pkg_name="nanocl"
 arch=`dpkg --print-architecture`
 version=`cat ./nanocli/Cargo.toml | grep -m 1 "version = \"" | sed 's/[^0-9.]*\([0-9.]*\).*/\1/'`
 release_path="../target/${pkg_name}_${version}_${arch}"
+commit_id=`git rev-parse --verify HEAD | cut -c1-8`
+
+if [ -n `git diff --no-ext-diff --quiet --exit-code` ]; then
+  echo "You seems to have changes please commit them before release"
+  # exit 1
+fi;
 
 cd nanocli
 # create directories structure for package
@@ -15,17 +20,19 @@ mkdir -p ${release_path}/DEBIAN
 mkdir -p ${release_path}/usr/local/bin
 mkdir -p ${release_path}/usr/local/man/man1
 
-# create and copy release binary
-cargo make release
-cp ../target/release/${pkg_name} ${release_path}/usr/local/bin
-
-# generate man pages
+echo "[DOC] Generating man pages"
 mkdir -p ../target/man
-cargo make man
-pandoc --from man --to markdown < ../target/man/${pkg_name}.1 > ../man/${pkg_name}.1.md
-gzip -f ../target/man/${pkg_name}.1
-cp ../target/man/${pkg_name}.1.gz ${release_path}/usr/local/man/man1
+cargo make man > /dev/null
 
+for file in ../target/man/*; do
+  file_name=`basename ${file}`
+  gzip < $file > ${release_path}/usr/local/man/man1/$file_name.gz
+  pandoc --from man --to markdown < $file > ../doc/man/$file_name.md
+done
+
+echo "[BUILD] Release"
+COMMIT_ID=${commit_id} VERSION=${version} ARCH=${arch} cargo make release > /dev/null
+cp ../target/release/${pkg_name} ${release_path}/usr/local/bin
 # generate DEBIAN controll
 cat > ${release_path}/DEBIAN/control <<- EOM
 Package: ${pkg_name}

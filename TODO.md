@@ -1,6 +1,9 @@
 # TODO
 
-- Use config for /var/lib/nanocl and /etc/nanocl
-- Update installation script
-- Create a script to sign release and update it to github and update it to next
-- Save nginx logs into a table
+- add bg_task to run background task and be abble to serve them
+- add websocket server
+- generate more man from cli and daemon
+- Tutorials and examples
+- Installation guide
+- Post installation guide
+- Overview and why

@@ -7,7 +7,7 @@ SYNOPSIS
 ========
 
 **nanocl** \[**-h**\|**\--help**\] \[**-V**\|**\--version**\]
-\<*subcommands*\>
+\[**-H**\|**\--host**\] \<*subcommands*\>
 
 DESCRIPTION
 ===========
@@ -25,6 +25,10 @@ OPTIONS
 
 :   Print version information
 
+**-H**, **\--host**=*HOST* \[default: unix://run/nanocl/nanocl.sock\]
+
+:   nanocld host
+
 SUBCOMMANDS
 ===========
 
@@ -40,17 +44,9 @@ nanocl-cluster(1)
 
 :   manage clusters
 
-nanocl-cluster-network(1)
-
-:   manage cluster networks
-
 nanocl-cargo(1)
 
 :   manage cargoes
-
-nanocl-git-repository(1)
-
-:   manage git repositories
 
 nanocl-apply(1)
 
@@ -59,6 +55,22 @@ nanocl-apply(1)
 nanocl-revert(1)
 
 :   revert a configuration file
+
+nanocl-git-repository(1)
+
+:   manage git repositories
+
+nanocl-nginx-template(1)
+
+:   
+
+nanocl-cluster-network(1)
+
+:   manage cluster networks
+
+nanocl-container-image(1)
+
+:   
 
 nanocl-help(1)
 

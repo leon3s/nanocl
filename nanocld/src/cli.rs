@@ -2,21 +2,25 @@ use clap::{AppSettings, Parser};
 
 /// nanocl daemon
 /// vms and containers manager at scale for intranet
-#[derive(Debug, Parser)]
+#[derive(Debug, Clone, Parser)]
 #[clap(
   about,
   version,
   global_setting = AppSettings::DeriveDisplayOrder,
 )]
 pub(crate) struct Cli {
-  #[cfg_attr(feature = "openapi", clap(long))]
+  #[clap(long)]
   pub(crate) genopenapi: bool,
   /// Only instally required services this have to be called before any boot
   #[clap(long)]
   pub(crate) install_services: bool,
   /// Daemon socket to connect to default to unix:///run/nanocl/nanocl.sock
-  #[clap(short, long = "--host")]
-  pub(crate) host: Option<String>,
+  #[clap(
+    short,
+    long = "--host",
+    default_value = "unix:://run/nanocl/nanocl.sock"
+  )]
+  pub(crate) host: String,
   /// Docker daemon socket to connect to
   #[clap(long, default_value = "unix:///run/docker.sock")]
   pub(crate) docker_host: String,

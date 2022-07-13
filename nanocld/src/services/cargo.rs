@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use futures::StreamExt;
 use futures::stream::FuturesUnordered;
 
+use crate::config::DaemonConfig;
 use crate::models::CargoItem;
 
 use crate::errors::HttpResponseError;
@@ -12,8 +13,6 @@ use crate::services::errors::docker_error;
 #[derive(Debug)]
 pub struct CreateCargoContainerOpts<'a> {
   pub(crate) cargo: &'a CargoItem,
-  #[allow(dead_code)]
-  pub(crate) network_key: String,
   pub(crate) environnements: Vec<String>,
   pub(crate) labels: Option<&'a mut HashMap<String, String>>,
 }

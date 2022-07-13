@@ -2,6 +2,7 @@
 use ntex::web;
 use serde::{Deserialize, Serialize};
 
+use crate::config::DaemonConfig;
 use crate::services;
 use crate::repositories;
 
@@ -175,10 +176,11 @@ async fn inspect_cluster_by_name(
 ))]
 #[web::post("/clusters/{name}/start")]
 async fn start_cluster_by_name(
-  pool: web::types::State<Pool>,
-  docker_api: web::types::State<bollard::Docker>,
   name: web::types::Path<String>,
   web::types::Query(qs): web::types::Query<ClusterQuery>,
+  pool: web::types::State<Pool>,
+  config: web::types::State<DaemonConfig>,
+  docker_api: web::types::State<bollard::Docker>,
 ) -> Result<web::HttpResponse, HttpResponseError> {
   let name = name.into_inner();
   let nsp = match qs.namespace {
@@ -187,7 +189,7 @@ async fn start_cluster_by_name(
   };
   let gen_key = nsp.to_owned() + "-" + &name;
   let cluster = repositories::cluster::find_by_key(gen_key, &pool).await?;
-  services::cluster::start(&cluster, &docker_api, &pool).await?;
+  services::cluster::start(&cluster, &config, &pool, &docker_api).await?;
   Ok(web::HttpResponse::Ok().into())
 }
 

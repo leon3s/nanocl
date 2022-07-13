@@ -1,10 +1,12 @@
 use ntex::web;
 use ntex::http::StatusCode;
 use std::collections::HashMap;
+use std::path::Path;
 use serde::{Serialize, Deserialize};
 use futures::StreamExt;
 use futures::stream::FuturesUnordered;
 
+use crate::config::DaemonConfig;
 use crate::{services, repositories};
 use crate::models::{
   Pool, ClusterItem, CargoItem, ClusterNetworkItem, ClusterCargoPartial,
@@ -86,10 +88,12 @@ pub async fn list_containers(
     .map_err(docker_error)?;
   Ok(containers)
 }
+
 pub async fn start(
   cluster: &ClusterItem,
-  docker_api: &web::types::State<bollard::Docker>,
+  config: &DaemonConfig,
   pool: &web::types::State<Pool>,
+  docker_api: &web::types::State<bollard::Docker>,
 ) -> Result<(), HttpResponseError> {
   let cluster_cargoes = repositories::cluster_cargo::get_by_cluster_key(
     cluster.key.to_owned(),
@@ -202,13 +206,14 @@ pub async fn start(
         };
         log::debug!("generating nginx template with content : {:#?}", content);
         log::debug!("generating nginx template with data : {:#?}", &data);
-        let mut file = std::fs::File::create(format!(
-          "/var/lib/nanocl/nginx/sites-enabled/{name}.conf",
-          name = &cluster_cargo_key
-        ))
-        .map_err(|err| HttpResponseError {
-          msg: format!("unable to generate template file {:?}", err),
-          status: StatusCode::INTERNAL_SERVER_ERROR,
+        let file_path = Path::new(&config.state_dir)
+          .join("nginx/sites-enabled")
+          .join(format!("{name}.conf", name = &cluster_cargo_key));
+        let mut file = std::fs::File::create(file_path).map_err(|err| {
+          HttpResponseError {
+            msg: format!("unable to generate template file {:?}", err),
+            status: StatusCode::INTERNAL_SERVER_ERROR,
+          }
         })?;
         template
           .render(&mut file, &data)
@@ -228,8 +233,12 @@ pub async fn start(
         } else {
           dns_entry += &proxy_config.domain_name;
         }
-        services::dnsmasq::add_dns_entry(&dns_entry, &proxy_config.host_ip)
-          .map_err(|err| err.to_http_error())?;
+        services::dnsmasq::add_dns_entry(
+          &dns_entry,
+          &proxy_config.host_ip,
+          &config.state_dir,
+        )
+        .map_err(|err| err.to_http_error())?;
         services::dnsmasq::restart(docker_api)
           .await
           .map_err(|err| err.to_http_error())?;
@@ -308,7 +317,6 @@ pub async fn join_cargo(
     .to_vec();
   let create_opts = CreateCargoContainerOpts {
     cargo: &opts.cargo,
-    network_key: opts.network.key.to_owned(),
     labels: Some(&mut labels),
     environnements,
   };

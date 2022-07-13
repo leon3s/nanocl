@@ -15,10 +15,11 @@ use errors::DaemonError;
 
 mod cli;
 mod boot;
-mod install;
 
 mod utils;
 mod errors;
+mod config;
+mod install;
 mod server;
 mod schema;
 mod models;
@@ -27,7 +28,30 @@ mod services;
 mod controllers;
 mod repositories;
 
-/// nanocld is the daemon to manager namespace cluster network and cargoes
+fn parse_main_error(args: &cli::Cli, err: errors::DaemonError) -> i32 {
+  match err {
+    DaemonError::Docker(err) => match err {
+      bollard::errors::Error::HyperResponseError { err } => {
+        if err.is_connect() {
+          log::error!("unable to connect to docker host {}", &args.docker_host,);
+          return 1;
+        }
+        log::error!("{}", err);
+        1
+      }
+      _ => {
+        log::error!("{}", err);
+        1
+      }
+    },
+    _ => {
+      log::error!("{}", err);
+      1
+    }
+  }
+}
+
+/// nanocld is the daemon to manage your self hosted instranet
 ///
 /// # Example
 /// ```sh
@@ -35,13 +59,18 @@ mod repositories;
 /// ```
 #[ntex::main]
 async fn main() -> std::io::Result<()> {
+  // Parsing command line arguments
   let args = cli::Cli::parse();
-  // building env logger
+
+  // Building env logger
   if std::env::var("LOG_LEVEL").is_err() {
     std::env::set_var("LOG_LEVEL", "nanocld=info,warn,error,nanocld=debug");
   }
   env_logger::Builder::new().parse_env("LOG_LEVEL").init();
 
+  // if we build with openapi feature
+  // with args genopenapi we print the json on output
+  // in order to generate a file with a pipe.
   #[cfg(feature = "openapi")]
   {
     if args.genopenapi {
@@ -50,6 +79,8 @@ async fn main() -> std::io::Result<()> {
       std::process::exit(0);
     }
   }
+
+  // Connect to docker daemon
   let docker_api = match bollard::Docker::connect_with_unix(
     &args.docker_host,
     120,
@@ -62,42 +93,31 @@ async fn main() -> std::io::Result<()> {
     Ok(docker_api) => docker_api,
   };
 
+  let config: config::DaemonConfig = args.to_owned().into();
+  // Download and configure and boot internal services
   if args.install_services {
     if let Err(err) = install::install_services(&docker_api).await {
-      match err {
-        DaemonError::Docker(err) => match err {
-          bollard::errors::Error::HyperResponseError { err } => {
-            if err.is_connect() {
-              log::error!(
-                "unable to connect to docker host {}",
-                &args.docker_host,
-              );
-              std::process::exit(1);
-            }
-            log::error!("{}", err);
-            std::process::exit(1);
-          }
-          _ => {
-            log::error!("{}", err);
-            std::process::exit(1);
-          }
-        },
-        _ => {
-          log::error!("{}", err);
-          std::process::exit(1);
-        }
-      }
+      let exit_code = parse_main_error(&args, err);
+      std::process::exit(exit_code);
     }
+    if let Err(err) = boot::boot(&config, &docker_api).await {
+      let exit_code = parse_main_error(&args, err);
+      std::process::exit(exit_code);
+    };
     return Ok(());
   }
-  let state = match boot::boot(&docker_api).await {
+
+  // Start internal services
+  let boot_state = match boot::boot(&config, &docker_api).await {
     Err(err) => {
-      log::error!("Error while trying to boot : {:?}", err);
-      std::process::exit(1);
+      let exit_code = parse_main_error(&args, err);
+      std::process::exit(exit_code);
     }
     Ok(state) => state,
   };
-  server::ntex::start_server(state).await?;
+
+  // start ntex http server
+  server::start(config, boot_state).await?;
   log::info!("kill received exiting.");
   Ok(())
 }

@@ -1042,6 +1042,7 @@ dependencies = [
  "clap_mangen",
  "futures",
  "indicatif",
+ "lazy_static",
  "ntex",
  "serde",
  "serde_json",

@@ -58,8 +58,8 @@ pub fn gen_labels_with_namespace(namespace: &str) -> HashMap<&str, &str> {
 /// services::utils::start_service(&docker, "nanocl-proxy-nginx").await;
 /// ```
 pub async fn start_service(
-  docker: &Docker,
   name: &str,
+  docker: &Docker,
 ) -> Result<(), DockerError> {
   docker
     .start_container(name, None::<StartContainerOptions<String>>)
@@ -298,8 +298,8 @@ pub async fn create_network(
 /// services::utils::get_service_state(&docker, "nanocl-proxy-nginx").await;
 /// ```
 pub async fn get_service_state(
-  docker: &Docker,
   container_name: &'static str,
+  docker: &Docker,
 ) -> ServiceState {
   let resp = docker.inspect_container(container_name, None).await;
   if resp.is_err() {

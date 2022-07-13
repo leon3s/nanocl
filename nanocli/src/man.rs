@@ -1,5 +1,6 @@
 use clap::IntoApp;
 use crate::cli;
+use crate::nanocld::namespace::NamespacePartial;
 
 pub fn generate_man_command(
   name: &str,
@@ -19,6 +20,13 @@ pub fn generate_man_command(
 
 pub fn generate_man() -> std::io::Result<()> {
   generate_man_command("nanocl", cli::Cli::into_app())?;
+  generate_man_command("nanocl-namespace", cli::NamespaceArgs::into_app())?;
+  generate_man_command(
+    "nanocl-namespace-create",
+    NamespacePartial::into_app(),
+  )?;
+  generate_man_command("nanocl-apply", cli::ApplyArgs::into_app())?;
+  generate_man_command("nanocl-revert", cli::RevertArgs::into_app())?;
   // let man = clap_mangen::Man::new(cli::Cli::into_app());
   // let man_namespace = clap_mangen::Man::new(cli::NamespaceArgs::into_app());
   // let man_cluster = clap_mangen::Man::new(cli::ClusterArgs::into_app());
