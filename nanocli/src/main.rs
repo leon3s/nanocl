@@ -318,6 +318,9 @@ async fn execute_args(args: &Cli) -> Result<(), CliError> {
         pg.finish_and_clear();
       }
     },
+    Commands::Version => {
+      version::print_version();
+    }
   }
   Ok(())
 }

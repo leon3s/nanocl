@@ -14,6 +14,7 @@ use crate::nanocld::{
 #[derive(Debug, Parser)]
 #[clap(
   about,
+  version,
   name = "nanocl",
   global_setting = AppSettings::DeriveDisplayOrder,
 )]
@@ -270,6 +271,7 @@ pub enum Commands {
   NginxTemplate(NginxTemplateArgs),
   ClusterNetwork(ClusterNetworkArgs),
   ContainerImage(ContainerImageArgs),
+  Version,
   // TODO shell ompletion
   // Completion {
   //   /// Shell to generate completion for

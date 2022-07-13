@@ -72,6 +72,10 @@ nanocl-container-image(1)
 
 :   
 
+nanocl-version(1)
+
+:   
+
 nanocl-help(1)
 
 :   Print this message or the help of the given subcommand(s)

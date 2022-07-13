@@ -1,3 +1,6 @@
+[env]
+ARCH = { value = "new", condition = { env_not_set = ["ARCH"] } }
+
 [tasks.format]
 install_crate = "rustfmt"
 command = "cargo"
