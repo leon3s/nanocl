@@ -9,6 +9,8 @@ version=`cat ./nanocli/Cargo.toml | grep -m 1 "version = \"" | sed 's/[^0-9.]*\(
 release_path="../target/${pkg_name}_${version}_${arch}"
 
 cd nanocld
+# clean directory
+rm -r ${release_path}
 # create directories structure for package
 mkdir -p ${release_path}
 mkdir -p ${release_path}/DEBIAN
@@ -21,12 +23,7 @@ mkdir -p ${release_path}/etc
 cargo make release
 cp ../target/release/${pkg_name} ${release_path}/usr/local/bin
 # copy config files
-cp -r ../fake_path/etc/nanocl ${release_path}/etc
-cp -r ../fake_path/etc/systemd ${release_path}/etc
-cp -r ../fake_path/etc/init.d ${release_path}/etc
-cp -r ../fake_path/var/lib/nanocl/dnsmasq ${release_path}/var/lib/nanocl
-cp -r ../fake_path/var/lib/nanocl/nginx ${release_path}/var/lib/nanocl
-cp ../scripts/pre_start_nanocl.sh ${release_path}/var/lib/nanocl/prestart.sh
+cp -r ../fake_path/* ${release_path}/
 
 # TODO generate man pages
 # mkdir -p ../target/man

@@ -14,6 +14,8 @@ if [ -n `git diff --no-ext-diff --quiet --exit-code` ]; then
 fi;
 
 cd nanocli
+# clear directory
+rm -r ${release_path}
 # create directories structure for package
 mkdir -p ${release_path}
 mkdir -p ${release_path}/DEBIAN
