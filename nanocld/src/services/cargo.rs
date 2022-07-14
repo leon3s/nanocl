@@ -4,7 +4,6 @@ use std::collections::HashMap;
 use futures::StreamExt;
 use futures::stream::FuturesUnordered;
 
-use crate::config::DaemonConfig;
 use crate::models::CargoItem;
 
 use crate::errors::HttpResponseError;

@@ -15,6 +15,25 @@ pub struct HttpResponseError {
   pub(crate) status: StatusCode,
 }
 
+impl From<DockerError> for HttpResponseError {
+  fn from(err: DockerError) -> Self {
+    match err {
+      DockerError::DockerResponseServerError {
+        status_code,
+        message,
+      } => HttpResponseError {
+        msg: message,
+        status: StatusCode::from_u16(status_code)
+          .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR),
+      },
+      _ => HttpResponseError {
+        msg: format!("{}", err),
+        status: StatusCode::INTERNAL_SERVER_ERROR,
+      },
+    }
+  }
+}
+
 impl std::fmt::Display for HttpResponseError {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "[{}] {}", self.status, self.msg)

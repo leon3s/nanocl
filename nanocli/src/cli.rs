@@ -11,11 +11,18 @@ use crate::nanocld::{
 };
 
 /// A self-sufficient vms and containers manager
+/// longlong text longlong text longlong text longlong text
+/// longlong text longlong text longlong text longlong text
+/// longlong text longlong text longlong text longlong text
+/// longlong text longlong text longlong text longlong text
+/// longlong text longlong text longlong text longlong text
+/// longlong text longlong text longlong text longlong text
 #[derive(Debug, Parser)]
 #[clap(
   about,
   version,
   name = "nanocl",
+  long_about = "test",
   global_setting = AppSettings::DeriveDisplayOrder,
 )]
 pub struct Cli {
@@ -233,17 +240,24 @@ pub struct NginxTemplateCreateOptions {
 pub enum NginxTemplateCommand {
   #[clap(alias("ls"))]
   List,
+  Create(NginxTemplateCreateOptions),
   #[clap(alias("rm"))]
   Remove(NginxTemplateOptions),
-  Create(NginxTemplateCreateOptions),
   // Todo
   // Inspect(NginxTemplateOption),
 }
 
+/// Manage nginx templates
 #[derive(Debug, Parser)]
 pub struct NginxTemplateArgs {
   #[clap(subcommand)]
   pub(crate) commands: NginxTemplateCommand,
+}
+
+#[derive(Debug, Parser)]
+pub struct ContainerImageRemoveOpts {
+  /// id or name of image to delete
+  pub(crate) name: String,
 }
 
 #[derive(Debug, Subcommand)]
@@ -251,8 +265,11 @@ pub enum ContainerImageCommands {
   #[clap(alias("ls"))]
   List,
   Create(ContainerImagePartial),
+  #[clap(alias("rm"))]
+  Remove(ContainerImageRemoveOpts),
 }
 
+/// Manage container images
 #[derive(Debug, Parser)]
 pub struct ContainerImageArgs {
   #[clap(subcommand)]
@@ -271,6 +288,8 @@ pub enum Commands {
   NginxTemplate(NginxTemplateArgs),
   ClusterNetwork(ClusterNetworkArgs),
   ContainerImage(ContainerImageArgs),
+  NginxLog,
+  /// Show the Nanocl version information
   Version,
   // TODO shell ompletion
   // Completion {

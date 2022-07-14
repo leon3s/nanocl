@@ -12,11 +12,7 @@ async fn list_container_image(
       all: false,
       ..Default::default()
     }))
-    .await
-    .map_err(|err| HttpResponseError {
-      msg: format!("unable to list image {}", err),
-      status: StatusCode::INTERNAL_SERVER_ERROR,
-    })?;
+    .await?;
 
   Ok(web::HttpResponse::Ok().json(&images))
 }
@@ -37,6 +33,7 @@ async fn create_container_image(
 
   let (tx, rx_body) = mpsc::channel();
 
+  log::info!("im called !");
   let from_image = image_info[0].to_string();
   let tag = image_info[1].to_string();
   rt::spawn(async move {
@@ -63,9 +60,16 @@ async fn create_container_image(
           }
         }
         Ok(result) => {
-          let data = serde_json::to_string(&result).unwrap();
+          let data = match serde_json::to_string(&result) {
+            Err(err) => {
+              log::error!("unable to stringify create image info {:#?}", err);
+              break;
+            }
+            Ok(data) => data,
+          };
           let result = tx.send(Ok::<_, web::error::Error>(Bytes::from(data)));
           if result.is_err() {
+            println!("stop build image");
             break;
           }
         }
@@ -75,12 +79,24 @@ async fn create_container_image(
 
   Ok(
     web::HttpResponse::Ok()
+      .keep_alive()
       .content_type("nanocl/streaming-v1")
       .streaming(rx_body),
   )
 }
 
+#[web::delete("/containers/images/{id_or_name}")]
+async fn delete_container_image_by_name(
+  docker_api: web::types::State<bollard::Docker>,
+  id_or_name: web::types::Path<String>,
+) -> Result<web::HttpResponse, HttpResponseError> {
+  let id_or_name = id_or_name.into_inner();
+  docker_api.remove_image(&id_or_name, None, None).await?;
+  Ok(web::HttpResponse::Ok().into())
+}
+
 pub fn ntex_config(config: &mut web::ServiceConfig) {
   config.service(list_container_image);
   config.service(create_container_image);
+  config.service(delete_container_image_by_name);
 }

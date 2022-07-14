@@ -16,11 +16,11 @@ pub(crate) struct Cli {
   pub(crate) install_services: bool,
   /// Daemon socket to connect to default to unix:///run/nanocl/nanocl.sock
   #[clap(
-    short,
+    short = 'H',
     long = "--host",
-    default_value = "unix:://run/nanocl/nanocl.sock"
+    default_value = "unix:///run/nanocl/nanocl.sock"
   )]
-  pub(crate) host: String,
+  pub(crate) hosts: Vec<String>,
   /// Docker daemon socket to connect to
   #[clap(long, default_value = "unix:///run/docker.sock")]
   pub(crate) docker_host: String,

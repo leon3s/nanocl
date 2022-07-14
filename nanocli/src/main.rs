@@ -314,7 +314,13 @@ async fn execute_args(args: &Cli) -> Result<(), CliError> {
         }
         pg.finish_and_clear();
       }
+      ContainerImageCommands::Remove(args) => {
+        client.remove_container_image(&args.name).await?;
+      }
     },
+    Commands::NginxLog => {
+      client.watch_nginx_logs().await?;
+    }
     Commands::Version => {
       version::print_version();
     }

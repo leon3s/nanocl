@@ -15,6 +15,7 @@ use errors::DaemonError;
 
 mod cli;
 mod boot;
+mod events;
 
 mod utils;
 mod errors;
@@ -116,8 +117,16 @@ async fn main() -> std::io::Result<()> {
     Ok(state) => state,
   };
 
+  // Start background event_system
+  let event_system = events::system::start(
+    config.to_owned(),
+    docker_api.to_owned(),
+    boot_state.pool.to_owned(),
+  )
+  .await;
+
   // start ntex http server
-  server::start(config, boot_state).await?;
+  server::start(config, event_system, boot_state).await?;
   log::info!("kill received exiting.");
   Ok(())
 }

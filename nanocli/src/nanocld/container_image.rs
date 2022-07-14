@@ -180,4 +180,18 @@ impl Nanocld {
 
     Ok(rx_body)
   }
+
+  pub async fn remove_container_image(
+    &self,
+    name: &str,
+  ) -> Result<(), NanocldError> {
+    let mut res = self
+      .delete(format!("/containers/images/{}", name))
+      .send()
+      .await?;
+    let status = res.status();
+    is_api_error(&mut res, &status).await?;
+
+    Ok(())
+  }
 }
