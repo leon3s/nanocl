@@ -317,6 +317,7 @@ pub async fn join_cargo(
     .to_vec();
   let create_opts = CreateCargoContainerOpts {
     cargo: &opts.cargo,
+    cluster_name: &opts.cluster.name,
     labels: Some(&mut labels),
     environnements,
   };

@@ -100,11 +100,9 @@ pub fn watch_nginx_logs(
             cookie,
           }) => {
             log::debug!("watcher event {:?} {:?} ({:?})", op, path, cookie);
-            if path.to_string_lossy() != "/var/lib/nanocl/nginx/log/access.log"
+            if path.to_string_lossy() == "/var/lib/nanocl/nginx/log/access.log"
+              && op == Op::WRITE
             {
-              return;
-            }
-            if op == Op::WRITE {
               let output = std::process::Command::new("tail")
                 .args(["-n", "1", "/var/lib/nanocl/nginx/log/access.log"])
                 .output()

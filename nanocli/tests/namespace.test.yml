@@ -38,7 +38,7 @@ cargoes:
     proxy_config:
       target_port: 3000
       domain_name: "express-test-deploy.com"
-      host_ip: 172.30.233.52
+      host_ip: 172.22.238.118
       template: nodejs-single
     envs:
       - NODE_ENV=production

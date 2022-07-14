@@ -126,6 +126,7 @@ pub async fn start(
   system.start_tasks();
   rt::Arbiter::new().exec_fn(move || {
     rt::spawn(async move {
+      println!("break");
       while let Some(event) = rx.next().await {
         system.handle_events(event).await;
       }

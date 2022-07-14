@@ -12,6 +12,7 @@ use crate::services::errors::docker_error;
 #[derive(Debug)]
 pub struct CreateCargoContainerOpts<'a> {
   pub(crate) cargo: &'a CargoItem,
+  pub(crate) cluster_name: &'a str,
   pub(crate) environnements: Vec<String>,
   pub(crate) labels: Option<&'a mut HashMap<String, String>>,
 }
@@ -43,7 +44,10 @@ pub async fn create_containers<'a>(
     None => HashMap::new(),
     Some(labels) => labels.to_owned(),
   };
-  let mut name = opts.cargo.key.to_owned();
+  let mut name = format!(
+    "{}-{}-{}",
+    &opts.cargo.namespace_name, &opts.cluster_name, &opts.cargo.name,
+  );
   let len = container_ids.len();
   if len != 0 {
     name += &("-".to_owned() + &len.to_string());
