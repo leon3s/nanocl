@@ -16,7 +16,6 @@ use crate::models::{
 use crate::errors::{HttpResponseError, IntoHttpResponseError};
 
 use super::cargo::CreateCargoContainerOpts;
-use super::errors::docker_error;
 
 #[derive(Debug)]
 pub struct JoinCargoOptions {
@@ -82,10 +81,7 @@ pub async fn list_containers(
     filters,
     ..Default::default()
   });
-  let containers = docker_api
-    .list_containers(options)
-    .await
-    .map_err(docker_error)?;
+  let containers = docker_api.list_containers(options).await?;
   Ok(containers)
 }
 
@@ -134,13 +130,10 @@ pub async fn start(
               &container_id,
               None::<bollard::container::StartContainerOptions<String>>,
             )
-            .await
-            .map_err(docker_error)?;
+            .await?;
           log::info!("successfully started container {}", &container_id);
-          let container = docker_api
-            .inspect_container(&container_id, None)
-            .await
-            .map_err(docker_error)?;
+          let container =
+            docker_api.inspect_container(&container_id, None).await?;
           let networks = container
             .network_settings
             .ok_or(HttpResponseError {
@@ -224,9 +217,7 @@ pub async fn start(
             ),
             status: StatusCode::INTERNAL_SERVER_ERROR,
           })?;
-        services::nginx::reload_config(docker_api)
-          .await
-          .map_err(docker_error)?;
+        services::nginx::reload_config(docker_api).await?;
         let mut dns_entry = String::new();
         if let Some(pre_domain) = vars.get("pre_domain") {
           dns_entry += &(pre_domain.to_owned() + &proxy_config.domain_name);
@@ -334,8 +325,7 @@ pub async fn join_cargo(
       };
       docker_api
         .connect_network(&opts.network.key, config)
-        .await
-        .map_err(docker_error)?;
+        .await?;
       Ok::<(), HttpResponseError>(())
     })
     .collect::<FuturesUnordered<_>>()

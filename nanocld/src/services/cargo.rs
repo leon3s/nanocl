@@ -7,7 +7,6 @@ use futures::stream::FuturesUnordered;
 use crate::models::CargoItem;
 
 use crate::errors::HttpResponseError;
-use crate::services::errors::docker_error;
 
 #[derive(Debug)]
 pub struct CreateCargoContainerOpts<'a> {
@@ -73,13 +72,9 @@ pub async fn create_containers<'a>(
     }),
     ..Default::default()
   };
-  let res = match docker_api
+  let res = docker_api
     .create_container(Some(container_opts), config)
-    .await
-  {
-    Err(err) => return Err(docker_error(err)),
-    Ok(res) => res,
-  };
+    .await?;
   container_ids.push(res.id);
   Ok(container_ids)
 }
@@ -96,10 +91,7 @@ pub async fn list_containers(
     filters,
     ..Default::default()
   });
-  let containers = docker_api
-    .list_containers(options)
-    .await
-    .map_err(docker_error)?;
+  let containers = docker_api.list_containers(options).await?;
   Ok(containers)
 }
 
@@ -120,10 +112,7 @@ pub async fn delete_container(
         force: true,
         ..Default::default()
       });
-      docker_api
-        .remove_container(&id, options)
-        .await
-        .map_err(docker_error)?;
+      docker_api.remove_container(&id, options).await?;
       Ok::<_, HttpResponseError>(())
     })
     .collect::<FuturesUnordered<_>>()

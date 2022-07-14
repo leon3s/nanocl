@@ -46,27 +46,29 @@ async fn create_default_nsp(
 }
 
 pub async fn create_default_network(
-  docker: &bollard::Docker,
+  docker_api: &bollard::Docker,
 ) -> Result<(), DockerError> {
   let network_name = "nanocl";
-  let state = services::utils::get_network_state(docker, network_name).await?;
+  let state =
+    services::utils::get_network_state(docker_api, network_name).await?;
   if state == services::utils::NetworkState::NotFound {
-    services::utils::create_network(docker, network_name).await?;
+    services::utils::create_network(docker_api, network_name).await?;
   }
   Ok(())
 }
 
 async fn boot_docker_services(
   config: &DaemonConfig,
-  docker: &bollard::Docker,
+  docker_api: &bollard::Docker,
 ) -> Result<(), DaemonError> {
-  create_default_network(docker).await?;
+  create_default_network(docker_api).await?;
   // Boot postgresql service to ensure database connection
-  services::postgresql::boot(config, docker).await?;
+  services::postgresql::boot(config, docker_api).await?;
   // Boot dnsmasq service to manage domain names
-  services::dnsmasq::boot(config, docker).await?;
+  services::dnsmasq::boot(config, docker_api).await?;
   // Boot nginx service to manage proxy
-  services::nginx::boot(config, docker).await?;
+  services::nginx::boot(config, docker_api).await?;
+  services::ipsec::boot(config, docker_api).await?;
   Ok(())
 }
 

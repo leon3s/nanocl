@@ -23,7 +23,3 @@ pub fn docker_error_ref(err: &bollard::errors::Error) -> HttpResponseError {
     },
   }
 }
-
-pub fn docker_error(err: bollard::errors::Error) -> HttpResponseError {
-  docker_error_ref(&err)
-}

@@ -19,14 +19,11 @@ use crate::{
 use crate::errors::HttpResponseError;
 
 use super::utils::*;
-use super::errors::docker_error;
 
 fn gen_postgre_host_conf(config: &DaemonConfig) -> HostConfig {
   let path = Path::new(&config.state_dir).join("postgresql/data");
 
   let binds = vec![format!("{}:/var/lib/postgresql/data", path.display())];
-
-  log::info!("postgresql binds {:#?}", binds);
 
   HostConfig {
     binds: Some(binds),
@@ -105,8 +102,7 @@ pub async fn get_postgres_ip(
 ) -> Result<String, HttpResponseError> {
   let container = docker_api
     .inspect_container("nanocl-db-postgre", None)
-    .await
-    .map_err(docker_error)?;
+    .await?;
 
   let networks = container
     .network_settings

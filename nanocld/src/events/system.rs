@@ -73,7 +73,6 @@ impl EventSystem {
             if let Some(clients) = unlock_mutex(&clients) {
               println!("clients length {}", &clients.len());
               let iter = clients.clone();
-              drop(clients);
               iter
             } else {
               HashMap::new()
@@ -102,7 +101,6 @@ impl EventSystem {
         if let Some(mut clients) = unlock_mutex(&self.0.clients) {
           log::info!("added new client in event system");
           clients.insert(client.id, client);
-          drop(clients);
         }
       }
     }
@@ -126,11 +124,9 @@ pub async fn start(
   system.start_tasks();
   rt::Arbiter::new().exec_fn(move || {
     rt::spawn(async move {
-      println!("break");
       while let Some(event) = rx.next().await {
         system.handle_events(event).await;
       }
-
       log::error!("Background system died");
       rt::Arbiter::current().stop();
     });
