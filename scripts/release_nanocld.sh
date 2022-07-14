@@ -45,21 +45,11 @@ Description: A self-sufficient vms and containers manager
 EOM
 
 cat > ${release_path}/DEBIAN/postinst <<- EOM
-
-
-addgroup nanocl
-ln -s /etc/systemd/nanocl.conf /etc/systemd/system/nanocl.service
-chown root:root /etc/systemd/nanocl.conf
-chown root:root /etc/init.d/nanocl
-chmod +x /etc/init.d/nanocl
 EOM
 
 chmod 775 ${release_path}/DEBIAN/postinst
 
 cat > ${release_path}/DEBIAN/postrm <<- EOM
-delgroup nanocl
-rm /etc/systemd/system/nanocl.service
-rm /etc/systemd/nanocl.conf
 EOM
 
 chmod 775 ${release_path}/DEBIAN/postrm

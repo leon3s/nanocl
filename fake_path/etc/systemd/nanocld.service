@@ -1,16 +1,18 @@
 [Unit]
 Description=nanocl deamon
 Documentation=https://github.com/leon3s/nanocl
-After=network-online.target
+After=network-online.target nanocld@dockerd.service
 Wants=network-online.target
+Requires=nanocld@dockerd.service
 
 [Service]
-User=root
+User=nanocl
 Group=nanocl
-EnvironmentFile=-/etc/nanocl
-ExecStartPre=/var/lib/nanocl/prestart.sh
-ExecStart=/usr/local/bin/nanocld
+ExecStart=/usr/local/bin/nanocld --docker-host /run/nanocl/docker.sock
 PIDFile=/run/nanocl/nanocl.pid
+TimeoutSec=0
+RestartSec=2
+Restart=always
 # file size
 LimitFSIZE=infinity
 # cpu time

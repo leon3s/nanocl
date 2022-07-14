@@ -1,6 +1,6 @@
 {
   "debug": true,
-  "bridge": "nanocl",
+  "bridge": "nanocl0",
   "hosts": [
     "unix:///run/nanocl/docker.sock"
   ],

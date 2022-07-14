@@ -2,7 +2,7 @@
 ## name: pre_start_nanocl.dev.sh
 set -e -x
 
-: ${bridge=nanocl}
+: ${bridge=nanocl0}
 
 # Set up bridge network:
 if ! ip link show $bridge > /dev/null 2>&1
