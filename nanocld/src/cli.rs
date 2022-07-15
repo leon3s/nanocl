@@ -22,7 +22,7 @@ pub(crate) struct Cli {
   )]
   pub(crate) hosts: Vec<String>,
   /// Docker daemon socket to connect to
-  #[clap(long, default_value = "unix:///run/docker.sock")]
+  #[clap(long, default_value = "unix:///run/nanocl/docker.sock")]
   pub(crate) docker_host: String,
   /// Nanocld state dir
   #[clap(long, default_value = "/var/lib/nanocl")]

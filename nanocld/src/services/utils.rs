@@ -101,11 +101,12 @@ fn parse_create_output(
     Err(err) => return Err(err),
     Ok(create_info) => {
       if let Some(ref status) = create_info.status {
-        print!("{}", status);
+        println!("{}", status);
       }
       if let Some(ref progress) = create_info.progress {
-        print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
-        print!("{}", progress)
+        print!("{}", progress);
+        print!("\r");
+        // print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
       }
       if let Some(err) = create_info.error {
         log::error!("[{}] {:#?}", &service_name, &err);

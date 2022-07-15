@@ -106,22 +106,22 @@ pub fn gen_dnsmasq_host_conf(config: &DaemonConfig) -> HostConfig {
     format!("{}:/etc/dnsmasq.conf", config_file_path.display()),
     format!("{}:/etc/dnsmasq.d/", dir_path.display()),
   ]);
-  let mut port_bindings: HashMap<String, Option<Vec<PortBinding>>> =
-    HashMap::new();
-  port_bindings.insert(
-    String::from("53/udp"),
-    Some(vec![PortBinding {
-      host_ip: None,
-      host_port: Some(String::from("53/udp")),
-    }]),
-  );
-  port_bindings.insert(
-    String::from("53/tcp"),
-    Some(vec![PortBinding {
-      host_ip: None,
-      host_port: Some(String::from("53/tcp")),
-    }]),
-  );
+  // let mut port_bindings: HashMap<String, Option<Vec<PortBinding>>> =
+  //   HashMap::new();
+  // port_bindings.insert(
+  //   String::from("53/udp"),
+  //   Some(vec![PortBinding {
+  //     host_ip: None,
+  //     host_port: Some(String::from("53/udp")),
+  //   }]),
+  // );
+  // port_bindings.insert(
+  //   String::from("53/tcp"),
+  //   Some(vec![PortBinding {
+  //     host_ip: None,
+  //     host_port: Some(String::from("53/tcp")),
+  //   }]),
+  // );
   HostConfig {
     binds,
     network_mode: Some(String::from("host")),

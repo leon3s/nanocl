@@ -72,8 +72,7 @@ impl EventSystem {
           let iter: EventSystemClients =
             if let Some(clients) = unlock_mutex(&clients) {
               println!("clients length {}", &clients.len());
-              let iter = clients.clone();
-              iter
+              clients.clone()
             } else {
               HashMap::new()
             };
