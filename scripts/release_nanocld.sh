@@ -10,7 +10,7 @@ release_path="../target/${pkg_name}_${version}_${arch}"
 
 cd nanocld
 # clean directory
-rm -r ${release_path}
+rm -fr ${release_path}
 # create directories structure for package
 mkdir -p ${release_path}
 mkdir -p ${release_path}/DEBIAN

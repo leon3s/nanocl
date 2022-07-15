@@ -15,7 +15,7 @@ fi;
 
 cd nanocli
 # clear directory
-rm -r ${release_path}
+rm -fr ${release_path}
 # create directories structure for package
 mkdir -p ${release_path}
 mkdir -p ${release_path}/DEBIAN
