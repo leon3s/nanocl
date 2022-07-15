@@ -13,7 +13,10 @@ use super::utils::*;
 fn gen_ipsec_host_conf(config: &DaemonConfig) -> HostConfig {
   let path = Path::new(&config.state_dir).join("ipsec");
 
-  let binds = vec![format!("{}:/etc/ipsec.d", path.display())];
+  let binds = vec![
+    format!("{}:/etc/ipsec.d", path.display()),
+    String::from("/lib/modules:/lib/modules:ro"),
+  ];
   let mut port_bindings: HashMap<String, Option<Vec<PortBinding>>> =
     HashMap::new();
   let mut sysctl: HashMap<String, String> = HashMap::new();
@@ -67,16 +70,17 @@ fn gen_ipsec_host_conf(config: &DaemonConfig) -> HostConfig {
 
   HostConfig {
     binds: Some(binds),
+    privileged: Some(true),
     port_bindings: Some(port_bindings),
-    network_mode: Some(String::from("host")),
-    cap_add: Some(vec![String::from("NET_ADMIN")]),
+    // network_mode: Some(String::from("host")),
+    // cap_add: Some(vec![String::from("NET_ADMIN")]),
     // sysctls:
-    devices: Some(vec![DeviceMapping {
-      path_on_host: Some(String::from("/dev/ppp")),
-      path_in_container: Some(String::from("/dev/ppp")),
-      // cgroup_permissions: Strin,
-      cgroup_permissions: Some(String::from("rwm")),
-    }]),
+    // devices: Some(vec![DeviceMapping {
+    //   path_on_host: Some(String::from("/dev/ppp")),
+    //   path_in_container: Some(String::from("/dev/ppp")),
+    //   // cgroup_permissions: Strin,
+    //   cgroup_permissions: Some(String::from("rwm")),
+    // }]),
     ..Default::default()
   }
 }
