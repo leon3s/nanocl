@@ -2,7 +2,6 @@
 Description=nanocl containerd
 Documentation=https://github.com/leon3s/nanocl
 After=network.target local-fs.target
-PartOf=nanocld.service
 
 [Service]
 # ExecStartPre=-/sbin/modprobe overlay
@@ -24,4 +23,4 @@ TasksMax=infinity
 OOMScoreAdjust=-999
 
 [Install]
-WantedBy=nanocld@dockerd.service
+WantedBy=nanocld.service

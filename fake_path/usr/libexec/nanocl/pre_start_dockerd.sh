@@ -1,3 +1,4 @@
+#!/bin/sh
 : ${bridge=nanocl0}
 
 # Set up bridge network:

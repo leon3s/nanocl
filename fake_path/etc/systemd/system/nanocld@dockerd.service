@@ -1,19 +1,18 @@
 [Unit]
 Description=nanocl dockerd
 Documentation=https://github.com/leon3s/nanocl
-After=network-online.target firewalld.service nanocld@containerd.service
-Wants=network-online.target
+After=network-online.target firewalld.service
+Wants=network-online.target nanocld@containerd.service
 Requires=nanocld@containerd.service
-PartOf=nanocld.service
 
 [Service]
 Type=notify
 # the default is not to use systemd for cgroups because the delegate issues still
 # exists and systemd currently does not support the cgroup feature set required
 # for containers run by docker
-ExecStartPre=-/usr/bin/sh /usr/libexec/nanocl/pre_start_dockerd.sh
+ExecStartPre=/usr/bin/sh /usr/libexec/nanocl/pre_start_dockerd.sh
 ExecStart=/usr/bin/dockerd --config-file /etc/nanocl/dockerd.json
-ExecStartPost=-/usr/bin/chown -R nanocl:nanocl /run/nanocl
+ExecStartPost=/usr/bin/sh /usr/libexec/nanocl/post_start_dockerd.sh
 ExecReload=/bin/kill -s HUP $MAINPID
 TimeoutSec=0
 RestartSec=2

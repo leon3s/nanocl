@@ -42,6 +42,13 @@ Description: A self-sufficient vms and containers manager
 EOM
 
 cat > ${release_path}/DEBIAN/postinst <<- EOM
+getent passwd $1 > /dev/null 2&>1
+
+if [ $? -eq 0 ]; then
+    echo "user exist skipping"
+else
+    useradd nanocl
+fi
 EOM
 
 chmod 775 ${release_path}/DEBIAN/postinst
