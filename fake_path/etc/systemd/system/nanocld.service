@@ -6,8 +6,6 @@ Wants=network-online.target nanocld@containerd.service nanocld@dockerd.service
 Requires=nanocld@containerd.service nanocld@dockerd.service
 
 [Service]
-User=nanocl
-Group=nanocl
 ExecStart=/usr/local/bin/nanocld --docker-host /run/nanocl/docker.sock
 PIDFile=/run/nanocl/nanocl.pid
 Restart=always
