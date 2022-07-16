@@ -115,8 +115,22 @@ async fn delete_git_repository_by_name(
   Ok(web::HttpResponse::Ok().json(&res))
 }
 
+/// Transform a git repository into an image
+#[cfg_attr(feature = "openapi", utoipa::path(
+  post,
+  path = "/git_repositories/{name}/build",
+  params(
+    ("id" = String, path, description = "Name of git repository"),
+    ("branch" = Option<String>, query, description = "Branch to build default to main branch"),
+  ),
+  responses(
+    (status = 201, description = "Number of entry deleted", body = PgDeleteGeneric),
+    (status = 400, description = "Generic database error"),
+    (status = 404, description = "Namespace name not valid"),
+  ),
+))]
 #[web::post("/git_repositories/{id}/build")]
-async fn build_git_repository(
+async fn build_git_repository_by_name(
   pool: web::types::State<Pool>,
   docker_api: web::types::State<bollard::Docker>,
   id: web::types::Path<String>,
@@ -137,8 +151,8 @@ async fn build_git_repository(
 /// Configure ntex to bind our routes
 pub fn ntex_config(config: &mut web::ServiceConfig) {
   config.service(list_git_repository);
-  config.service(build_git_repository);
   config.service(create_git_repository);
+  config.service(build_git_repository_by_name);
   config.service(delete_git_repository_by_name);
 }
 

@@ -29,6 +29,8 @@ pub async fn start<'a>(
       .app_state(web::types::JsonConfig::default().limit(4096))
       // bind /explorer
       .configure(openapi::ntex_config)
+      // bind controller system
+      .configure(controllers::system::ntex_config)
       // bind controller namespace
       .configure(controllers::namespace::ntex_config)
       // bind controller git repository

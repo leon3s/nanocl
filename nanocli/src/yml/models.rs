@@ -8,6 +8,7 @@ pub(crate) struct Cargo {
   pub(crate) name: String,
   #[serde(rename(deserialize = "image"))]
   pub(crate) image_name: String,
+  pub(crate) binds: Option<Vec<String>>,
   pub(crate) proxy_config: Option<CargoProxyConfigPartial>,
   #[serde(rename(deserialize = "envs"))]
   pub(crate) environnements: Option<Vec<String>>,

@@ -19,3 +19,5 @@ pub mod cluster_variable;
 pub mod container_image;
 /// Manage nginx logs
 pub mod nginx_log;
+
+pub mod system;

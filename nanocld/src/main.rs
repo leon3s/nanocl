@@ -16,6 +16,7 @@ use errors::DaemonError;
 mod cli;
 mod boot;
 mod events;
+mod version;
 
 mod utils;
 mod errors;
