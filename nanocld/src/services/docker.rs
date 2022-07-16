@@ -49,7 +49,6 @@ pub async fn build_git_repository(
         }
       }
     }
-    drop(stream);
   });
 
   Ok(rx_body)

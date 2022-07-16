@@ -54,11 +54,11 @@ pub async fn create(
   }
 }
 
-/// Delete git repository by id or name
+/// Delete git repository by name
 ///
 /// # Arguments
 ///
-/// * `id` - Id or name of git repository
+/// * `name` - name of git repository
 /// * `pool` - Posgresql database pool
 ///
 /// # Examples
@@ -67,17 +67,17 @@ pub async fn create(
 ///
 /// use crate::repositories::git_repository;
 ///
-/// git_repository::delete_by_name(id, &pool).await;
+/// git_repository::delete_by_name(name, &pool).await;
 /// ```
 pub async fn delete_by_name(
-  id: String,
+  name: String,
   pool: &web::types::State<Pool>,
 ) -> Result<PgDeleteGeneric, HttpResponseError> {
   use crate::schema::git_repositories::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
   let res = web::block(move || {
-    diesel::delete(dsl::git_repositories.filter(dsl::name.eq(id)))
+    diesel::delete(dsl::git_repositories.filter(dsl::name.eq(name)))
       .execute(&conn)
   })
   .await;
@@ -88,11 +88,11 @@ pub async fn delete_by_name(
   }
 }
 
-/// Find git repository by his id or name
+/// Find git repository by his name
 ///
 /// # Arguments
 ///
-/// * `id` - Id or name of git repository
+/// * `name` - name of git repository
 /// * `pool` - Posgresql database pool
 ///
 /// # Examples
@@ -101,10 +101,10 @@ pub async fn delete_by_name(
 ///
 /// use crate::repositories::git_repository;
 ///
-/// git_repository::find_by_name(id, &pool).await;
+/// git_repository::find_by_name(name, &pool).await;
 /// ```
 pub async fn find_by_name(
-  id_or_name: String,
+  name_or_name: String,
   pool: &web::types::State<Pool>,
 ) -> Result<GitRepositoryItem, HttpResponseError> {
   use crate::schema::git_repositories::dsl;
@@ -112,7 +112,7 @@ pub async fn find_by_name(
   let conn = services::postgresql::get_pool_conn(pool)?;
   let res = web::block(move || {
     dsl::git_repositories
-      .filter(dsl::name.eq(id_or_name))
+      .filter(dsl::name.eq(name_or_name))
       .get_result(&conn)
   })
   .await;
@@ -135,7 +135,7 @@ pub async fn find_by_name(
 ///
 /// use crate::repositories::git_repository;
 ///
-/// git_repository::list(id, &pool).await;
+/// git_repository::list(name, &pool).await;
 /// ```
 pub async fn list(
   pool: &web::types::State<Pool>,

@@ -14,12 +14,12 @@ files="${files} /var/lib/nanocl/nginx/log/access.log"
 files="${files} /var/lib/nanocl/dnsmasq/dnsmasq.d/dns_entry.conf"
 
 fix_dir_perm () {
-  chown -R :nanocl $1
+  chown -R root:nanocl $1
   chmod 770 $1
 }
 
 fix_file_perm () {
-  chown :nanocl $1
+  chown root:nanocl $1
   chmod 660 $1
 }
 

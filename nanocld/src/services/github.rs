@@ -76,8 +76,8 @@ impl GithubApi {
   pub fn new() -> Self {
     log::info!("creating github api");
     // Ensuring GITHUB_ACCOUNT value so we can unwrap safelly
-    let github_password = std::env::var("GITHUB_ACCOUNT");
-    if let Err(ref _err) = github_password {
+    let github_user = std::env::var("GITHUB_USER");
+    if let Err(ref _err) = github_user {
       log::warn!(
         "GITHUB_ACCOUNT env variable is missing you may face api rate limit"
       );
@@ -88,8 +88,8 @@ impl GithubApi {
       log::warn!("GITHUB_TOKEN is missing env variable is missing you may face api rate limit");
     }
     let credential = BasicCredential {
-      username: github_token.unwrap_or_else(|_| String::from("")),
-      password: github_password.unwrap_or_else(|_| String::from("")),
+      username: github_user.unwrap_or_else(|_| String::from("")),
+      password: github_token.unwrap_or_else(|_| String::from("")),
     };
     let client = Client::build()
       .basic_auth(credential.username, Some(&credential.password))
@@ -157,11 +157,11 @@ impl GithubApi {
   pub async fn inspect_branch(
     &self,
     item: &GitRepositoryItem,
-    branch: String,
+    branch: &str,
   ) -> Result<GithubRepoBranch, Box<dyn std::error::Error + 'static>> {
     let git_desc = parse_git_url(&item.url)?;
 
-    let url = "/repos".to_owned() + &git_desc.path + "/branches/" + &branch;
+    let url = "/repos".to_owned() + &git_desc.path + "/branches/" + branch;
     let mut res = self.get(url).send().await?;
     if res.status().is_client_error() {
       let err = res.json::<GithubApiError>().await?;
