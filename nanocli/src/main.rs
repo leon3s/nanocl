@@ -226,6 +226,10 @@ async fn execute_args(args: &Cli) -> Result<(), CliError> {
           .await?;
       }
       NginxTemplateCommand::Create(options) => {
+        if !options.is_reading_stdi && options.file_path.is_none() {
+          eprintln!("Missing option use --help");
+          std::process::exit(1);
+        }
         if options.is_reading_stdi && options.file_path.is_some() {
           eprintln!("cannot have --stdi and -f options in same time.");
           std::process::exit(1);
@@ -242,6 +246,7 @@ async fn execute_args(args: &Cli) -> Result<(), CliError> {
           }
           let item = NginxTemplatePartial {
             name: options.name.to_owned(),
+            mode: options.mode.to_owned(),
             content,
           };
           let res = client.create_nginx_template(item).await?;
@@ -251,6 +256,7 @@ async fn execute_args(args: &Cli) -> Result<(), CliError> {
           let content = std::fs::read_to_string(file_path)?;
           let item = NginxTemplatePartial {
             name: options.name.to_owned(),
+            mode: options.mode.to_owned(),
             content,
           };
           let res = client.create_nginx_template(item).await?;

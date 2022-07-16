@@ -8,15 +8,10 @@ use crate::nanocld::{
   cluster::{ClusterPartial, ClusterNetworkPartial},
   cargo::CargoPartial,
   container_image::ContainerImagePartial,
+  nginx_template::NginxTemplateModes,
 };
 
-/// A self-sufficient vms and containers manager
-/// longlong text longlong text longlong text longlong text
-/// longlong text longlong text longlong text longlong text
-/// longlong text longlong text longlong text longlong text
-/// longlong text longlong text longlong text longlong text
-/// longlong text longlong text longlong text longlong text
-/// longlong text longlong text longlong text longlong text
+/// A self-sufficient hybrid-cloud manager
 #[derive(Debug, Parser)]
 #[clap(
   about,
@@ -26,10 +21,10 @@ use crate::nanocld::{
   global_setting = AppSettings::DeriveDisplayOrder,
 )]
 pub struct Cli {
-  /// nanocld host
+  /// Nanocld host
   #[clap(long, short = 'H', default_value = "unix://run/nanocl/nanocl.sock")]
   pub host: String,
-  /// commands
+  /// Commands
   #[clap(subcommand)]
   pub command: Commands,
 }
@@ -37,93 +32,112 @@ pub struct Cli {
 /// Namespace commands
 #[derive(Debug, Subcommand)]
 pub enum NamespaceCommands {
-  /// create namespace
+  /// Create new namespace
   Create(NamespacePartial),
-  /// list namespaces
+  /// List existing namespaces
   #[clap(alias("ls"))]
   List,
 }
 
+/// Git repository delete options
 #[derive(Debug, Parser)]
 pub struct GitRepositoryDeleteOptions {
+  /// Name of repository to delete
   pub name: String,
 }
 
+/// Cluster delete options
 #[derive(Debug, Parser)]
 pub struct ClusterDeleteOptions {
+  /// Name of cluster to delete
   pub name: String,
 }
 
+/// Git repository build options
 #[derive(Debug, Parser)]
 pub struct GitRepositoryBuildOptions {
+  // Name of git repository to build into container image
   pub name: String,
 }
 
+/// Git repository sub commands
 #[derive(Debug, Subcommand)]
 pub enum GitRepositoryCommands {
-  /// list git repository
+  /// List existing git repository
   #[clap(alias("ls"))]
   List,
-  /// create git repository
+  /// Create new git repository
   Create(GitRepositoryPartial),
   /// remove git repository
   #[clap(alias("rm"))]
   Remove(GitRepositoryDeleteOptions),
-  /// build a image from git repository
+  /// Build a container image from git repository
   Build(GitRepositoryBuildOptions),
 }
 
+/// Cluster start options
 #[derive(Debug, Parser)]
 pub struct ClusterStartOptions {
+  /// Name of cluster to start
   pub(crate) name: String,
 }
 
+/// Cluster sub commands
 #[derive(Debug, Subcommand)]
 pub enum ClusterCommands {
-  /// list cluster
+  /// List existing cluster
   #[clap(alias("ls"))]
   List,
-  /// create cluster
+  /// Create new cluster
   Create(ClusterPartial),
-  /// remove cluster
+  /// Remove cluster
   #[clap(alias("rm"))]
   Remove(ClusterDeleteOptions),
-  /// start cluster
+  /// Start cluster
   Start(ClusterStartOptions),
 }
 
+/// Cluster network delete topions
 #[derive(Debug, Parser)]
 pub struct ClusterNetworkDeleteOptions {
-  #[clap(long)]
+  /// Name of the cluster where network is
   pub cluster_name: String,
+  /// Name of the network
   pub name: String,
 }
 
+/// Cluster network option
 #[derive(Debug, Parser)]
 pub struct ClusterNetworkOptions {
+  /// Name of the cluster where network is
   #[clap(long)]
   pub cluster_name: String,
 }
 
+/// Cluster network commads
 #[derive(Debug, Subcommand)]
 pub enum ClusterNetworkCommands {
-  /// list cluster network
+  /// List existing cluster network
   #[clap(alias("ls"))]
   List,
-  /// create cluster network
+  /// Create new cluster network
   Create(ClusterNetworkPartial),
-  /// remove cluster network
+  /// Remove cluster network
   #[clap(alias("rm"))]
   Remove(ClusterNetworkDeleteOptions),
 }
 
+/// Cargo delete options
 #[derive(Debug, Parser)]
 pub struct CargoDeleteOptions {
+  /// Name of cargo to delete
   pub name: String,
 }
 
+/// Cargo start options
 #[derive(Debug, Parser)]
 pub struct CargoStartOptions {
+  // Name of cargo to start
   pub name: String,
 }
 
@@ -228,19 +242,27 @@ pub struct NginxTemplateOptions {
 
 #[derive(Debug, Parser)]
 pub struct NginxTemplateCreateOptions {
-  #[clap(long)]
+  /// Name of template to create
   pub(crate) name: String,
-  #[clap(long = "-stdi")]
+  /// Mode of template http|stream
+  #[clap(long, short)]
+  pub(crate) mode: NginxTemplateModes,
+  /// Create by reading stdi
+  #[clap(long = "stdi")]
   pub(crate) is_reading_stdi: bool,
+  /// Create by reading a file
   #[clap(short)]
   pub(crate) file_path: Option<String>,
 }
 
 #[derive(Debug, Subcommand)]
 pub enum NginxTemplateCommand {
+  /// List existing template
   #[clap(alias("ls"))]
   List,
+  /// Create a new template
   Create(NginxTemplateCreateOptions),
+  /// Remove a template
   #[clap(alias("rm"))]
   Remove(NginxTemplateOptions),
   // Todo

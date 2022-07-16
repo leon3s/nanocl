@@ -1,0 +1,4 @@
+server {
+  listen     {{host_ip}}:3306;
+  proxy_pass {{target_ip}}:{{target_port}};
+}

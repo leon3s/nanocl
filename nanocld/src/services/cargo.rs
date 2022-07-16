@@ -33,7 +33,10 @@ pub async fn create_containers<'a>(
     .is_err()
   {
     return Err(HttpResponseError {
-      msg: String::from("image name is not valid"),
+      msg: format!(
+        "Unable to create cargo container image {} is not available.",
+        &image_name,
+      ),
       status: StatusCode::BAD_REQUEST,
     });
   }
@@ -66,6 +69,7 @@ pub async fn create_containers<'a>(
     attach_stderr: Some(true),
     host_config: Some(bollard::models::HostConfig {
       binds: Some(opts.cargo.binds.to_owned()),
+      dns: Some(vec![String::from("142.0.0.1")]),
       // This remove internet inside the container need to find a workarround
       // network_mode: Some(opts.network_key),
       ..Default::default()

@@ -37,6 +37,7 @@ pub async fn reload_config(docker_api: &Docker) -> Result<(), DockerError> {
 
 fn gen_nginx_host_conf(config: &DaemonConfig) -> HostConfig {
   let sites_path = Path::new(&config.state_dir).join("nginx/sites-enabled");
+  let stream_path = Path::new(&config.state_dir).join("nginx/streams-enabled");
   let log_path = Path::new(&config.state_dir).join("nginx/log");
   let ssl_path = Path::new(&config.state_dir).join("nginx/ssl");
   let letsencrypt_path = Path::new(&config.state_dir).join("nginx/letsencrypt");
@@ -44,6 +45,7 @@ fn gen_nginx_host_conf(config: &DaemonConfig) -> HostConfig {
     format!("{}:/etc/nginx/sites-enabled", sites_path.display()),
     format!("{}:/var/log/nginx", log_path.display()),
     format!("{}:/etc/nginx/ssl", ssl_path.display()),
+    format!("{}:/etc/nginx/streams-enabled", stream_path.display()),
     format!("{}:/etc/letsencrypt", letsencrypt_path.display()),
   ]);
   let network_mode = Some(String::from("host"));

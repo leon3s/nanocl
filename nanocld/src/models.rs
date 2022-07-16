@@ -17,6 +17,47 @@ use crate::{
 pub type DBConn = PooledConnection<ConnectionManager<PgConnection>>;
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
+fn deserialize_empty_string<'de, D>(
+  deserializer: D,
+) -> Result<Option<String>, D::Error>
+where
+  D: Deserializer<'de>,
+{
+  let buf = String::deserialize(deserializer)?;
+  if buf.is_empty() {
+    Ok(None)
+  } else {
+    Ok(Some(buf))
+  }
+}
+
+fn deserialize_string_to_i64<'de, D>(deserializer: D) -> Result<i64, D::Error>
+where
+  D: Deserializer<'de>,
+{
+  let buf = String::deserialize(deserializer)?;
+  let res = buf.parse::<i64>().unwrap_or_default();
+  Ok(res)
+}
+
+fn deserialize_string_to_i32<'de, D>(deserializer: D) -> Result<i32, D::Error>
+where
+  D: Deserializer<'de>,
+{
+  let buf = String::deserialize(deserializer)?;
+  let res = buf.parse::<i32>().unwrap_or_default();
+  Ok(res)
+}
+
+fn deserialize_string_to_f64<'de, D>(deserializer: D) -> Result<f64, D::Error>
+where
+  D: Deserializer<'de>,
+{
+  let buf = String::deserialize(deserializer)?;
+  let res = buf.parse::<f64>().unwrap_or_default();
+  Ok(res)
+}
+
 #[cfg(feature = "openapi")]
 use utoipa::Component;
 
@@ -194,6 +235,7 @@ pub struct ClusterNetworkItem {
   pub(crate) name: String,
   pub(crate) namespace: String,
   pub(crate) docker_network_id: String,
+  pub(crate) default_gateway: String,
   pub(crate) cluster_key: String,
 }
 
@@ -264,6 +306,21 @@ pub struct CargoProxyConfigPartial {
   pub(crate) target_port: i32,
 }
 
+/// Nginx template mode
+/// # Examples
+/// ```
+/// NginxTemplateModes::Http; // For http forward
+/// NginxTemplateModes::Stream; // For low level tcp/udp forward
+/// ```
+#[derive(Serialize, Deserialize, Debug, PartialEq, DbEnum, Clone)]
+#[serde(rename_all = "snake_case")]
+#[DieselType = "Nginx_template_modes"]
+#[cfg_attr(feature = "openapi", derive(Component))]
+pub enum NginxTemplateModes {
+  Http,
+  Stream,
+}
+
 #[derive(
   Debug, Clone, Serialize, Deserialize, Queryable, Identifiable, Insertable,
 )]
@@ -272,6 +329,7 @@ pub struct CargoProxyConfigPartial {
 #[cfg_attr(feature = "openapi", derive(Component))]
 pub struct NginxTemplateItem {
   pub(crate) name: String,
+  pub(crate) mode: NginxTemplateModes,
   pub(crate) content: String,
 }
 
@@ -375,47 +433,6 @@ pub struct ContainerImagePartial {
   pub(crate) name: String,
 }
 
-fn deserialize_empty_string<'de, D>(
-  deserializer: D,
-) -> Result<Option<String>, D::Error>
-where
-  D: Deserializer<'de>,
-{
-  let buf = String::deserialize(deserializer)?;
-  if buf.is_empty() {
-    Ok(None)
-  } else {
-    Ok(Some(buf))
-  }
-}
-
-fn deserialize_string_to_i64<'de, D>(deserializer: D) -> Result<i64, D::Error>
-where
-  D: Deserializer<'de>,
-{
-  let buf = String::deserialize(deserializer)?;
-  let res = buf.parse::<i64>().unwrap_or_default();
-  Ok(res)
-}
-
-fn deserialize_string_to_i32<'de, D>(deserializer: D) -> Result<i32, D::Error>
-where
-  D: Deserializer<'de>,
-{
-  let buf = String::deserialize(deserializer)?;
-  let res = buf.parse::<i32>().unwrap_or_default();
-  Ok(res)
-}
-
-fn deserialize_string_to_f64<'de, D>(deserializer: D) -> Result<f64, D::Error>
-where
-  D: Deserializer<'de>,
-{
-  let buf = String::deserialize(deserializer)?;
-  let res = buf.parse::<f64>().unwrap_or_default();
-  Ok(res)
-}
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NginxLogPartial {
   pub(crate) date_gmt: DateTime<FixedOffset>,
@@ -506,5 +523,6 @@ impl From<NginxLogPartial> for NginxLogItem {
 /// Re exports ours enums and diesel sql_types for schema.rs
 pub mod exports {
   pub use diesel::sql_types::*;
+  pub use super::Nginx_template_modes;
   pub use super::Git_repository_source_type;
 }

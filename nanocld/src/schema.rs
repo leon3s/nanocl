@@ -52,6 +52,7 @@ table! {
         name -> Varchar,
         namespace -> Varchar,
         docker_network_id -> Varchar,
+        default_gateway -> Varchar,
         cluster_key -> Varchar,
     }
 }
@@ -139,6 +140,7 @@ table! {
 
     nginx_templates (name) {
         name -> Varchar,
+        mode -> Nginx_template_modes,
         content -> Text,
     }
 }

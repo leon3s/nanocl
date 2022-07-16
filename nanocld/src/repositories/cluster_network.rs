@@ -51,6 +51,7 @@ pub async fn create_for_cluster(
   cluster_name: String,
   item: ClusterNetworkPartial,
   docker_network_id: String,
+  default_gateway: String,
   pool: &web::types::State<Pool>,
 ) -> Result<ClusterNetworkItem, HttpResponseError> {
   use crate::schema::cluster_networks::dsl;
@@ -62,6 +63,7 @@ pub async fn create_for_cluster(
       key: cluster_key.to_owned() + "-" + &item.name,
       cluster_key,
       name: item.name,
+      default_gateway,
       docker_network_id,
       namespace: namespace_name,
     };
@@ -176,6 +178,7 @@ mod cluster_networks {
       cluster.name,
       new_network,
       id,
+      String::from("127.0.0.1"),
       &pool_state,
     )
     .await

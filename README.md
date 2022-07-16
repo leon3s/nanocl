@@ -3,7 +3,7 @@
     src="https://avatars.githubusercontent.com/u/94208118?s=200&v=4"
   />
   <p><h1><strong>nanocl</strong></h1> </p>
-  <p><strong>self-sufficient production ready intranet</strong> </p>
+  <p><strong>self-sufficient self-sufficient hybrid-cloud manager</strong> </p>
 </div>
 
 Unlock control of your network using nanocl.

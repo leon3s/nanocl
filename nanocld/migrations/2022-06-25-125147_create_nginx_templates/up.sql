@@ -1,10 +1,13 @@
 -- Your SQL goes here
+CREATE TYPE "nginx_template_modes" AS ENUM ('http', 'stream');
+
 CREATE TABLE "nginx_templates" (
   "name" VARCHAR NOT NULL UNIQUE PRIMARY KEY,
+  "mode" nginx_template_modes NOT NUll,
   "content" TEXT NOT NULL
 );
 
-INSERT INTO "nginx_templates" ("name", "content") VALUES ('nodejs-single', 'server {
+INSERT INTO "nginx_templates" ("name", "mode", "content") VALUES ('nodejs-single', 'http', 'server {
   server_name {{vars.pre_domain}}{{domain_name}};
   listen {{host_ip}}:80;
   location / {
@@ -22,7 +25,7 @@ INSERT INTO "nginx_templates" ("name", "content") VALUES ('nodejs-single', 'serv
 }
 ');
 
-INSERT INTO "nginx_templates" ("name", "content") VALUES ('nodejs-single-ssl', 'server {
+INSERT INTO "nginx_templates" ("name", "mode", "content") VALUES ('nodejs-single-ssl', 'http', 'server {
   server_name {{vars.pre_domain}}{{domain_name}};
   listen 443 ssl;
   location / {

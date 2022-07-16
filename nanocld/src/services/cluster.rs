@@ -10,7 +10,7 @@ use crate::config::DaemonConfig;
 use crate::{services, repositories};
 use crate::models::{
   Pool, ClusterItem, CargoItem, ClusterNetworkItem, ClusterCargoPartial,
-  CargoEnvItem,
+  CargoEnvItem, NginxTemplateModes, CargoProxyConfigItem,
 };
 
 use crate::errors::{HttpResponseError, IntoHttpResponseError};
@@ -25,12 +25,18 @@ pub struct JoinCargoOptions {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct NetworkTemplateData {
+  pub(crate) gateway: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct NginxTemplateData {
   domain_name: String,
   host_ip: String,
   target_ip: String,
   target_ips: Vec<String>,
   target_port: i32,
+  network: NetworkTemplateData,
   vars: Option<HashMap<String, String>>,
 }
 
@@ -178,45 +184,114 @@ pub async fn start(
           .await;
       log::info!("setup proxy config {:#?}", &proxy_config);
       if let Ok(proxy_config) = proxy_config {
+        let network = repositories::cluster_network::find_by_key(
+          network_key.to_owned(),
+          pool,
+        )
+        .await?;
+
+        let target_ip = target_ips[0].to_owned();
+
+        let data = NginxTemplateData {
+          domain_name: proxy_config.domain_name.to_owned(),
+          host_ip: proxy_config.host_ip.to_owned(),
+          target_ip,
+          target_ips: target_ips.to_owned(),
+          network: NetworkTemplateData {
+            gateway: network.default_gateway.to_owned(),
+          },
+          target_port: proxy_config.target_port,
+          vars: Some(vars.to_owned()),
+        };
+
+        let proxy_config_content = serde_json::to_string(&proxy_config)
+          .map_err(|err| HttpResponseError {
+            status: StatusCode::INTERNAL_SERVER_ERROR,
+            msg: format!("Unable to stringify proxy config {:#?}", err),
+          })?;
+
+        let proxy_config_template =
+          mustache::compile_str(&proxy_config_content).map_err(|err| {
+            HttpResponseError {
+              msg: format!("mustache template error: {:?}", err),
+              status: StatusCode::INTERNAL_SERVER_ERROR,
+            }
+          })?;
+
+        let proxy_config_content = proxy_config_template
+          .render_to_string(&data)
+          .map_err(|err| HttpResponseError {
+            msg: format!(
+              "Unable to render proxy config template for cargo {} : {:#?}",
+              &cargo_key, err
+            ),
+            status: StatusCode::INTERNAL_SERVER_ERROR,
+          })?;
+
+        let proxy_config =
+          serde_json::from_str::<CargoProxyConfigItem>(&proxy_config_content)
+            .map_err(|err| HttpResponseError {
+            status: StatusCode::INTERNAL_SERVER_ERROR,
+            msg: format!("Unable to serialize proxy config {:#?}", err),
+          })?;
+
         let template = repositories::nginx_template::get_by_name(
           proxy_config.template,
           pool,
         )
         .await?;
-        let content = &template.content;
-        let template =
-          mustache::compile_str(content).map_err(|err| HttpResponseError {
-            msg: format!("mustache template error: {:?}", err),
-            status: StatusCode::INTERNAL_SERVER_ERROR,
+        let mustemplate =
+          mustache::compile_str(&template.content).map_err(|err| {
+            HttpResponseError {
+              msg: format!("mustache template error: {:?}", err),
+              status: StatusCode::INTERNAL_SERVER_ERROR,
+            }
           })?;
+        log::debug!(
+          "generating nginx template with content : {:#?}",
+          &template.content
+        );
+        log::debug!("generating nginx template with data : {:#?}", &data);
+
+        let file_path = Path::new(&config.state_dir);
+
+        let file_path = match template.mode {
+          NginxTemplateModes::Http => file_path.join("nginx/sites-enabled"),
+          NginxTemplateModes::Stream => file_path.join("nginx/streams-enabled"),
+        };
+        let file_path =
+          file_path.join(format!("{name}.conf", name = &cluster_cargo_key));
+
+        let mut file = std::fs::File::create(&file_path).map_err(|err| {
+          HttpResponseError {
+            msg: format!(
+              "Unable to generate template file {} {:?}",
+              file_path.display(),
+              err
+            ),
+            status: StatusCode::INTERNAL_SERVER_ERROR,
+          }
+        })?;
         let data = NginxTemplateData {
           domain_name: proxy_config.domain_name.to_owned(),
           host_ip: proxy_config.host_ip.to_owned(),
           target_ip: target_ips[0].to_owned(),
           target_ips,
+          network: NetworkTemplateData {
+            gateway: network.default_gateway,
+          },
           target_port: proxy_config.target_port,
           vars: Some(vars.to_owned()),
         };
-        log::debug!("generating nginx template with content : {:#?}", content);
-        log::debug!("generating nginx template with data : {:#?}", &data);
-        let file_path = Path::new(&config.state_dir)
-          .join("nginx/sites-enabled")
-          .join(format!("{name}.conf", name = &cluster_cargo_key));
-        let mut file = std::fs::File::create(file_path).map_err(|err| {
+        mustemplate.render(&mut file, &data).map_err(|err| {
           HttpResponseError {
-            msg: format!("unable to generate template file {:?}", err),
-            status: StatusCode::INTERNAL_SERVER_ERROR,
-          }
-        })?;
-        template
-          .render(&mut file, &data)
-          .map_err(|err| HttpResponseError {
             msg: format!(
               "unable to render nginx template for cargo {} : {:#?}",
               &cargo_key, err
             ),
             status: StatusCode::INTERNAL_SERVER_ERROR,
-          })?;
+          }
+        })?;
         services::nginx::reload_config(docker_api).await?;
         let mut dns_entry = String::new();
         if let Some(pre_domain) = vars.get("pre_domain") {

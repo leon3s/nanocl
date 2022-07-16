@@ -112,9 +112,47 @@ async fn create_cluster_network(
     }
     Some(id) => id,
   };
+  let network = docker_api
+    .inspect_network(
+      &id,
+      None::<bollard::network::InspectNetworkOptions<String>>,
+    )
+    .await?;
 
-  let new_network =
-    cluster_network::create_for_cluster(nsp, name, payload, id, &pool).await?;
+  let ipam_config = network
+    .ipam
+    .ok_or(HttpResponseError {
+      status: StatusCode::INTERNAL_SERVER_ERROR,
+      msg: String::from("Unable to get ipam config from network"),
+    })?
+    .config
+    .ok_or(HttpResponseError {
+      status: StatusCode::INTERNAL_SERVER_ERROR,
+      msg: String::from("Unable to get ipam config"),
+    })?;
+
+  let default_gateway = ipam_config
+    .get(0)
+    .ok_or(HttpResponseError {
+      status: StatusCode::INTERNAL_SERVER_ERROR,
+      msg: String::from("Unable to get ipam config"),
+    })?
+    .gateway
+    .as_ref()
+    .ok_or(HttpResponseError {
+      status: StatusCode::INTERNAL_SERVER_ERROR,
+      msg: String::from("Unable to get ipam config gateway"),
+    })?;
+
+  let new_network = cluster_network::create_for_cluster(
+    nsp,
+    name,
+    payload,
+    id,
+    default_gateway.to_owned(),
+    &pool,
+  )
+  .await?;
   Ok(web::HttpResponse::Created().json(&new_network))
 }
 
