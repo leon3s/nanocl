@@ -6,13 +6,13 @@ This section includes the reference documentation for nanocl
 
 <table>
   <tr>
-    <th align="center">
+    <th>
       <img width="1000" height="1">
       <p>
         Title
       </p>
     </th>
-    <th align="center">
+    <th>
       <img width="1000" height="1">
       <p>
         Description
