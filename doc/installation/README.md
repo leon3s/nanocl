@@ -1,10 +1,9 @@
-## Nanocl documentation
+## Nanocl installation instruction
 
 <strong>
-This section includes the reference documentation for nanocl
+This section includes the reference installation for nanocl
 </strong>
 
 | Title                                      | Description                                             |
 | :--------------------------------------- | :------------------------------------------------------ |
-| [Manuals](./manuals/)            | Man pages of nanocl |
-| [Installation](./installation/) | Installation instructions |
+| [Linux](./linux.md)            | Install on linux |

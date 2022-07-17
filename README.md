@@ -1,32 +1,21 @@
 <div align="center">
   <img
-    src="https://avatars.githubusercontent.com/u/94208118?s=200&v=4"
+    src="./doc/images/logo.png"
   />
   <p><h1><strong>nanocl</strong></h1> </p>
   <p><strong>self-sufficient self-sufficient hybrid-cloud manager</strong> </p>
 </div>
 
-Unlock control of your network using nanocl.
+<div align="center">
+  Create on demand or persistant highly scalable environment
+  <img src="./doc/images/infra.png" />
+</div>
 
-Setup and configure enterprice grade vpn with his own dns server and http proxy.
-Allow vms and containers management on multiple machine. Automaticaly test,
-deploy and scale your services or applications.
-
-## State
-
-Approching alpha-0.1 release
-
-## Compatibility
-
-List of system compatible and tested
-
-- Ubuntu 20.xx
-- Ubuntu 22.xx
-
-## Documentation
-
-- [nanocl](./man/nanocl.1.md)
 
 ## Installation
 
-Nothing yet for production see [development](./DEVELOPING.md)
+To install nanocl refer to this [manuel](./doc/installation/)
+
+## Contribution
+
+If you want to contribute see [development](./DEVELOPING.md) section to see how to setup a dev environement for nanocl
