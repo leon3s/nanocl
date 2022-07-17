@@ -1,4 +1,4 @@
-## Nanocl documentation
+# Nanocl documentation
 
 <strong>
 This section includes the reference documentation for nanocl

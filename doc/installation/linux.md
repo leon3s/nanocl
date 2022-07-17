@@ -1,6 +1,6 @@
-## Linux installation
+# Linux installation
 
-#### From source
+## From source
 
 Install rustlang
 ```sh
