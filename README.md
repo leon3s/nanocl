@@ -3,11 +3,11 @@
     src="./doc/images/logo.png"
   />
   <p><h1><strong>nanocl</strong></h1> </p>
-  <p><strong>self-sufficient self-sufficient hybrid-cloud manager</strong> </p>
+  <p><strong>self-sufficient self-sufficient hybrid-cloud</strong> </p>
 </div>
 
 <div align="center">
-  Create on demand or persistant highly scalable environment
+  Create on demand or persistant highly scalable environment inside your cloud
   <img src="./doc/images/infra.png" />
 </div>
 
