@@ -7,12 +7,12 @@ This section includes the reference documentation for nanocl
 <table>
   <tr>
     <th align="left">
-      <img width="800" height="0">
-      Title
+      <img width="1000" height="0">
+      <p>Title</p>
     </th>
     <th align="left">
-      <img width="800" height="0">
-      Description
+      <img width="1000" height="0">
+      <p>Description</p>
     </th>
   </tr>
   <tr>
