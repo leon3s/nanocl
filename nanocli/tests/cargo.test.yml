@@ -1,2 +1,0 @@
-name: test-cargo
-image: express-test-deploy:development

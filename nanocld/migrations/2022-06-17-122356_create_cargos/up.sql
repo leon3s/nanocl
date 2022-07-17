@@ -4,5 +4,6 @@ create table "cargoes" (
   "namespace_name" VARCHAR NOT NULL references namespaces("name"),
   "name" VARCHAR NOT NULL,
   "image_name" VARCHAR NOT NULL,
-  "binds" TEXT[] NOT NULL
+  "binds" TEXT[] NOT NULL,
+  "domain" VARCHAR
 );

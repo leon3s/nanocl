@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize, Deserializer};
 use crate::{
   schema::{
     clusters, namespaces, git_repositories, cluster_networks,
-    git_repository_branches, cargoes, cargo_proxy_configs, nginx_templates,
+    git_repository_branches, cargoes, cluster_proxy_configs, nginx_templates,
     cluster_variables, cluster_cargoes, cargo_environnements, nginx_logs,
   },
 };
@@ -172,6 +172,7 @@ pub struct GitRepositoryBranchPartial {
 #[cfg_attr(feature = "openapi", derive(Component))]
 pub struct ClusterPartial {
   pub(crate) name: String,
+  pub(crate) proxy_config: Option<ClusterProxyConfigPartial>,
 }
 
 /// Cluster used to encapsulate networks
@@ -196,6 +197,14 @@ pub struct ClusterItem {
   pub(crate) namespace: String,
 }
 
+// #[derive(Debug, Serialize, Deserialize)]
+// pub struct ClusterItemWithRelation {
+//   pub(crate) key: String,
+//   pub(crate) name: String,
+//   pub(crate) namespace: String,
+//   pub(crate) proxy_config: Option<ClusterProxyConfigItem>,
+// }
+
 /// Cluster item with his relations
 #[derive(Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(Component))]
@@ -204,6 +213,7 @@ pub struct ClusterItemWithRelation {
   pub(crate) name: String,
   pub(crate) namespace: String,
   pub(crate) networks: Option<Vec<ClusterNetworkItem>>,
+  pub(crate) proxy_config: Option<ClusterProxyConfigItem>,
 }
 
 /// Cluster network partial
@@ -247,8 +257,8 @@ pub struct CargoPartial {
   pub(crate) name: String,
   pub(crate) image_name: String,
   pub(crate) environnements: Option<Vec<String>>,
-  pub(crate) proxy_config: Option<CargoProxyConfigPartial>,
   pub(crate) binds: Option<Vec<String>>,
+  pub(crate) domain: Option<String>,
 }
 
 /// Cargo item is an definition to container create image and start them
@@ -274,6 +284,7 @@ pub struct CargoItem {
   pub(crate) name: String,
   pub(crate) image_name: String,
   pub(crate) binds: Vec<String>,
+  pub(crate) domain: Option<String>,
 }
 
 #[derive(
@@ -286,23 +297,19 @@ pub struct CargoItem {
   Associations,
   AsChangeset,
 )]
-#[primary_key(cargo_key)]
-#[table_name = "cargo_proxy_configs"]
+#[primary_key(cluster_key)]
+#[table_name = "cluster_proxy_configs"]
 #[cfg_attr(feature = "openapi", derive(Component))]
-pub struct CargoProxyConfigItem {
-  pub(crate) cargo_key: String,
-  pub(crate) domain_name: String,
-  pub(crate) template: String,
-  pub(crate) host_ip: String,
+pub struct ClusterProxyConfigItem {
+  pub(crate) cluster_key: String,
+  pub(crate) template: Vec<String>,
   pub(crate) target_port: i32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(Component))]
-pub struct CargoProxyConfigPartial {
-  pub(crate) domain_name: String,
-  pub(crate) template: String,
-  pub(crate) host_ip: String,
+pub struct ClusterProxyConfigPartial {
+  pub(crate) template: Vec<String>,
   pub(crate) target_port: i32,
 }
 

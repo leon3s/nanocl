@@ -3,22 +3,22 @@ use diesel::prelude::*;
 
 use crate::services;
 use crate::models::{
-  Pool, CargoProxyConfigItem, CargoProxyConfigPartial, PgDeleteGeneric,
+  Pool, ClusterProxyConfigItem, ClusterProxyConfigPartial, PgDeleteGeneric,
 };
 
 use crate::errors::HttpResponseError;
 use super::errors::db_blocking_error;
 
-pub async fn get_for_cargo(
-  cargo_key: String,
+pub async fn get_for_cluster(
+  cluster_key: String,
   pool: &web::types::State<Pool>,
-) -> Result<CargoProxyConfigItem, HttpResponseError> {
-  use crate::schema::cargo_proxy_configs::dsl;
+) -> Result<ClusterProxyConfigItem, HttpResponseError> {
+  use crate::schema::cluster_proxy_configs::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
   let res = web::block(move || {
-    dsl::cargo_proxy_configs
-      .filter(dsl::cargo_key.eq(cargo_key))
+    dsl::cluster_proxy_configs
+      .filter(dsl::cluster_key.eq(cluster_key))
       .get_result(&conn)
   })
   .await;
@@ -29,24 +29,22 @@ pub async fn get_for_cargo(
   }
 }
 
-pub async fn create_for_cargo(
-  cargo_key: String,
-  item: CargoProxyConfigPartial,
+pub async fn create_for_cluster(
+  cluster_key: String,
+  item: ClusterProxyConfigPartial,
   pool: &web::types::State<Pool>,
-) -> Result<CargoProxyConfigItem, HttpResponseError> {
-  use crate::schema::cargo_proxy_configs::dsl;
+) -> Result<ClusterProxyConfigItem, HttpResponseError> {
+  use crate::schema::cluster_proxy_configs::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
 
   let res = web::block(move || {
-    let item = CargoProxyConfigItem {
-      cargo_key,
-      domain_name: item.domain_name,
+    let item = ClusterProxyConfigItem {
+      cluster_key,
       template: item.template,
-      host_ip: item.host_ip,
       target_port: item.target_port,
     };
-    diesel::insert_into(dsl::cargo_proxy_configs)
+    diesel::insert_into(dsl::cluster_proxy_configs)
       .values(&item)
       .execute(&conn)?;
     Ok(item)
@@ -58,16 +56,16 @@ pub async fn create_for_cargo(
   }
 }
 
-pub async fn delete_for_cargo(
-  cargo_key: String,
+pub async fn delete_for_cluster(
+  cluster_key: String,
   pool: &web::types::State<Pool>,
 ) -> Result<PgDeleteGeneric, HttpResponseError> {
-  use crate::schema::cargo_proxy_configs::dsl;
+  use crate::schema::cluster_proxy_configs::dsl;
 
   let conn = services::postgresql::get_pool_conn(pool)?;
   let res = web::block(move || {
     diesel::delete(
-      dsl::cargo_proxy_configs.filter(dsl::cargo_key.eq(cargo_key)),
+      dsl::cluster_proxy_configs.filter(dsl::cluster_key.eq(cluster_key)),
     )
     .execute(&conn)
   })

@@ -1,5 +1,34 @@
 use ntex::http::StatusCode;
+use serde::Serialize;
+
 use crate::errors::HttpResponseError;
+
+pub fn render_template<T, D>(
+  template: T,
+  data: &D,
+) -> Result<String, HttpResponseError>
+where
+  T: ToString,
+  D: Serialize,
+{
+  let compiled =
+    mustache::compile_str(&template.to_string()).map_err(|err| {
+      HttpResponseError {
+        msg: format!("{}", err),
+        status: StatusCode::INTERNAL_SERVER_ERROR,
+      }
+    })?;
+
+  let result =
+    compiled
+      .render_to_string(&data)
+      .map_err(|err| HttpResponseError {
+        msg: format!("{}", err),
+        status: StatusCode::INTERNAL_SERVER_ERROR,
+      })?;
+
+  Ok(result)
+}
 
 pub fn _get_free_port() -> Result<u16, HttpResponseError> {
   let socket = match std::net::UdpSocket::bind("127.0.0.1:0") {

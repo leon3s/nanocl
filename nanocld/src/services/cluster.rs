@@ -3,14 +3,15 @@ use ntex::http::StatusCode;
 use std::collections::HashMap;
 use std::path::Path;
 use serde::{Serialize, Deserialize};
-use futures::StreamExt;
+use futures::{StreamExt, stream};
 use futures::stream::FuturesUnordered;
 
 use crate::config::DaemonConfig;
+use crate::utils::render_template;
 use crate::{services, repositories};
 use crate::models::{
   Pool, ClusterItem, CargoItem, ClusterNetworkItem, ClusterCargoPartial,
-  CargoEnvItem, NginxTemplateModes, CargoProxyConfigItem,
+  CargoEnvItem, NginxTemplateModes, ClusterProxyConfigItem, ClusterCargoItem,
 };
 
 use crate::errors::{HttpResponseError, IntoHttpResponseError};
@@ -24,20 +25,25 @@ pub struct JoinCargoOptions {
   pub(crate) network: ClusterNetworkItem,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NetworkTemplateData {
   pub(crate) gateway: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct NginxTemplateData {
-  domain_name: String,
-  host_ip: String,
-  target_ip: String,
-  target_ips: Vec<String>,
+pub struct TemplateData {
   target_port: i32,
-  network: NetworkTemplateData,
   vars: Option<HashMap<String, String>>,
+  cargoes: HashMap<String, CargoTemplateData>,
+  networks: Option<HashMap<String, NetworkTemplateData>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CargoTemplateData {
+  name: String,
+  target_ip: String,
+  domain: Option<String>,
+  target_ips: Vec<String>,
 }
 
 pub async fn delete_networks(
@@ -91,6 +97,105 @@ pub async fn list_containers(
   Ok(containers)
 }
 
+async fn start_containers(
+  containers: Vec<bollard::models::ContainerSummary>,
+  network_key: &str,
+  docker_api: &web::types::State<bollard::Docker>,
+) -> Result<Vec<String>, HttpResponseError> {
+  log::info!("Starting cargoes");
+  let target_ips = containers
+    .into_iter()
+    .map(|container| async move {
+      let container_id = container.id.unwrap_or_default();
+      log::info!("starting container {}", &container_id);
+      docker_api
+        .start_container(
+          &container_id,
+          None::<bollard::container::StartContainerOptions<String>>,
+        )
+        .await?;
+      log::info!("successfully started container {}", &container_id);
+      let container = docker_api.inspect_container(&container_id, None).await?;
+      let networks = container
+        .network_settings
+        .ok_or(HttpResponseError {
+          msg: format!(
+            "unable to get network settings for container {:#?}",
+            &container_id,
+          ),
+          status: StatusCode::INTERNAL_SERVER_ERROR,
+        })?
+        .networks
+        .ok_or(HttpResponseError {
+          msg: format!(
+            "unable to get networks for container {:#?}",
+            &container_id
+          ),
+          status: StatusCode::INTERNAL_SERVER_ERROR,
+        })?;
+      let network = networks.get(network_key).ok_or(HttpResponseError {
+        msg: format!(
+          "unable to get network {} for container {}",
+          &network_key, &container_id
+        ),
+        status: StatusCode::INTERNAL_SERVER_ERROR,
+      })?;
+      let ip_address =
+        network.ip_address.as_ref().ok_or(HttpResponseError {
+          msg: format!(
+            "unable to get ip_address of container {}",
+            &container_id
+          ),
+          status: StatusCode::INTERNAL_SERVER_ERROR,
+        })?;
+      Ok::<String, HttpResponseError>(ip_address.into())
+    })
+    .collect::<FuturesUnordered<_>>()
+    .collect::<Vec<_>>()
+    .await
+    .into_iter()
+    .collect::<Result<Vec<String>, HttpResponseError>>()?;
+  log::info!("all cargo started");
+  Ok(target_ips)
+}
+
+async fn start_cluster_cargoes(
+  cluster_cargoes: Vec<ClusterCargoItem>,
+  docker_api: &web::types::State<bollard::Docker>,
+  pool: &web::types::State<Pool>,
+) -> Result<Vec<CargoTemplateData>, HttpResponseError> {
+  cluster_cargoes
+    .into_iter()
+    .map(|cluster_cargo| async move {
+      let cargo_key = &cluster_cargo.cargo_key;
+      let network_key = &cluster_cargo.network_key;
+      let containers = list_containers(
+        &cluster_cargo.cluster_key,
+        &cluster_cargo.cargo_key,
+        docker_api,
+      )
+      .await?;
+
+      let cargo =
+        repositories::cargo::find_by_key(cargo_key.to_owned(), pool).await?;
+
+      let target_ips =
+        start_containers(containers, network_key, docker_api).await?;
+      let cargo_template_data = CargoTemplateData {
+        name: cargo.name,
+        domain: cargo.domain,
+        target_ip: target_ips[0].to_owned(),
+        target_ips,
+      };
+      Ok::<CargoTemplateData, HttpResponseError>(cargo_template_data)
+    })
+    .collect::<FuturesUnordered<_>>()
+    .collect::<Vec<_>>()
+    .await
+    .into_iter()
+    .collect::<Result<Vec<CargoTemplateData>, HttpResponseError>>()
+}
+
 pub async fn start(
   cluster: &ClusterItem,
   config: &DaemonConfig,
@@ -103,219 +208,146 @@ pub async fn start(
   )
   .await?;
 
-  let cluster_vars = repositories::cluster_variable::list_by_cluster(
-    cluster.key.to_owned(),
-    pool,
-  )
-  .await?;
-
-  let vars = &services::cluster_variable::cluster_vars_to_hashmap(cluster_vars);
-
-  cluster_cargoes
+  let cargoes = start_cluster_cargoes(cluster_cargoes, docker_api, pool)
+    .await?
     .into_iter()
-    .map(|cluster_cargo| async move {
-      let cluster_cargo_key = &cluster_cargo.key;
-      let cargo_key = &cluster_cargo.cargo_key;
-      let network_key = &cluster_cargo.network_key;
-      let containers = list_containers(
-        &cluster_cargo.cluster_key,
-        &cluster_cargo.cargo_key,
-        docker_api,
+    .fold(HashMap::new(), |mut acc, item| {
+      acc.insert(item.name.to_owned(), item);
+      acc
+    });
+
+  let cluster_proxy_config =
+    repositories::cluster_proxy_config::get_for_cluster(
+      cluster.key.to_owned(),
+      pool,
+    )
+    .await;
+
+  if let Ok(proxy_config) = cluster_proxy_config {
+    let cluster_vars = repositories::cluster_variable::list_by_cluster(
+      cluster.key.to_owned(),
+      pool,
+    )
+    .await?;
+    let vars =
+      services::cluster_variable::cluster_vars_to_hashmap(cluster_vars);
+
+    let networks =
+      repositories::cluster_network::list_for_cluster(cluster.to_owned(), pool)
+        .await?
+        .into_iter()
+        .fold(HashMap::new(), |mut acc, network| {
+          acc.insert(
+            network.name.to_owned(),
+            NetworkTemplateData {
+              gateway: network.default_gateway,
+            },
+          );
+          acc
+        });
+
+    let mut templates = stream::iter(&proxy_config.template);
+
+    while let Some(template_name) = templates.next().await {
+      let template = repositories::nginx_template::get_by_name(
+        template_name.to_owned(),
+        pool,
       )
       .await?;
-
-      log::info!("starting cargo {}", &cargo_key);
-
-      let target_ips = containers
-        .into_iter()
-        .map(|container| async move {
-          let container_id = container.id.unwrap_or_default();
-          log::info!("starting container {}", &container_id);
-          docker_api
-            .start_container(
-              &container_id,
-              None::<bollard::container::StartContainerOptions<String>>,
-            )
-            .await?;
-          log::info!("successfully started container {}", &container_id);
-          let container =
-            docker_api.inspect_container(&container_id, None).await?;
-          let networks = container
-            .network_settings
-            .ok_or(HttpResponseError {
-              msg: format!(
-                "unable to get network settings for container {:#?}",
-                &container_id,
-              ),
-              status: StatusCode::INTERNAL_SERVER_ERROR,
-            })?
-            .networks
-            .ok_or(HttpResponseError {
-              msg: format!(
-                "unable to get networks for container {:#?}",
-                &container_id
-              ),
-              status: StatusCode::INTERNAL_SERVER_ERROR,
-            })?;
-          let network = networks.get(network_key).ok_or(HttpResponseError {
-            msg: format!(
-              "unable to get network {} for container {}",
-              &network_key, &container_id
-            ),
-            status: StatusCode::INTERNAL_SERVER_ERROR,
-          })?;
-          let ip_address =
-            network.ip_address.as_ref().ok_or(HttpResponseError {
-              msg: format!(
-                "unable to get ip_address of container {}",
-                &container_id
-              ),
-              status: StatusCode::INTERNAL_SERVER_ERROR,
-            })?;
-          Ok::<String, HttpResponseError>(ip_address.into())
-        })
-        .collect::<FuturesUnordered<_>>()
-        .collect::<Vec<_>>()
-        .await
-        .into_iter()
-        .collect::<Result<Vec<String>, HttpResponseError>>()?;
-      let proxy_config =
-        repositories::cargo_proxy_config::get_for_cargo(cargo_key.into(), pool)
-          .await;
-      log::info!("setup proxy config {:#?}", &proxy_config);
-      if let Ok(proxy_config) = proxy_config {
-        let network = repositories::cluster_network::find_by_key(
-          network_key.to_owned(),
-          pool,
-        )
-        .await?;
-
-        let target_ip = target_ips[0].to_owned();
-
-        let data = NginxTemplateData {
-          domain_name: proxy_config.domain_name.to_owned(),
-          host_ip: proxy_config.host_ip.to_owned(),
-          target_ip,
-          target_ips: target_ips.to_owned(),
-          network: NetworkTemplateData {
-            gateway: network.default_gateway.to_owned(),
-          },
-          target_port: proxy_config.target_port,
-          vars: Some(vars.to_owned()),
-        };
-
-        let proxy_config_content = serde_json::to_string(&proxy_config)
-          .map_err(|err| HttpResponseError {
-            status: StatusCode::INTERNAL_SERVER_ERROR,
-            msg: format!("Unable to stringify proxy config {:#?}", err),
-          })?;
-
-        let proxy_config_template =
-          mustache::compile_str(&proxy_config_content).map_err(|err| {
-            HttpResponseError {
-              msg: format!("mustache template error: {:?}", err),
-              status: StatusCode::INTERNAL_SERVER_ERROR,
-            }
-          })?;
-
-        let proxy_config_content = proxy_config_template
-          .render_to_string(&data)
-          .map_err(|err| HttpResponseError {
-            msg: format!(
-              "Unable to render proxy config template for cargo {} : {:#?}",
-              &cargo_key, err
-            ),
-            status: StatusCode::INTERNAL_SERVER_ERROR,
-          })?;
-
-        let proxy_config =
-          serde_json::from_str::<CargoProxyConfigItem>(&proxy_config_content)
-            .map_err(|err| HttpResponseError {
-            status: StatusCode::INTERNAL_SERVER_ERROR,
-            msg: format!("Unable to serialize proxy config {:#?}", err),
-          })?;
-
-        let template = repositories::nginx_template::get_by_name(
-          proxy_config.template,
-          pool,
-        )
-        .await?;
-        let mustemplate =
-          mustache::compile_str(&template.content).map_err(|err| {
-            HttpResponseError {
-              msg: format!("mustache template error: {:?}", err),
-              status: StatusCode::INTERNAL_SERVER_ERROR,
-            }
-          })?;
-        log::debug!(
-          "generating nginx template with content : {:#?}",
-          &template.content
-        );
-        log::debug!("generating nginx template with data : {:#?}", &data);
-
-        let file_path = Path::new(&config.state_dir);
-
-        let file_path = match template.mode {
-          NginxTemplateModes::Http => file_path.join("nginx/sites-enabled"),
-          NginxTemplateModes::Stream => file_path.join("nginx/streams-enabled"),
-        };
-        let file_path =
-          file_path.join(format!("{name}.conf", name = &cluster_cargo_key));
-
-        let mut file = std::fs::File::create(&file_path).map_err(|err| {
-          HttpResponseError {
-            msg: format!(
-              "Unable to generate template file {} {:?}",
-              file_path.display(),
-              err
-            ),
-            status: StatusCode::INTERNAL_SERVER_ERROR,
-          }
-        })?;
-        let data = NginxTemplateData {
-          domain_name: proxy_config.domain_name.to_owned(),
-          host_ip: proxy_config.host_ip.to_owned(),
-          target_ip: target_ips[0].to_owned(),
-          target_ips,
-          network: NetworkTemplateData {
-            gateway: network.default_gateway,
-          },
-          target_port: proxy_config.target_port,
-          vars: Some(vars.to_owned()),
-        };
-        mustemplate.render(&mut file, &data).map_err(|err| {
-          HttpResponseError {
-            msg: format!(
-              "unable to render nginx template for cargo {} : {:#?}",
-              &cargo_key, err
-            ),
-            status: StatusCode::INTERNAL_SERVER_ERROR,
-          }
-        })?;
-        services::nginx::reload_config(docker_api).await?;
-        let mut dns_entry = String::new();
-        if let Some(pre_domain) = vars.get("pre_domain") {
-          dns_entry += &(pre_domain.to_owned() + &proxy_config.domain_name);
-        } else {
-          dns_entry += &proxy_config.domain_name;
+      let file_path = Path::new(&config.state_dir);
+      let file_path = match template.mode {
+        NginxTemplateModes::Http => file_path.join("nginx/sites-enabled"),
+        NginxTemplateModes::Stream => file_path.join("nginx/streams-enabled"),
+      };
+      let file_path =
+        file_path.join(format!("{name}.conf", name = &cluster.key));
+      let pcstr = serde_json::to_string(&proxy_config).map_err(|err| {
+        HttpResponseError {
+          status: StatusCode::INTERNAL_SERVER_ERROR,
+          msg: format!("Unable to stringify proxy config {:#?}", err),
         }
+      })?;
+      let template_data = TemplateData {
+        target_port: proxy_config.target_port,
+        vars: Some(vars.to_owned()),
+        networks: Some(networks.to_owned()),
+        cargoes: cargoes.to_owned(),
+      };
+      let proxy_config: ClusterProxyConfigItem =
+        serde_json::from_str(&render_template(pcstr, &template_data)?)
+          .map_err(|err| HttpResponseError {
+            msg: format!("{}", err),
+            status: StatusCode::INTERNAL_SERVER_ERROR,
+          })?;
+
+      let template_data = TemplateData {
+        target_port: proxy_config.target_port,
+        vars: Some(vars.to_owned()),
+        networks: Some(networks.to_owned()),
+        cargoes: cargoes.to_owned(),
+      };
+
+      let config_file = render_template(template.content, &template_data)?;
+      std::fs::write(&file_path, config_file).map_err(|err| {
+        HttpResponseError {
+          msg: format!(
+            "Unable to write config file {} {}",
+            &file_path.display(),
+            err
+          ),
+          status: StatusCode::INTERNAL_SERVER_ERROR,
+        }
+      })?;
+
+      let mut cargoes = stream::iter(&cargoes);
+
+      println!("{:#?}", &networks);
+
+      while let Some((_, item)) = cargoes.next().await {
+        if None == item.domain {
+          continue;
+        }
+        let item_string =
+          serde_json::to_string(&item).map_err(|err| HttpResponseError {
+            msg: format!("{}", err),
+            status: StatusCode::INTERNAL_SERVER_ERROR,
+          })?;
+
+        let item: CargoTemplateData =
+          serde_json::from_str(&render_template(item_string, &template_data)?)
+            .map_err(|err| HttpResponseError {
+              msg: format!("{}", err),
+              status: StatusCode::INTERNAL_SERVER_ERROR,
+            })?;
+
+        let domain = item.domain.ok_or(HttpResponseError {
+          msg: String::from("Unexpected error domain should not be null"),
+          status: StatusCode::INTERNAL_SERVER_ERROR,
+        })?;
+
+        let dns_settings = domain.split(':').collect::<Vec<_>>();
+
+        if dns_settings.len() != 2 {
+          return Err(HttpResponseError {
+            msg: String::from("Error dns settings have incorrect format"),
+            status: StatusCode::BAD_REQUEST,
+          });
+        }
+
         services::dnsmasq::add_dns_entry(
-          &dns_entry,
-          &proxy_config.host_ip,
+          dns_settings[1],
+          dns_settings[0],
           &config.state_dir,
         )
         .map_err(|err| err.to_http_error())?;
-        services::dnsmasq::restart(docker_api)
-          .await
-          .map_err(|err| err.to_http_error())?;
       }
-      Ok::<_, HttpResponseError>(())
-    })
-    .collect::<FuturesUnordered<_>>()
-    .collect::<Vec<_>>()
-    .await
-    .into_iter()
-    .collect::<Result<Vec<()>, HttpResponseError>>()?;
+
+      services::dnsmasq::restart(docker_api)
+        .await
+        .map_err(|err| err.to_http_error())?;
+      services::nginx::reload_config(docker_api).await?;
+    }
+  }
   Ok(())
 }
 

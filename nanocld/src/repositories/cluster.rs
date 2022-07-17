@@ -202,6 +202,7 @@ mod test_cluster {
       .unwrap();
     let item = ClusterPartial {
       name: String::from(CLUSTER_NAME),
+      proxy_config: None,
     };
     // test create cluster
     create_for_namespace(String::from(NSP_NAME), item, &pool_state)

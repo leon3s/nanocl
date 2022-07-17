@@ -17,6 +17,7 @@ impl Nanocld {
           }))
           .finish(),
       )
+      .timeout(ntex::time::Millis::from_secs(20))
       .finish();
 
     Nanocld {

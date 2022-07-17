@@ -1,15 +1,17 @@
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 
-use crate::nanocld::{cargo::CargoProxyConfigPartial, cluster::ClusterJoinPartial};
+use crate::nanocld::{
+  cluster::{ClusterJoinPartial, ClusterProxyConfigPartial},
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Cargo {
   pub(crate) name: String,
   #[serde(rename(deserialize = "image"))]
   pub(crate) image_name: String,
+  pub(crate) domain: Option<String>,
   pub(crate) binds: Option<Vec<String>>,
-  pub(crate) proxy_config: Option<CargoProxyConfigPartial>,
   #[serde(rename(deserialize = "envs"))]
   pub(crate) environnements: Option<Vec<String>>,
 }
@@ -29,6 +31,7 @@ pub(crate) struct GitRepository {
 pub(crate) struct Cluster {
   pub(crate) name: String,
   pub(crate) auto_start: Option<bool>,
+  pub(crate) proxy_config: Option<ClusterProxyConfigPartial>,
   #[serde(rename(deserialize = "vars"))]
   pub(crate) variables: Option<HashMap<String, String>>,
   pub(crate) joins: Option<Vec<ClusterJoinPartial>>,

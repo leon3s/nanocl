@@ -142,6 +142,7 @@ mod cluster_networks {
     // Create cluster for relationship
     let new_cluster = ClusterPartial {
       name: String::from("dev"),
+      proxy_config: None,
     };
     let cluster = cluster::create_for_namespace(
       String::from("default"),

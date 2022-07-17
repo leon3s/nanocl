@@ -8,7 +8,7 @@ pub mod nginx_template;
 
 pub mod cargo;
 pub mod cargo_env;
-pub mod cargo_proxy_config;
+pub mod cluster_proxy_config;
 
 pub mod cluster;
 pub mod cluster_cargo;

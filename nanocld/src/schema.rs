@@ -12,24 +12,13 @@ table! {
 table! {
     use crate::models::exports::*;
 
-    cargo_proxy_configs (cargo_key) {
-        cargo_key -> Varchar,
-        domain_name -> Varchar,
-        template -> Varchar,
-        host_ip -> Varchar,
-        target_port -> Int4,
-    }
-}
-
-table! {
-    use crate::models::exports::*;
-
     cargoes (key) {
         key -> Varchar,
         namespace_name -> Varchar,
         name -> Varchar,
         image_name -> Varchar,
         binds -> Array<Text>,
+        domain -> Nullable<Varchar>,
     }
 }
 
@@ -54,6 +43,16 @@ table! {
         docker_network_id -> Varchar,
         default_gateway -> Varchar,
         cluster_key -> Varchar,
+    }
+}
+
+table! {
+    use crate::models::exports::*;
+
+    cluster_proxy_configs (cluster_key) {
+        cluster_key -> Varchar,
+        template -> Array<Text>,
+        target_port -> Int4,
     }
 }
 
@@ -145,19 +144,19 @@ table! {
     }
 }
 
-joinable!(cargo_proxy_configs -> cargoes (cargo_key));
 joinable!(cargoes -> namespaces (namespace_name));
 joinable!(cluster_cargoes -> cargoes (cargo_key));
 joinable!(cluster_cargoes -> cluster_networks (network_key));
 joinable!(cluster_cargoes -> clusters (cluster_key));
 joinable!(cluster_networks -> clusters (cluster_key));
+joinable!(cluster_proxy_configs -> clusters (cluster_key));
 
 allow_tables_to_appear_in_same_query!(
     cargo_environnements,
-    cargo_proxy_configs,
     cargoes,
     cluster_cargoes,
     cluster_networks,
+    cluster_proxy_configs,
     cluster_variables,
     clusters,
     git_repositories,

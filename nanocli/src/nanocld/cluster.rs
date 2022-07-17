@@ -8,6 +8,12 @@ use super::{
   models::{PgGenericCount, GenericNamespaceQuery},
 };
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ClusterProxyConfigPartial {
+  pub(crate) template: Vec<String>,
+  pub(crate) target_port: i32,
+}
+
 #[derive(Debug, Tabled, Serialize, Deserialize)]
 pub struct ClusterItem {
   pub(crate) key: String,
@@ -18,6 +24,8 @@ pub struct ClusterItem {
 #[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct ClusterPartial {
   pub name: String,
+  #[clap(skip)]
+  pub proxy_config: Option<ClusterProxyConfigPartial>,
 }
 
 #[derive(Debug, Tabled, Serialize, Deserialize)]

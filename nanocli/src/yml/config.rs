@@ -99,6 +99,7 @@ async fn apply_namespace(
         .await;
       let item = ClusterPartial {
         name: cluster.name.to_owned(),
+        proxy_config: cluster.proxy_config.to_owned(),
       };
       if cluster_exists.is_err() {
         client
@@ -191,8 +192,8 @@ async fn apply_namespace(
         .await;
       let item = CargoPartial {
         name: cargo.name.to_owned(),
+        domain: cargo.domain.to_owned(),
         image_name: cargo.image_name.to_owned(),
-        proxy_config: cargo.proxy_config.to_owned(),
         environnements: cargo.environnements.to_owned(),
       };
       if result.is_err() {

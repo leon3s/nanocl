@@ -1,4 +1,0 @@
-name: express-test-deploy
-type: git-repository
-url: https://github.com/leon3s/express-test-deploy
-auto_build: true

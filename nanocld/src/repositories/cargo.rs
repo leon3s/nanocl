@@ -37,6 +37,7 @@ pub async fn create(
       namespace_name: nsp,
       image_name: item.image_name,
       binds: item.binds.unwrap_or_default(),
+      domain: item.domain,
     };
     diesel::insert_into(dsl::cargoes)
       .values(&new_item)

@@ -69,18 +69,8 @@ async fn create_cargo(
     &nsp,
     payload,
   );
-  let proxy_config = payload.proxy_config.to_owned();
   let environnements = payload.environnements.to_owned();
   let item = repositories::cargo::create(nsp, payload, &pool).await?;
-  if let Some(proxy_config) = proxy_config {
-    log::info!("creating proxy config");
-    repositories::cargo_proxy_config::create_for_cargo(
-      item.key.to_owned(),
-      proxy_config,
-      &pool,
-    )
-    .await?;
-  }
   if let Some(environnements) = environnements {
     let mut envs: Vec<CargoEnvPartial> = Vec::new();
     let cargo_envs = environnements
@@ -137,19 +127,12 @@ async fn delete_cargo_by_name(
   let gen_key = nsp + "-" + &name.into_inner();
 
   repositories::cargo::find_by_key(gen_key.clone(), &pool).await?;
-  log::info!("deleting cargo proxy config");
-  repositories::cargo_proxy_config::delete_for_cargo(gen_key.to_owned(), &pool)
-    .await?;
-  log::info!("deleting cluster links");
   repositories::cluster_cargo::delete_by_cargo_key(gen_key.to_owned(), &pool)
     .await?;
-  log::info!("deleting cargo");
   let res =
     repositories::cargo::delete_by_key(gen_key.to_owned(), &pool).await?;
-  log::info!("deleting environements");
   repositories::cargo_env::delete_by_cargo_key(gen_key.to_owned(), &pool)
     .await?;
-  log::info!("deleting containers");
   services::cargo::delete_container(gen_key.to_owned(), &docker_api).await?;
   Ok(web::HttpResponse::Ok().json(&res))
 }

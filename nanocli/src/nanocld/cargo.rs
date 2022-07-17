@@ -9,14 +9,6 @@ use super::{
   models::{PgGenericCount, GenericNamespaceQuery},
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CargoProxyConfigPartial {
-  pub(crate) domain_name: String,
-  pub(crate) template: String,
-  pub(crate) host_ip: String,
-  pub(crate) target_port: i32,
-}
-
 #[derive(Debug, Error)]
 pub enum CargoProxyConfigError {
   #[error("the config key `{0}` is not available")]
@@ -25,63 +17,63 @@ pub enum CargoProxyConfigError {
   ValueRequired(String),
 }
 
-impl std::str::FromStr for CargoProxyConfigPartial {
-  type Err = CargoProxyConfigError;
+// impl std::str::FromStr for CargoProxyConfigPartial {
+//   type Err = CargoProxyConfigError;
 
-  fn from_str(s: &str) -> Result<Self, Self::Err> {
-    let mut options = s.split(',');
+//   fn from_str(s: &str) -> Result<Self, Self::Err> {
+//     let mut options = s.split(',');
 
-    let item = options.try_fold(
-      CargoProxyConfigPartial {
-        domain_name: String::from(""),
-        template: String::from(""),
-        host_ip: String::from(""),
-        target_port: 0,
-      },
-      |acc, option| {
-        let args = option.split('=').collect::<Vec<&str>>();
-        match args[0] {
-          "domain_name" => Ok(CargoProxyConfigPartial {
-            domain_name: String::from(args[1]),
-            ..acc
-          }),
-          "template" => Ok(CargoProxyConfigPartial {
-            template: String::from(args[1]),
-            ..acc
-          }),
-          "host_ip" => Ok(CargoProxyConfigPartial {
-            host_ip: String::from(args[1]),
-            ..acc
-          }),
-          "target_port" => Ok(CargoProxyConfigPartial {
-            target_port: args[1].parse::<i32>().map_err(|_| {
-              CargoProxyConfigError::ParseError(format!(
-                "{} must be a number",
-                args[0]
-              ))
-            })?,
-            ..acc
-          }),
-          &_ => Err(CargoProxyConfigError::ParseError(args[0].to_owned())),
-        }
-      },
-    )?;
+//     let item = options.try_fold(
+//       CargoProxyConfigPartial {
+//         domain_name: String::from(""),
+//         template: String::from(""),
+//         host_ip: String::from(""),
+//         target_port: 0,
+//       },
+//       |acc, option| {
+//         let args = option.split('=').collect::<Vec<&str>>();
+//         match args[0] {
+//           "domain_name" => Ok(CargoProxyConfigPartial {
+//             domain_name: String::from(args[1]),
+//             ..acc
+//           }),
+//           "template" => Ok(CargoProxyConfigPartial {
+//             template: args[1],
+//             ..acc
+//           }),
+//           "host_ip" => Ok(CargoProxyConfigPartial {
+//             host_ip: String::from(args[1]),
+//             ..acc
+//           }),
+//           "target_port" => Ok(CargoProxyConfigPartial {
+//             target_port: args[1].parse::<i32>().map_err(|_| {
+//               CargoProxyConfigError::ParseError(format!(
+//                 "{} must be a number",
+//                 args[0]
+//               ))
+//             })?,
+//             ..acc
+//           }),
+//           &_ => Err(CargoProxyConfigError::ParseError(args[0].to_owned())),
+//         }
+//       },
+//     )?;
 
-    if item.target_port == 0 {
-      return Err(CargoProxyConfigError::ValueRequired(String::from(
-        "target_port",
-      )));
-    }
+//     if item.target_port == 0 {
+//       return Err(CargoProxyConfigError::ValueRequired(String::from(
+//         "target_port",
+//       )));
+//     }
 
-    Ok(item)
-  }
-}
+//     Ok(item)
+//   }
+// }
 
-impl std::fmt::Display for CargoProxyConfigPartial {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{:?}", self)
-  }
-}
+// impl std::fmt::Display for ClusterProxyConfigPartial {
+//   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//     write!(f, "{:?}", self)
+//   }
+// }
 
 #[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct CargoPartial {
@@ -90,9 +82,12 @@ pub struct CargoPartial {
   /// name of the image
   #[clap(long = "image")]
   pub(crate) image_name: String,
-  /// proxy config is an optional string as follow domain_name=your_domain,host_ip=your_host_ip
+  /// Optional domain to bind to in format ip:domain.com
   #[clap(long)]
-  pub(crate) proxy_config: Option<CargoProxyConfigPartial>,
+  pub(crate) domain: Option<String>,
+  /// proxy config is an optional string as follow domain_name=your_domain,host_ip=your_host_ip
+  // #[clap(long)]
+  // pub(crate) proxy_config: Option<CargoProxyConfigPartial>,
   /// Environement variable
   #[clap(long = "-env")]
   pub(crate) environnements: Option<Vec<String>>,

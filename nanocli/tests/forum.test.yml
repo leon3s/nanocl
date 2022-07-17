@@ -1,42 +1,45 @@
 type: namespace
-name: next-hat-forum
+name: simple-forum
+
+networks:
+  - name: forum
 
 clusters:
   - name: test
     auto_start: true
+    proxy_config:
+      target_port: 3000
+      template:
+        - test-forum
+        - test-stream
+
     joins:
       - cargo: forum-db
-        network: next-hat-forum
+        network: forum
       - cargo: forum
-        network: next-hat-forum
+        network: forum
     vars:
       CLUSTER: DEV
-
-networks:
-  - name: next-hat-forum
 
 cargoes:
   - name: forum-db
     image: mariadb:10.5
+    domain: "{{networks.forum.gateway}}:db.express-forum.com"
     envs:
       - "TZ=Europe/Paris"
       - "MYSQL_ALLOW_EMPTY_PASSWORD=yes"
       - "MYSQL_DATABASE=flarum"
       - "MYSQL_USER=flarum"
       - "MYSQL_PASSWORD=flarum"
-    proxy_config:
-      target_port: 3306
-      domain_name: "db.express-test.com"
-      host_ip: "{{network.gateway}}"
-      template: test-stream
 
   - name: forum
     image: crazymax/flarum:latest
+    domain: 192.168.8.100:express-forum.com
     envs:
       - "TZ=Europe/Paris"
       - "PUID=1000"
       - "PGID=1000"
-      - "DB_HOST=db.express-test.com"
+      - "DB_HOST=db.express-forum.com"
       - "DB_NAME=flarum"
       - "DB_USER=flarum"
       - "DB_PASSWORD=flarum"
@@ -47,9 +50,4 @@ cargoes:
       - "REAL_IP_HEADER=X-Forwarded-For"
       - "LOG_IP_VAR=remote_addr"
       - "FLARUM_DEBUG=false"
-      - "FLARUM_BASE_URL=http://forum.express-test.com"
-    proxy_config:
-      target_port: 8000
-      domain_name: "forum.express-test.com"
-      host_ip: 192.168.8.100
-      template: nodejs-single
+      - "FLARUM_BASE_URL=http://express-forum.com"

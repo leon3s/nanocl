@@ -1,7 +1,7 @@
 pub fn print_version() {
   const ARCH: &str = "amd64";
   const VERSION: &str = "0.1.0";
-  const COMMIT_ID: &str = "f9fabf6e";
+  const COMMIT_ID: &str = "6b2d1f18";
 
   println!("Arch: {}", ARCH);
   println!("Version: {}", VERSION);
