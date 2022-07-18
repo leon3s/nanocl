@@ -1,20 +1,21 @@
 <div align="center">
+  <h1><strong>nanocl</strong></h1>
   <img
     src="./doc/images/logo.png"
   />
-  <p><h1><strong>nanocl</strong></h1> </p>
-  <p><strong>self-sufficient self-sufficient hybrid-cloud</strong> </p>
+  <h1><strong>self-sufficient hybrid-cloud</strong> </h1>
 </div>
 
 <div align="center">
-  Create on demand or persistant highly scalable environment inside your cloud
+  <p>Environment as Services</p>
+  <p><strong>EaaS</strong></p>
+  <p>Create on demand or persistant highly scalable environment</p>
   <img src="./doc/images/infra.png" />
 </div>
 
-
 ## Installation
 
-To install nanocl refer to this [manuel](./doc/installation/)
+To install nanocl refer to this [manual](./doc/installation/)
 
 ## Contribution
 

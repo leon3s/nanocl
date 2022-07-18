@@ -17,7 +17,7 @@ This section includes the reference installation for nanocl
   </tr>
   <tr>
     <td>
-      <a href="./installation/">Linux</a>
+      <a href="./linux">Linux</a>
     </td>
     <td>
       Install on linux

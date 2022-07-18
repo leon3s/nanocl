@@ -5,14 +5,29 @@ networks:
   - name: forum
 
 clusters:
-  - name: test
+  - name: dev
     auto_start: true
     proxy_config:
       target_port: 3000
       template:
         - test-forum
         - test-stream
+    joins:
+      - cargo: forum-db
+        network: forum
+      - cargo: forum
+        network: forum
+    vars:
+      CLUSTER: DEV
+      PRE_DOMAIN: dev.
 
+  - name: production
+    auto_start: true
+    proxy_config:
+      target_port: 3000
+      template:
+        - test-forum
+        - test-stream
     joins:
       - cargo: forum-db
         network: forum
@@ -24,7 +39,7 @@ clusters:
 cargoes:
   - name: forum-db
     image: mariadb:10.5
-    domain: "{{networks.forum.gateway}}:db.express-forum.com"
+    domain: "{{networks.forum.gateway}}:{{vars.PRE_DOMAIN}}db.express-forum.com"
     envs:
       - "TZ=Europe/Paris"
       - "MYSQL_ALLOW_EMPTY_PASSWORD=yes"
@@ -34,12 +49,12 @@ cargoes:
 
   - name: forum
     image: crazymax/flarum:latest
-    domain: 192.168.8.100:express-forum.com
+    domain: 192.168.8.100:{{vars.PRE_DOMAIN}}express-forum.com
     envs:
       - "TZ=Europe/Paris"
       - "PUID=1000"
       - "PGID=1000"
-      - "DB_HOST=db.express-forum.com"
+      - "DB_HOST={{vars.PRE_DOMAIN}}db.express-forum.com"
       - "DB_NAME=flarum"
       - "DB_USER=flarum"
       - "DB_PASSWORD=flarum"
@@ -50,4 +65,4 @@ cargoes:
       - "REAL_IP_HEADER=X-Forwarded-For"
       - "LOG_IP_VAR=remote_addr"
       - "FLARUM_DEBUG=false"
-      - "FLARUM_BASE_URL=http://express-forum.com"
+      - "FLARUM_BASE_URL=http://{{vars.PRE_DOMAIN}}express-forum.com"
