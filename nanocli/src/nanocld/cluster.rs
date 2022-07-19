@@ -8,10 +8,16 @@ use super::{
   models::{PgGenericCount, GenericNamespaceQuery},
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ClusterProxyConfigPartial {
-  pub(crate) template: Vec<String>,
-  pub(crate) target_port: i32,
+/// Tabled function to display cluster network
+fn tbd_cluster_network(o: &Option<Vec<ClusterNetworkItem>>) -> String {
+  match o {
+    Some(s) => format!("{:#?}", s),
+    None => String::from(""),
+  }
+}
+
+fn tbd_vec_string(o: &[String]) -> String {
+  o.join(", ")
 }
 
 #[derive(Debug, Tabled, Serialize, Deserialize)]
@@ -19,21 +25,37 @@ pub struct ClusterItem {
   pub(crate) key: String,
   pub(crate) namespace: String,
   pub(crate) name: String,
+  #[tabled(display_with = "tbd_vec_string")]
+  pub(crate) proxy_templates: Vec<String>,
+  // #[tabled(display_with = "display_option")]
+  // pub(crate) networks: Option<Vec<ClusterNetworkItem>>,
+}
+
+/// Cluster item with his relations
+#[derive(Debug, Tabled, Serialize, Deserialize)]
+pub struct ClusterItemWithRelation {
+  pub(crate) key: String,
+  pub(crate) name: String,
+  pub(crate) namespace: String,
+  #[tabled(display_with = "tbd_vec_string")]
+  pub(crate) proxy_templates: Vec<String>,
+  #[tabled(skip)]
+  pub(crate) networks: Option<Vec<ClusterNetworkItem>>,
 }
 
 #[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct ClusterPartial {
   pub name: String,
-  #[clap(skip)]
-  pub proxy_config: Option<ClusterProxyConfigPartial>,
+  #[clap(long)]
+  pub proxy_templates: Option<Vec<String>>,
 }
 
 #[derive(Debug, Tabled, Serialize, Deserialize)]
 pub struct ClusterNetworkItem {
   pub(crate) key: String,
   pub(crate) name: String,
-  pub(crate) docker_network_id: String,
   pub(crate) cluster_key: String,
+  pub(crate) default_gateway: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -93,7 +115,7 @@ impl Nanocld {
     &self,
     name: &str,
     namespace: Option<String>,
-  ) -> Result<ClusterItem, NanocldError> {
+  ) -> Result<ClusterItemWithRelation, NanocldError> {
     let mut res = self
       .get(format!("/clusters/{name}/inspect", name = name))
       .query(&GenericNamespaceQuery { namespace })
@@ -102,8 +124,7 @@ impl Nanocld {
       .await?;
     let status = res.status();
     is_api_error(&mut res, &status).await?;
-    println!("res {:#?}", res);
-    let item = res.json::<ClusterItem>().await?;
+    let item = res.json::<ClusterItemWithRelation>().await?;
 
     Ok(item)
   }

@@ -18,7 +18,9 @@ table! {
         name -> Varchar,
         image_name -> Varchar,
         binds -> Array<Text>,
-        domain -> Nullable<Varchar>,
+        dns_entry -> Nullable<Varchar>,
+        domainname -> Nullable<Varchar>,
+        hostname -> Nullable<Varchar>,
     }
 }
 
@@ -49,16 +51,6 @@ table! {
 table! {
     use crate::models::exports::*;
 
-    cluster_proxy_configs (cluster_key) {
-        cluster_key -> Varchar,
-        template -> Array<Text>,
-        target_port -> Int4,
-    }
-}
-
-table! {
-    use crate::models::exports::*;
-
     cluster_variables (key) {
         key -> Varchar,
         cluster_key -> Varchar,
@@ -74,6 +66,7 @@ table! {
         key -> Varchar,
         name -> Varchar,
         namespace -> Varchar,
+        proxy_templates -> Array<Text>,
     }
 }
 
@@ -149,14 +142,12 @@ joinable!(cluster_cargoes -> cargoes (cargo_key));
 joinable!(cluster_cargoes -> cluster_networks (network_key));
 joinable!(cluster_cargoes -> clusters (cluster_key));
 joinable!(cluster_networks -> clusters (cluster_key));
-joinable!(cluster_proxy_configs -> clusters (cluster_key));
 
 allow_tables_to_appear_in_same_query!(
     cargo_environnements,
     cargoes,
     cluster_cargoes,
     cluster_networks,
-    cluster_proxy_configs,
     cluster_variables,
     clusters,
     git_repositories,

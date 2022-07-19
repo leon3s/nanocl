@@ -44,6 +44,7 @@ pub async fn create_for_namespace(
       key: k,
       namespace: nsp,
       name: item.name,
+      proxy_templates: item.proxy_templates.unwrap_or_default(),
     };
 
     diesel::insert_into(dsl::clusters)
@@ -202,7 +203,7 @@ mod test_cluster {
       .unwrap();
     let item = ClusterPartial {
       name: String::from(CLUSTER_NAME),
-      proxy_config: None,
+      proxy_templates: None,
     };
     // test create cluster
     create_for_namespace(String::from(NSP_NAME), item, &pool_state)

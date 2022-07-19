@@ -62,6 +62,8 @@ pub async fn create_containers<'a>(
   labels.insert(String::from("cargo"), opts.cargo.key.to_owned());
   let config = bollard::container::Config {
     image,
+    hostname: opts.cargo.hostname.to_owned(),
+    domainname: opts.cargo.domainname.to_owned(),
     tty: Some(true),
     labels: Some(labels),
     env: Some(opts.environnements),
@@ -69,7 +71,7 @@ pub async fn create_containers<'a>(
     attach_stderr: Some(true),
     host_config: Some(bollard::models::HostConfig {
       binds: Some(opts.cargo.binds.to_owned()),
-      dns: Some(vec![String::from("142.0.0.1")]),
+      // dns: Some(vec![String::from("142.0.0.1")]),
       // This remove internet inside the container need to find a workarround
       // network_mode: Some(opts.network_key),
       ..Default::default()

@@ -5,5 +5,7 @@ create table "cargoes" (
   "name" VARCHAR NOT NULL,
   "image_name" VARCHAR NOT NULL,
   "binds" TEXT[] NOT NULL,
-  "domain" VARCHAR
+  "dns_entry" VARCHAR,
+  "domainname" VARCHAR,
+  "hostname" VARCHAR
 );

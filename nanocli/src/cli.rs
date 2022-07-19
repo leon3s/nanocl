@@ -82,6 +82,11 @@ pub struct ClusterStartOptions {
   pub(crate) name: String,
 }
 
+#[derive(Debug, Parser)]
+pub struct ClusterInspectOptions {
+  pub(crate) name: String,
+}
+
 /// Cluster sub commands
 #[derive(Debug, Subcommand)]
 pub enum ClusterCommands {
@@ -90,11 +95,13 @@ pub enum ClusterCommands {
   List,
   /// Create new cluster
   Create(ClusterPartial),
-  /// Remove cluster
+  /// Remove cluster by it's name
   #[clap(alias("rm"))]
   Remove(ClusterDeleteOptions),
-  /// Start cluster
+  /// Start cluster by it's name
   Start(ClusterStartOptions),
+  /// Inspect cluster by it's name
+  Inspect(ClusterInspectOptions),
 }
 
 /// Cluster network delete topions
@@ -310,6 +317,7 @@ pub enum Commands {
   NginxTemplate(NginxTemplateArgs),
   ClusterNetwork(ClusterNetworkArgs),
   ContainerImage(ContainerImageArgs),
+  /// Connect to nginx logging
   NginxLog,
   /// Show the Nanocl version information
   Version,

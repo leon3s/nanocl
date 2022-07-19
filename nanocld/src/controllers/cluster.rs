@@ -69,17 +69,8 @@ async fn create_cluster(
     None => String::from("global"),
     Some(namespace) => namespace,
   };
-  let proxy_config = json.proxy_config.to_owned();
   let res =
     repositories::cluster::create_for_namespace(nsp, json, &pool).await?;
-  if let Some(proxy_config) = proxy_config {
-    repositories::cluster_proxy_config::create_for_cluster(
-      res.key.to_owned(),
-      proxy_config,
-      &pool,
-    )
-    .await?;
-  }
   Ok(web::HttpResponse::Created().json(&res))
 }
 
@@ -123,11 +114,6 @@ async fn delete_cluster_by_name(
   )
   .await?;
   services::cluster::delete_networks(item, &docker_api, &pool).await?;
-  repositories::cluster_proxy_config::delete_for_cluster(
-    gen_key.to_owned(),
-    &pool,
-  )
-  .await?;
   let res = repositories::cluster::delete_by_key(gen_key, &pool).await?;
   Ok(web::HttpResponse::Ok().json(&res))
 }
@@ -160,24 +146,15 @@ async fn inspect_cluster_by_name(
   let gen_key = nsp.to_owned() + "-" + &name;
   let item =
     repositories::cluster::find_by_key(gen_key.to_owned(), &pool).await?;
+  let proxy_templates = item.proxy_templates.to_owned();
   let networks =
     repositories::cluster_network::list_for_cluster(item, &pool).await?;
-
-  let proxy_config = match repositories::cluster_proxy_config::get_for_cluster(
-    gen_key.to_owned(),
-    &pool,
-  )
-  .await
-  {
-    Err(_) => None,
-    Ok(proxy_config) => Some(proxy_config),
-  };
 
   let res = ClusterItemWithRelation {
     name,
     key: gen_key,
     namespace: nsp,
-    proxy_config,
+    proxy_templates,
     networks: Some(networks),
   };
 
@@ -347,7 +324,7 @@ mod test_namespace_cluster {
   async fn test_create(srv: &TestServer) -> TestReturn {
     let item = ClusterPartial {
       name: String::from("test_cluster"),
-      proxy_config: None,
+      proxy_templates: None,
     };
     let resp = srv.post("/clusters").send_json(&item).await?;
 

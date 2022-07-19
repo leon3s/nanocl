@@ -11,7 +11,7 @@ use crate::utils::render_template;
 use crate::{services, repositories};
 use crate::models::{
   Pool, ClusterItem, CargoItem, ClusterNetworkItem, ClusterCargoPartial,
-  CargoEnvItem, NginxTemplateModes, ClusterProxyConfigItem, ClusterCargoItem,
+  CargoEnvItem, NginxTemplateModes, ClusterCargoItem,
 };
 
 use crate::errors::{HttpResponseError, IntoHttpResponseError};
@@ -32,7 +32,6 @@ pub struct NetworkTemplateData {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TemplateData {
-  target_port: i32,
   vars: Option<HashMap<String, String>>,
   cargoes: HashMap<String, CargoTemplateData>,
   networks: Option<HashMap<String, NetworkTemplateData>>,
@@ -42,7 +41,7 @@ pub struct TemplateData {
 pub struct CargoTemplateData {
   name: String,
   target_ip: String,
-  domain: Option<String>,
+  dns_entry: Option<String>,
   target_ips: Vec<String>,
 }
 
@@ -183,7 +182,7 @@ async fn start_cluster_cargoes(
         start_containers(containers, network_key, docker_api).await?;
       let cargo_template_data = CargoTemplateData {
         name: cargo.name,
-        domain: cargo.domain,
+        dns_entry: cargo.dns_entry,
         target_ip: target_ips[0].to_owned(),
         target_ips,
       };
@@ -216,14 +215,7 @@ pub async fn start(
       acc
     });
 
-  let cluster_proxy_config =
-    repositories::cluster_proxy_config::get_for_cluster(
-      cluster.key.to_owned(),
-      pool,
-    )
-    .await;
-
-  if let Ok(proxy_config) = cluster_proxy_config {
+  if !cluster.proxy_templates.is_empty() {
     let cluster_vars = repositories::cluster_variable::list_by_cluster(
       cluster.key.to_owned(),
       pool,
@@ -246,7 +238,7 @@ pub async fn start(
           acc
         });
 
-    let mut templates = stream::iter(&proxy_config.template);
+    let mut templates = stream::iter(&cluster.proxy_templates);
 
     while let Some(template_name) = templates.next().await {
       let template = repositories::nginx_template::get_by_name(
@@ -261,27 +253,7 @@ pub async fn start(
       };
       let file_path =
         file_path.join(format!("{name}.conf", name = &cluster.key));
-      let pcstr = serde_json::to_string(&proxy_config).map_err(|err| {
-        HttpResponseError {
-          status: StatusCode::INTERNAL_SERVER_ERROR,
-          msg: format!("Unable to stringify proxy config {:#?}", err),
-        }
-      })?;
       let template_data = TemplateData {
-        target_port: proxy_config.target_port,
-        vars: Some(vars.to_owned()),
-        networks: Some(networks.to_owned()),
-        cargoes: cargoes.to_owned(),
-      };
-      let proxy_config: ClusterProxyConfigItem =
-        serde_json::from_str(&render_template(pcstr, &template_data)?)
-          .map_err(|err| HttpResponseError {
-            msg: format!("{}", err),
-            status: StatusCode::INTERNAL_SERVER_ERROR,
-          })?;
-
-      let template_data = TemplateData {
-        target_port: proxy_config.target_port,
         vars: Some(vars.to_owned()),
         networks: Some(networks.to_owned()),
         cargoes: cargoes.to_owned(),
@@ -304,7 +276,7 @@ pub async fn start(
       println!("{:#?}", &networks);
 
       while let Some((_, item)) = cargoes.next().await {
-        if None == item.domain {
+        if None == item.dns_entry {
           continue;
         }
         let item_string =
@@ -320,7 +292,7 @@ pub async fn start(
               status: StatusCode::INTERNAL_SERVER_ERROR,
             })?;
 
-        let domain = item.domain.ok_or(HttpResponseError {
+        let domain = item.dns_entry.ok_or(HttpResponseError {
           msg: String::from("Unexpected error domain should not be null"),
           status: StatusCode::INTERNAL_SERVER_ERROR,
         })?;

@@ -1,16 +1,16 @@
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 
-use crate::nanocld::{
-  cluster::{ClusterJoinPartial, ClusterProxyConfigPartial},
-};
+use crate::nanocld::cluster::ClusterJoinPartial;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Cargo {
   pub(crate) name: String,
   #[serde(rename(deserialize = "image"))]
   pub(crate) image_name: String,
-  pub(crate) domain: Option<String>,
+  pub(crate) dns_entry: Option<String>,
+  pub(crate) domainname: Option<String>,
+  pub(crate) hostname: Option<String>,
   pub(crate) binds: Option<Vec<String>>,
   #[serde(rename(deserialize = "envs"))]
   pub(crate) environnements: Option<Vec<String>>,
@@ -31,18 +31,11 @@ pub(crate) struct GitRepository {
 pub(crate) struct Cluster {
   pub(crate) name: String,
   pub(crate) auto_start: Option<bool>,
-  pub(crate) proxy_config: Option<ClusterProxyConfigPartial>,
+  pub(crate) proxy_templates: Option<Vec<String>>,
   #[serde(rename(deserialize = "vars"))]
   pub(crate) variables: Option<HashMap<String, String>>,
   pub(crate) joins: Option<Vec<ClusterJoinPartial>>,
 }
-
-// #[derive(Debug, Serialize, Deserialize)]
-// pub(crate) struct CargoProxyConf {
-//   target_port: u32,
-//   host_ip: String,
-//   domain_name: String,
-// }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct NamespaceConfig {

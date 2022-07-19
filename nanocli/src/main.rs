@@ -144,6 +144,16 @@ async fn execute_args(args: &Cli) -> Result<(), CliError> {
           .start_cluster(&options.name, args.namespace.to_owned())
           .await?;
       }
+      ClusterCommands::Inspect(options) => {
+        let cluster = client
+          .inspect_cluster(&options.name, args.namespace.to_owned())
+          .await?;
+        println!("=== CLUSTER ===");
+        print_table(vec![&cluster]);
+        println!("=== NETWORKS ===");
+        print_table(cluster.networks.unwrap_or_default());
+        println!("===============");
+      }
     },
     Commands::ClusterNetwork(args) => match &args.commands {
       ClusterNetworkCommands::List => {
