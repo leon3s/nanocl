@@ -239,6 +239,7 @@ async fn join_cargo_to_cluster(
     cluster,
     cargo,
     network,
+    is_creating_relation: true,
   };
   services::cluster::join_cargo(&join_cargo_opts, &docker_api, &pool).await?;
   log::debug!("join success.");

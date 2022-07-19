@@ -23,6 +23,7 @@ pub struct JoinCargoOptions {
   pub(crate) cluster: ClusterItem,
   pub(crate) cargo: CargoItem,
   pub(crate) network: ClusterNetworkItem,
+  pub(crate) is_creating_relation: bool,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -56,13 +57,13 @@ pub async fn delete_networks(
   networks
     .into_iter()
     .map(|network| async move {
-      docker_api
+      let _ = docker_api
         .remove_network(&network.docker_network_id)
         .await
         .map_err(|err| HttpResponseError {
           msg: format!("unable to remove network {:#?}", err),
           status: StatusCode::INTERNAL_SERVER_ERROR,
-        })?;
+        });
       repositories::cluster_network::delete_by_key(network.key, pool).await?;
       Ok::<_, HttpResponseError>(())
     })
@@ -93,6 +94,7 @@ pub async fn list_containers(
     ..Default::default()
   });
   let containers = docker_api.list_containers(options).await?;
+
   Ok(containers)
 }
 
@@ -107,12 +109,15 @@ async fn start_containers(
     .map(|container| async move {
       let container_id = container.id.unwrap_or_default();
       log::info!("starting container {}", &container_id);
-      docker_api
-        .start_container(
-          &container_id,
-          None::<bollard::container::StartContainerOptions<String>>,
-        )
-        .await?;
+      let state = container.state.unwrap_or_default();
+      if state != "running" {
+        docker_api
+          .start_container(
+            &container_id,
+            None::<bollard::container::StartContainerOptions<String>>,
+          )
+          .await?;
+      }
       log::info!("successfully started container {}", &container_id);
       let container = docker_api.inspect_container(&container_id, None).await?;
       let networks = container
@@ -178,12 +183,17 @@ async fn start_cluster_cargoes(
       let cargo =
         repositories::cargo::find_by_key(cargo_key.to_owned(), pool).await?;
 
-      let target_ips =
+      let mut target_ips =
         start_containers(containers, network_key, docker_api).await?;
+      target_ips.reverse();
+      let target_ip = match target_ips.get(0) {
+        None => String::new(),
+        Some(target_ip) => target_ip.to_owned(),
+      };
       let cargo_template_data = CargoTemplateData {
         name: cargo.name,
         dns_entry: cargo.dns_entry,
-        target_ip: target_ips[0].to_owned(),
+        target_ip,
         target_ips,
       };
       Ok::<CargoTemplateData, HttpResponseError>(cargo_template_data)
@@ -332,7 +342,7 @@ pub async fn join_cargo(
   opts: &JoinCargoOptions,
   docker_api: &web::types::State<bollard::Docker>,
   pool: &web::types::State<Pool>,
-) -> Result<(), HttpResponseError> {
+) -> Result<Vec<String>, HttpResponseError> {
   let cluster_cargo = ClusterCargoPartial {
     cluster_key: opts.cluster.key.to_owned(),
     cargo_key: opts.cargo.key.to_owned(),
@@ -387,6 +397,7 @@ pub async fn join_cargo(
     .to_vec();
   let create_opts = CreateCargoContainerOpts {
     cargo: &opts.cargo,
+    network_key: &opts.network.key,
     cluster_name: &opts.cluster.name,
     labels: Some(&mut labels),
     environnements,
@@ -396,6 +407,7 @@ pub async fn join_cargo(
     services::cargo::create_containers(create_opts, docker_api).await?;
 
   container_ids
+    .clone()
     .into_iter()
     .map(|container_name| async move {
       let config = bollard::network::ConnectNetworkOptions {
@@ -413,7 +425,9 @@ pub async fn join_cargo(
     .into_iter()
     .collect::<Result<Vec<()>, HttpResponseError>>()?;
 
-  repositories::cluster_cargo::create(cluster_cargo, pool).await?;
+  if opts.is_creating_relation {
+    repositories::cluster_cargo::create(cluster_cargo, pool).await?;
+  }
 
-  Ok(())
+  Ok(container_ids)
 }

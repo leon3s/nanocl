@@ -40,6 +40,11 @@ async fn list_cargo(
   Ok(web::HttpResponse::Ok().json(&items))
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CargoPatchPayload {
+  cluster: Option<String>,
+}
+
 /// Create new cargo
 #[cfg_attr(feature = "openapi", utoipa::path(
   post,

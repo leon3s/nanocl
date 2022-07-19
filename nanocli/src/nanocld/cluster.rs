@@ -8,14 +8,6 @@ use super::{
   models::{PgGenericCount, GenericNamespaceQuery},
 };
 
-/// Tabled function to display cluster network
-fn tbd_cluster_network(o: &Option<Vec<ClusterNetworkItem>>) -> String {
-  match o {
-    Some(s) => format!("{:#?}", s),
-    None => String::from(""),
-  }
-}
-
 fn tbd_vec_string(o: &[String]) -> String {
   o.join(", ")
 }

@@ -91,6 +91,7 @@ async fn create_cluster_network(
   }
   let config = bollard::network::CreateNetworkOptions {
     name: gen_name,
+    driver: String::from("bridge"),
     labels,
     ..Default::default()
   };

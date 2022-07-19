@@ -88,3 +88,43 @@ pub async fn delete_by_cargo_key(
     Ok(result) => Ok(PgDeleteGeneric { count: result }),
   }
 }
+
+pub async fn find_by_cargo_key(
+  cargo_key: String,
+  pool: &web::types::State<Pool>,
+) -> Result<Vec<ClusterCargoItem>, HttpResponseError> {
+  use crate::schema::cluster_cargoes::dsl;
+
+  let conn = services::postgresql::get_pool_conn(pool)?;
+  let res = web::block(move || {
+    dsl::cluster_cargoes
+      .filter(dsl::cargo_key.eq(cargo_key))
+      .load(&conn)
+  })
+  .await;
+
+  match res {
+    Err(err) => Err(db_blocking_error(err)),
+    Ok(items) => Ok(items),
+  }
+}
+
+pub async fn get_by_key(
+  key: String,
+  pool: &web::types::State<Pool>,
+) -> Result<ClusterCargoItem, HttpResponseError> {
+  use crate::schema::cluster_cargoes::dsl;
+
+  let conn = services::postgresql::get_pool_conn(pool)?;
+  let res = web::block(move || {
+    dsl::cluster_cargoes
+      .filter(dsl::key.eq(key))
+      .get_result(&conn)
+  })
+  .await;
+
+  match res {
+    Err(err) => Err(db_blocking_error(err)),
+    Ok(item) => Ok(item),
+  }
+}

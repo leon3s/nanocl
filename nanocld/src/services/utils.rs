@@ -259,7 +259,8 @@ pub async fn create_network(
   network_name: &str,
 ) -> Result<(), DockerError> {
   let config = CreateNetworkOptions {
-    name: network_name,
+    name: network_name.to_owned(),
+    driver: String::from("bridge"),
     ..Default::default()
   };
   docker.create_network(config).await?;

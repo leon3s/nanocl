@@ -110,9 +110,22 @@ pub async fn find_by_key(
   }
 }
 
-// pub async fn list_by_image_name(
-//   image_name: String,
-//   pool: &web::types::State<Pool>,
-// ) -> Result<Vec<CargoItem>, HttpResponseError> {
+pub async fn find_by_image_name(
+  image_name: String,
+  pool: &web::types::State<Pool>,
+) -> Result<Vec<CargoItem>, HttpResponseError> {
+  use crate::schema::cargoes::dsl;
 
-// }
+  let conn = services::postgresql::get_pool_conn(pool)?;
+  let res = web::block(move || {
+    dsl::cargoes
+      .filter(dsl::image_name.eq(image_name))
+      .load(&conn)
+  })
+  .await;
+
+  match res {
+    Err(err) => Err(db_blocking_error(err)),
+    Ok(items) => Ok(items),
+  }
+}

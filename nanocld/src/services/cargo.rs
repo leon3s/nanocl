@@ -12,6 +12,7 @@ use crate::errors::HttpResponseError;
 pub struct CreateCargoContainerOpts<'a> {
   pub(crate) cargo: &'a CargoItem,
   pub(crate) cluster_name: &'a str,
+  pub(crate) network_key: &'a str,
   pub(crate) environnements: Vec<String>,
   pub(crate) labels: Option<&'a mut HashMap<String, String>>,
 }
@@ -54,7 +55,6 @@ pub async fn create_containers<'a>(
   if len != 0 {
     name += &("-".to_owned() + &len.to_string());
   }
-  let container_opts = bollard::container::CreateContainerOptions { name };
   labels.insert(
     String::from("namespace"),
     opts.cargo.namespace_name.to_owned(),
@@ -73,13 +73,17 @@ pub async fn create_containers<'a>(
       binds: Some(opts.cargo.binds.to_owned()),
       // dns: Some(vec![String::from("142.0.0.1")]),
       // This remove internet inside the container need to find a workarround
-      // network_mode: Some(opts.network_key),
+      network_mode: Some(opts.network_key.to_owned()),
+      // network_mode: Some(String::from("none")),
       ..Default::default()
     }),
     ..Default::default()
   };
   let res = docker_api
-    .create_container(Some(container_opts), config)
+    .create_container(
+      None::<bollard::container::CreateContainerOptions<String>>,
+      config,
+    )
     .await?;
   container_ids.push(res.id);
   Ok(container_ids)

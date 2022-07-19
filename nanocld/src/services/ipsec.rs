@@ -72,7 +72,7 @@ fn gen_ipsec_host_conf(config: &DaemonConfig) -> HostConfig {
     binds: Some(binds),
     // privileged: Some(true),
     port_bindings: Some(port_bindings),
-    // network_mode: Some(String::from("host")),
+    network_mode: Some(String::from("nanocl-vpn")),
     cap_add: Some(vec![String::from("NET_ADMIN")]),
     sysctls: Some(sysctl),
     devices: Some(vec![DeviceMapping {
@@ -91,9 +91,12 @@ async fn create_ipsec_container(
 ) -> Result<(), DockerError> {
   let image = Some("hwdsl2/ipsec-vpn-server");
   let env = Some(vec![
-    // "VPN_DNS_SRV1=127.0.0.1",
-    // "VPN_DNS_SRV2=8.8.8.8"
-    "VPN_PUBLIC_IP=192.168.0.12",
+    "VPN_DNS_SRV1=155.0.0.1",
+    "VPN_L2TP_NET=192.168.84.0/16",
+    "VPN_L2TP_LOCAL=192.168.84.1",
+    "VPN_L2TP_POOL=192.168.84.10-192.168.84.254",
+    "VPN_XAUTH_NET=192.168.85.0/16",
+    "VPN_XAUTH_POOL=192.168.85.10-192.168.85.254",
   ]);
   let labels = Some(gen_labels_with_namespace("nanocl"));
   let host_config = Some(gen_ipsec_host_conf(config));

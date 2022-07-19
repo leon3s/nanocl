@@ -68,11 +68,11 @@ pub fn add_dns_entry(
 ) -> Result<(), DnsmasqError> {
   let file_path = Path::new(state_dir).join("dnsmasq/dnsmasq.d/dns_entry.conf");
   let content = fs::read_to_string(&file_path)?;
-  let reg_expr = r"address=/".to_owned() + domain_name + "/.*";
+  let reg_expr = r"address=/.".to_owned() + domain_name + "/.*";
 
   let reg = Regex::new(&reg_expr)?;
 
-  let new_dns_entry = "address=/".to_owned() + domain_name + "/" + ip_address;
+  let new_dns_entry = "address=/.".to_owned() + domain_name + "/" + ip_address;
   if reg.is_match(&content) {
     // If entry exist we just update it by replacing it with the regex
     let res = reg.replace_all(&content, &new_dns_entry);
@@ -124,6 +124,7 @@ pub fn gen_dnsmasq_host_conf(config: &DaemonConfig) -> HostConfig {
   );
   HostConfig {
     binds,
+    cap_add: Some(vec![String::from("NET_ADMIN")]),
     network_mode: Some(String::from("host")),
     // port_bindings: Some(port_bindings),
     ..Default::default()
@@ -201,7 +202,7 @@ mod tests {
     add_dns_entry(&test_2.name, &test_2.ip_address, STATE_DIR)?;
     let content = fs::read_to_string(&file_path)?;
     let expected_content = format!(
-      "address=/{}/{}\naddress=/{}/{}\n",
+      "address=/.{}/{}\naddress=/.{}/{}\n",
       &test_1.name, &test_1.ip_address, &test_2.name, &test_2.ip_address
     );
     assert_eq!(content, expected_content);
@@ -212,7 +213,7 @@ mod tests {
     add_dns_entry(&test_3.name, &test_3.ip_address, STATE_DIR)?;
     let content = fs::read_to_string(&file_path)?;
     let expected_content = format!(
-      "address=/{}/{}\naddress=/{}/{}\n",
+      "address=/.{}/{}\naddress=/.{}/{}\n",
       &test_1.name, &test_1.ip_address, &test_3.name, &test_3.ip_address
     );
     assert_eq!(content, expected_content);
