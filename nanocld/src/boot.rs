@@ -1,8 +1,4 @@
 //! File used to describe daemon boot
-use std::collections::HashMap;
-
-use bollard::models::{Ipam, IpamConfig};
-use bollard::network::CreateNetworkOptions;
 use ntex::web;
 
 use bollard::errors::Error as DockerError;
@@ -52,34 +48,12 @@ async fn create_default_nsp(
 pub async fn create_default_network(
   docker_api: &bollard::Docker,
 ) -> Result<(), DockerError> {
-  let network_name = "nanocl";
+  let network_name = "nanoclservices0";
   let state =
     services::utils::get_network_state(docker_api, network_name).await?;
   if state == services::utils::NetworkState::NotFound {
     services::utils::create_network(docker_api, network_name).await?;
   }
-  let mut options: HashMap<String, String> = HashMap::new();
-  options.insert(
-    String::from("com.docker.network.bridge.name"),
-    String::from("nanoclvpn0"),
-  );
-  // let config = CreateNetworkOptions {
-  //   name: String::from("nanocl-vpn"),
-  //   driver: String::from("bridge"),
-  //   options,
-  //   ipam: Ipam {
-  //     driver: Some(String::from("default")),
-  //     config: Some(vec![IpamConfig {
-  //       ip_range: Some(String::from("155.0.0.128/25")),
-  //       subnet: Some(String::from("155.0.0.0/24")),
-  //       gateway: Some(String::from("155.0.0.1")),
-  //       ..Default::default()
-  //     }]),
-  //     ..Default::default()
-  //   },
-  //   ..Default::default()
-  // };
-  // docker_api.create_network(config).await?;
   Ok(())
 }
 

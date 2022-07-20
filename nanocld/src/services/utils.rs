@@ -258,9 +258,15 @@ pub async fn create_network(
   docker: &Docker,
   network_name: &str,
 ) -> Result<(), DockerError> {
+  let mut options: HashMap<String, String> = HashMap::new();
+  options.insert(
+    String::from("com.docker.network.bridge.name"),
+    network_name.to_owned(),
+  );
   let config = CreateNetworkOptions {
     name: network_name.to_owned(),
     driver: String::from("bridge"),
+    options,
     ..Default::default()
   };
   docker.create_network(config).await?;

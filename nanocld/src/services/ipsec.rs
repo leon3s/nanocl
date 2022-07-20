@@ -4,11 +4,12 @@ use std::path::Path;
 use bollard::Docker;
 use bollard::container::{CreateContainerOptions, Config};
 use bollard::errors::Error as DockerError;
-use bollard::models::{HostConfig, PortBinding, DeviceMapping};
+use bollard::models::{HostConfig, PortBinding, DeviceMapping, Ipam, IpamConfig};
+use bollard::network::CreateNetworkOptions;
 
 use crate::config::DaemonConfig;
 
-use super::utils::*;
+use super::utils::{*, self};
 
 fn gen_ipsec_host_conf(config: &DaemonConfig) -> HostConfig {
   let path = Path::new(&config.state_dir).join("ipsec");
@@ -72,7 +73,7 @@ fn gen_ipsec_host_conf(config: &DaemonConfig) -> HostConfig {
     binds: Some(binds),
     // privileged: Some(true),
     port_bindings: Some(port_bindings),
-    network_mode: Some(String::from("nanocl-vpn")),
+    network_mode: Some(String::from("nanoclvpn0")),
     cap_add: Some(vec![String::from("NET_ADMIN")]),
     sysctls: Some(sysctl),
     devices: Some(vec![DeviceMapping {
@@ -84,6 +85,38 @@ fn gen_ipsec_host_conf(config: &DaemonConfig) -> HostConfig {
   }
 }
 
+async fn create_ipsec_network(docker_api: &Docker) -> Result<(), DockerError> {
+  let network_name = "nanoclvpn0";
+  let network_state =
+    utils::get_network_state(docker_api, network_name).await?;
+  if network_state != utils::NetworkState::NotFound {
+    return Ok(());
+  }
+  let mut options: HashMap<String, String> = HashMap::new();
+  options.insert(
+    String::from("com.docker.network.bridge.name"),
+    network_name.to_owned(),
+  );
+  let config = CreateNetworkOptions {
+    name: network_name.to_owned(),
+    driver: String::from("bridge"),
+    options,
+    ipam: Ipam {
+      driver: Some(String::from("default")),
+      config: Some(vec![IpamConfig {
+        ip_range: Some(String::from("155.0.0.128/25")),
+        subnet: Some(String::from("155.0.0.0/24")),
+        gateway: Some(String::from("155.0.0.1")),
+        ..Default::default()
+      }]),
+      ..Default::default()
+    },
+    ..Default::default()
+  };
+  docker_api.create_network(config).await?;
+  Ok(())
+}
+
 async fn create_ipsec_container(
   name: &str,
   config: &DaemonConfig,
@@ -92,6 +125,7 @@ async fn create_ipsec_container(
   let image = Some("hwdsl2/ipsec-vpn-server");
   let env = Some(vec![
     "VPN_DNS_SRV1=155.0.0.1",
+    "VPN_PUBLIC_IP=155.0.0.1",
     "VPN_L2TP_NET=192.168.84.0/16",
     "VPN_L2TP_LOCAL=192.168.84.1",
     "VPN_L2TP_POOL=192.168.84.10-192.168.84.254",
@@ -120,6 +154,8 @@ pub async fn boot(
   docker_api: &Docker,
 ) -> Result<(), DockerError> {
   let container_name = "nanocl-vpn-ipsec";
+
+  create_ipsec_network(docker_api).await?;
   let s_state = get_service_state(container_name, docker_api).await;
 
   if s_state == ServiceState::Uninstalled {
