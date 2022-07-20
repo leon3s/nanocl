@@ -18,11 +18,11 @@ machine.</br> If you do not have nanocl installed, see
 <table>
   <tr>
     <th align="left">
-      <img class="nxtmdoc-delete" width="1000" height="0">
+      <img class="nxtmdoc-delete" width="100%" height="0">
       <p>Title</p>
     </th>
     <th align="left">
-      <img class="nxtmdoc-delete" width="1000" height="0">
+      <img class="nxtmdoc-delete" width="100%" height="0">
       <p>Description</p>
     </th>
   </tr>
