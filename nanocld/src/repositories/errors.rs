@@ -20,14 +20,20 @@ use crate::errors::HttpResponseError;
 pub fn db_error(err: diesel::result::Error) -> HttpResponseError {
   log::debug!("got db error : {:#?}", err);
   let default_error = HttpResponseError {
-    msg: String::from("unproccesable query"),
+    msg: format!("Unhandled database error {:#}", err),
     status: StatusCode::BAD_REQUEST,
   };
   match err {
     diesel::result::Error::InvalidCString(_) => default_error,
-    diesel::result::Error::DatabaseError(_, _) => default_error,
+    diesel::result::Error::DatabaseError(dberr, infoerr) => match dberr {
+      diesel::result::DatabaseErrorKind::UniqueViolation => HttpResponseError {
+        msg: format!("Database error {}", infoerr.message()),
+        status: StatusCode::CONFLICT,
+      },
+      _ => default_error,
+    },
     diesel::result::Error::NotFound => HttpResponseError {
-      msg: String::from("item not found"),
+      msg: String::from("Item not found"),
       status: StatusCode::NOT_FOUND,
     },
     diesel::result::Error::QueryBuilderError(_) => default_error,

@@ -60,7 +60,7 @@ pub fn parse_git_url(url: &str) -> Result<GitDesc, ParseError> {
   Ok(result)
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct BasicCredential {
   pub(crate) username: String,
   pub(crate) password: String,
@@ -70,6 +70,7 @@ pub struct BasicCredential {
 pub struct GithubApi {
   client: Client,
   base_url: String,
+  pub credential: BasicCredential,
 }
 
 impl GithubApi {
@@ -92,12 +93,13 @@ impl GithubApi {
       password: github_token.unwrap_or_else(|_| String::from("")),
     };
     let client = Client::build()
-      .basic_auth(credential.username, Some(&credential.password))
+      .basic_auth(&credential.username, Some(&credential.password))
       .header("Accept", "application/vnd.github.v3+json")
       .header("User-Agent", "nanocl")
       .finish();
     GithubApi {
       client,
+      credential,
       base_url: String::from("https://api.github.com"),
     }
   }

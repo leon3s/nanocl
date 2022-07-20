@@ -1,5 +1,6 @@
 use ntex::web;
 use ntex::http::StatusCode;
+use url::Url;
 
 use crate::repositories;
 use crate::errors::HttpResponseError;
@@ -15,6 +16,24 @@ pub async fn build(
 ) -> Result<web::HttpResponse, HttpResponseError> {
   let github_api = github::GithubApi::new();
   // we find the repository by it's unique name
+  let mut url = Url::parse(&item.url).map_err(|err| HttpResponseError {
+    msg: format!("Unable to parse {} url {} {}", &item.name, &item.url, err),
+    status: StatusCode::BAD_REQUEST,
+  })?;
+
+  url
+    .set_username(&github_api.credential.username)
+    .map_err(|_| HttpResponseError {
+      msg: String::from("Unable to set username"),
+      status: StatusCode::INTERNAL_SERVER_ERROR,
+    })?;
+  url
+    .set_password(Some(&github_api.credential.password))
+    .map_err(|_| HttpResponseError {
+      msg: String::from("Unable to set password"),
+      status: StatusCode::INTERNAL_SERVER_ERROR,
+    })?;
+
   let live_branch = github_api
     .inspect_branch(&item, branch_name)
     .await
@@ -40,13 +59,17 @@ pub async fn build(
     )
     .await?;
   }
+  let item_with_password = GitRepositoryItem {
+    url: url.to_string(),
+    ..item.to_owned()
+  };
   match image_exist {
     // Image not exist so we build it
     Err(_) => {
       log::info!("it's first build");
       let rx_body = docker::build_git_repository(
         image_name.to_owned(),
-        item,
+        item_with_password.to_owned(),
         new_branch.to_owned(),
         docker_api.to_owned(),
       )
@@ -128,7 +151,7 @@ pub async fn build(
       // unless we build the image :O
       let rx_body = docker::build_git_repository(
         image_name.to_owned(),
-        item,
+        item_with_password,
         new_branch.to_owned(),
         docker_api.to_owned(),
       )

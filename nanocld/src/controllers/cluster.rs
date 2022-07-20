@@ -1,4 +1,5 @@
 //! File to handle cluster routes
+use ntex::http::StatusCode;
 use ntex::web;
 use serde::{Deserialize, Serialize};
 
@@ -224,6 +225,23 @@ async fn join_cargo_to_cluster(
   };
   let cluster_key = nsp.to_owned() + "-" + &name;
   let cargo_key = nsp.to_owned() + "-" + &payload.cargo;
+
+  if (repositories::cluster_cargo::get_by_key(
+    format!("{}-{}", &cluster_key, &cargo_key),
+    &pool,
+  )
+  .await)
+    .is_ok()
+  {
+    return Err(HttpResponseError {
+      msg: format!(
+        "Unable to join cargo {} to cluster {} in network {}, already exists",
+        &payload.cargo, &name, &payload.network
+      ),
+      status: StatusCode::CONFLICT,
+    });
+  }
+
   let cluster = repositories::cluster::find_by_key(cluster_key, &pool).await?;
   let cargo = repositories::cargo::find_by_key(cargo_key, &pool).await?;
   let network_key = cluster.key.to_owned() + "-" + &payload.network;

@@ -9,6 +9,7 @@ use crate::nanocld::{
   cargo::CargoPartial,
   container_image::ContainerImagePartial,
   nginx_template::NginxTemplateModes,
+  container::ListContainerOptions,
 };
 
 /// A self-sufficient hybrid-cloud manager
@@ -305,6 +306,20 @@ pub struct ContainerImageArgs {
   pub(crate) commands: ContainerImageCommands,
 }
 
+/// Run a cargo in given environement
+#[derive(Debug, Parser)]
+pub struct RunArgs {
+  #[clap(long)]
+  pub(crate) namespace: Option<String>,
+  #[clap(long)]
+  pub(crate) cluster: String,
+  #[clap(long)]
+  pub(crate) network: String,
+  #[clap(long)]
+  pub(crate) image: String,
+  pub(crate) name: String,
+}
+
 #[derive(Debug, Subcommand)]
 pub enum Commands {
   Docker(DockerOptions),
@@ -317,6 +332,9 @@ pub enum Commands {
   NginxTemplate(NginxTemplateArgs),
   ClusterNetwork(ClusterNetworkArgs),
   ContainerImage(ContainerImageArgs),
+  #[clap(name = "lsc")]
+  ListContainer(ListContainerOptions),
+  Run(RunArgs),
   /// Connect to nginx logging
   NginxLog,
   /// Show the Nanocl version information

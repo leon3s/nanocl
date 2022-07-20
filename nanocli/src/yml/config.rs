@@ -219,13 +219,21 @@ async fn apply_namespace(
         joins
           .iter()
           .map(|join| async {
-            client
+            if let Err(err) = client
               .join_cluster_cargo(
                 &cluster.name,
                 join,
                 Some(namespace.name.to_owned()),
               )
-              .await?;
+              .await
+            {
+              if let NanocldError::Api(ref err) = err {
+                if err.status == StatusCode::CONFLICT {
+                  return Ok::<_, CliError>(());
+                }
+              }
+              return Err(CliError::Client(err));
+            }
 
             Ok::<_, CliError>(())
           })

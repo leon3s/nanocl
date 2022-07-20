@@ -49,6 +49,8 @@ pub async fn start<'a>(
       .configure(controllers::cluster_cargo::ntex_config)
       // bind controller nginx template
       .configure(controllers::nginx_template::ntex_config)
+      // bind controller container
+      .configure(controllers::container::ntex_config)
       // bind controller cargo
       .configure(controllers::cargo::ntex_config)
   });

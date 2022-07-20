@@ -89,23 +89,17 @@ async fn create_cluster_network(
       msg: format!("Unable to create network with name {} a similar network have same name", name),
     });
   }
-  let mut options: HashMap<String, String> = HashMap::new();
-  options.insert(
-    String::from("com.docker.network.bridge.name"),
-    gen_name.to_owned(),
-  );
   let config = bollard::network::CreateNetworkOptions {
     name: gen_name,
-    options,
     driver: String::from("bridge"),
     labels,
     ..Default::default()
   };
   let id = match docker_api.create_network(config).await {
-    Err(_) => {
+    Err(err) => {
       return Err(HttpResponseError {
         status: StatusCode::BAD_REQUEST,
-        msg: format!("Unable to create network with name {}", name),
+        msg: format!("Unable to create network with name {} {}", name, err),
       })
     }
     Ok(result) => result.id,

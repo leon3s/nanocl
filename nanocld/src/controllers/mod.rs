@@ -23,3 +23,5 @@ pub mod nginx_log;
 pub mod system;
 
 pub mod cluster_cargo;
+
+pub mod container;

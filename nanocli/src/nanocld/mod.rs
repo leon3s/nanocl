@@ -10,3 +10,5 @@ pub mod container_image;
 
 pub mod nginx_log;
 pub mod nginx_template;
+
+pub mod container;

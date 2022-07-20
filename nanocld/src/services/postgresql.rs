@@ -27,7 +27,7 @@ fn gen_postgre_host_conf(config: &DaemonConfig) -> HostConfig {
 
   HostConfig {
     binds: Some(binds),
-    network_mode: Some(String::from("nanocl")),
+    network_mode: Some(String::from("nanoclservices0")),
     ..Default::default()
   }
 }
@@ -117,7 +117,7 @@ pub async fn get_postgres_ip(
     })?;
 
   let ip_address = networks
-    .get("nanocl")
+    .get("nanoclservices0")
     .ok_or(HttpResponseError {
       msg: String::from("unable to get nanocl-db-postgre network nanocl"),
       status: StatusCode::INTERNAL_SERVER_ERROR,

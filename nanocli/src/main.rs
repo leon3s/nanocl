@@ -3,7 +3,13 @@ use errors::CliError;
 use futures::StreamExt;
 use futures::stream::FuturesUnordered;
 use indicatif::{ProgressBar, ProgressStyle};
-use nanocld::nginx_template::NginxTemplatePartial;
+use nanocld::{
+  nginx_template::NginxTemplatePartial,
+  cluster::{ClusterPartial, ClusterNetworkPartial, ClusterJoinPartial},
+  cargo::CargoPartial,
+  error::NanocldError,
+};
+use ntex::http::StatusCode;
 use serde::{Serialize, Deserialize};
 
 use std::{
@@ -31,16 +37,19 @@ fn process_error(args: &Cli, err: errors::CliError) {
     CliError::Client(err) => match err {
       nanocld::error::NanocldError::SendRequest(err) => match err {
         ntex::http::client::error::SendRequestError::Connect(_) => {
-          println!(
+          eprintln!(
             "Cannot connect to the nanocl daemon at {host}. Is the nanocl daemon running?",
             host = args.host
           )
         }
-        _ => println!("{}", err),
+        _ => eprintln!("{}", err),
       },
-      _ => println!("{}", err),
+      nanocld::error::NanocldError::Api(err) => {
+        eprintln!("Daemon [{}]: {}", err.status, err.msg);
+      }
+      _ => eprintln!("{}", err),
     },
-    _ => println!("{}", err),
+    _ => eprintln!("{}", err),
   }
   std::process::exit(1);
 }
@@ -88,6 +97,67 @@ async fn execute_args(args: &Cli) -> Result<(), CliError> {
         .unwrap();
 
       let _status = cmd.wait();
+    }
+    Commands::ListContainer(args) => {
+      let data = client.list_containers(args).await?;
+      print_table(data);
+    }
+    Commands::Run(args) => {
+      let cluster = ClusterPartial {
+        name: args.cluster.to_owned(),
+        proxy_templates: None,
+      };
+      if let Err(err) = client
+        .create_cluster(&cluster, args.namespace.to_owned())
+        .await
+      {
+        if let NanocldError::Api(err) = err {
+          if err.status != StatusCode::CONFLICT {
+            return Err(CliError::Client(nanocld::error::NanocldError::Api(
+              err,
+            )));
+          }
+        } else {
+          return Err(CliError::Client(err));
+        }
+      }
+      let cluster_network = ClusterNetworkPartial {
+        name: args.network.to_owned(),
+      };
+      client
+        .create_cluster_network(
+          &args.cluster,
+          &cluster_network,
+          args.namespace.to_owned(),
+        )
+        .await?;
+
+      let cargo = CargoPartial {
+        name: args.name.to_owned(),
+        image_name: args.image.to_owned(),
+        dns_entry: None,
+        domainname: None,
+        hostname: None,
+        environnements: None,
+      };
+      client
+        .create_cargo(&cargo, args.namespace.to_owned())
+        .await?;
+
+      let cluster_join = ClusterJoinPartial {
+        network: args.network.to_owned(),
+        cargo: args.name.to_owned(),
+      };
+      client
+        .join_cluster_cargo(
+          &args.cluster,
+          &cluster_join,
+          args.namespace.to_owned(),
+        )
+        .await?;
+      client
+        .start_cluster(&args.cluster, args.namespace.to_owned())
+        .await?;
     }
     Commands::Namespace(args) => match &args.commands {
       NamespaceCommands::List => {
