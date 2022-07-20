@@ -13,10 +13,12 @@
   <img src="./doc/images/infra.png" />
 </div>
 
-## Installation
+## Summary
 
-To install nanocl refer to this [manual](./doc/installation/)
+- [Installation](./doc/guides/installation)
+- [Documentation](./doc/guides/installation)
 
 ## Contribution
 
-If you want to contribute see [development](./DEVELOPING.md) section to see how to setup a dev environement for nanocl
+If you want to contribute see [development](./DEVELOPING.md) section to see how
+to setup a dev environement for nanocl
