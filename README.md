@@ -15,8 +15,8 @@
 
 ## Summary
 
-- [Installation](./doc/guides/installation)
-- [Documentation](./doc/guides/installation)
+- [Installation](./doc/guides/installation/)
+- [Documentation](./doc/)
 
 ## Contribution
 
