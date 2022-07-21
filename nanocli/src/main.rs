@@ -135,6 +135,7 @@ async fn execute_args(args: &Cli) -> Result<(), CliError> {
       let cargo = CargoPartial {
         name: args.name.to_owned(),
         image_name: args.image.to_owned(),
+        binds: None,
         dns_entry: None,
         domainname: None,
         hostname: None,

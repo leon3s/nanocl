@@ -2,7 +2,7 @@ use ntex::web;
 use ntex::http::StatusCode;
 use std::collections::HashMap;
 use std::path::Path;
-use serde::{Serialize, Deserializ&e};
+use serde::{Serialize, Deserialize};
 use futures::{StreamExt, stream};
 use futures::stream::FuturesUnordered;
 
@@ -261,8 +261,10 @@ pub async fn start(
         NginxTemplateModes::Http => file_path.join("nginx/sites-enabled"),
         NginxTemplateModes::Stream => file_path.join("nginx/streams-enabled"),
       };
-      let file_path =
-        file_path.join(format!("{name}.conf", name = format!("{}.{}", &cluster.key, &template.name)));
+      let file_path = file_path.join(format!(
+        "{name}.conf",
+        name = format!("{}.{}", &cluster.key, &template.name)
+      ));
       let template_data = TemplateData {
         vars: Some(vars.to_owned()),
         networks: Some(networks.to_owned()),

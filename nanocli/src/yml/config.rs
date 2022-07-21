@@ -194,7 +194,7 @@ async fn apply_namespace(
         name: cargo.name.to_owned(),
         dns_entry: cargo.dns_entry.to_owned(),
         image_name: cargo.image_name.to_owned(),
-        binds: cargo.binds,
+        binds: cargo.binds.to_owned(),
         environnements: cargo.environnements.to_owned(),
         domainname: cargo.domainname.to_owned(),
         hostname: cargo.hostname.to_owned(),
