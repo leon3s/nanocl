@@ -290,6 +290,11 @@ pub struct ContainerImageRemoveOpts {
   pub(crate) name: String,
 }
 
+#[derive(Debug, Parser)]
+pub struct ContainerImageDeployOpts {
+  pub(crate) name: String,
+}
+
 #[derive(Debug, Subcommand)]
 pub enum ContainerImageCommands {
   #[clap(alias("ls"))]
@@ -297,6 +302,8 @@ pub enum ContainerImageCommands {
   Create(ContainerImagePartial),
   #[clap(alias("rm"))]
   Remove(ContainerImageRemoveOpts),
+  #[clap(alias("dp"))]
+  Deploy(ContainerImageDeployOpts),
 }
 
 /// Manage container images

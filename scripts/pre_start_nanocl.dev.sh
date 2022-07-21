@@ -21,6 +21,4 @@ sudo dockerd --config-file ./fake_path/etc/nanocl/dockerd.json 2> /dev/null &
 sleep 4
 
 sudo chmod 777 -R /run/nanocl
-sudo chown :nanocl -R /run/nanocl
 sudo chmod 777 -R /var/lib/nanocl
-sudo chown :nanocl -R /var/lib/nanocl

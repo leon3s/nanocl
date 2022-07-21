@@ -359,6 +359,9 @@ async fn execute_args(args: &Cli) -> Result<(), CliError> {
         let items = client.list_container_image().await?;
         print_table(items);
       }
+      ContainerImageCommands::Deploy(options) => {
+        client.deploy_container_image(&options.name).await?;
+      }
       ContainerImageCommands::Create(options) => {
         let mut stream = client.create_container_image(&options.name).await?;
         let style = ProgressStyle::default_spinner();

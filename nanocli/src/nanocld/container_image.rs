@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, result};
 
 use chrono::prelude::*;
 
@@ -192,6 +192,19 @@ impl Nanocld {
     let status = res.status();
     is_api_error(&mut res, &status).await?;
 
+    Ok(())
+  }
+
+  pub async fn deploy_container_image(
+    &self,
+    name: &str,
+  ) -> Result<(), NanocldError> {
+    let mut res = self
+      .post(format!("/containers/images/{}/deploy", name))
+      .send()
+      .await?;
+    let status = res.status();
+    is_api_error(&mut res, &status).await?;
     Ok(())
   }
 }

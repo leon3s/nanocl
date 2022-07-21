@@ -42,13 +42,13 @@ pub struct ProgressDetail {
 )]
 pub enum PortTypeEnum {
   #[serde(rename = "")]
-  EMPTY,
+  Empty,
   #[serde(rename = "tcp")]
-  TCP,
+  Tcp,
   #[serde(rename = "udp")]
-  UDP,
+  Udp,
   #[serde(rename = "sctp")]
-  SCTP,
+  Sctp,
 }
 
 /// An open port on a container
