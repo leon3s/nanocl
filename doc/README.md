@@ -7,20 +7,26 @@ This section includes the reference documentation for nanocl
 <table>
   <tr>
     <th align="left">
-      <img class="nxtmdoc-delete" width="400" height="0">
       <p>Title</p>
     </th>
     <th align="left">
-      <img class="nxtmdoc-delete" width="400" height="0">
       <p>Description</p>
     </th>
   </tr>
   <tr>
     <td>
-      <a href="./guides/installation/">Installation</a>
+      <a href="./installation/">Installation</a>
     </td>
     <td>
       Installation instructions
+    </td>
+  </tr>
+    <tr>
+    <td>
+      <a href="./guides/">Guides</a>
+    </td>
+    <td>
+      How to use nanocl
     </td>
   </tr>
   <tr>

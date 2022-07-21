@@ -2,20 +2,24 @@
   <img
     src="./doc/images/logo.png"
   />
-  <h1><strong>🌐 nanocl 🌐</strong></h1>
+  <h1><strong> nanocl </strong></h1>
 </div>
 
 <div>
-  <h2><strong>self-sufficient hybrid-cloud manager</strong></h2>
+  <div align="center">
+    <h2><strong>self-sufficient hybrid-cloud manager</strong></h2>
+  </div>
   <p>Your own scalable environment as services <strong>EaaS</strong></p>
   <p>Create on demand or persistant highly scalable environment with nanocl</p>
   <img src="./doc/images/infra.png" />
 </div>
 
-## Summary
+# Let's get started
 
-- [Installation](./doc/guides/installation/)
-- [Documentation](./doc/)
+- [Installation](./doc/installation/)
+- [Getting started!](./doc/guides/get-started/)
+- [Guides](./doc/guides/)
+- [References](./doc/references)
 
 ## Contribution
 
