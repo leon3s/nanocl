@@ -7,11 +7,11 @@ This section includes the guides for nanocl
 <table>
   <tr>
     <th align="left">
-      <img class="nxtmdoc-delete" width="1000" height="0">
+      <img class="nxtmdoc-delete" width="400" height="0">
       <p>Title</p>
     </th>
     <th align="left">
-      <img class="nxtmdoc-delete" width="1000" height="0">
+      <img class="nxtmdoc-delete" width="400" height="0">
       <p>Description</p>
     </th>
   </tr>
