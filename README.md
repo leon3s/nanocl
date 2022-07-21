@@ -1,15 +1,14 @@
 <div align="center">
-  <h1><strong>nanocl</strong></h1>
   <img
     src="./doc/images/logo.png"
   />
-  <h1><strong>self-sufficient hybrid-cloud</strong> </h1>
+  <h1><strong>🌐 nanocl 🌐</strong></h1>
 </div>
 
-<div align="center">
-  <p>Environment as Services</p>
-  <p><strong>EaaS</strong></p>
-  <p>Create on demand or persistant highly scalable environment</p>
+<div>
+  <h2><strong>self-sufficient hybrid-cloud manager</strong></h2>
+  <p>Your own scalable environment as services <strong>EaaS</strong></p>
+  <p>Create on demand or persistant highly scalable environment with nanocl</p>
   <img src="./doc/images/infra.png" />
 </div>
 

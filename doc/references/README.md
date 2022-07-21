@@ -7,11 +7,11 @@ This section includes the reference manual for nanocl CLIs
 <table>
   <tr>
     <th align="left">
-      <img class="nxtmdoc-delete" width="1000" height="0">
+      <img class="nxtmdoc-delete" width="500" height="0">
       <p>CLI</p>
     </th>
     <th align="left">
-      <img class="nxtmdoc-delete" width="1000" height="0">
+      <img class="nxtmdoc-delete" width="500" height="0">
       <p>Description</p>
     </th>
   </tr>

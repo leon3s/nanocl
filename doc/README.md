@@ -7,17 +7,17 @@ This section includes the reference documentation for nanocl
 <table>
   <tr>
     <th align="left">
-      <img width="1000" height="0">
+      <img class="nxtmdoc-delete" width="500" height="0">
       <p>Title</p>
     </th>
     <th align="left">
-      <img width="1000" height="0">
+      <img class="nxtmdoc-delete" width="500" height="0">
       <p>Description</p>
     </th>
   </tr>
   <tr>
     <td>
-      <a href="./installation/">Installation</a>
+      <a href="./guides/installation/">Installation</a>
     </td>
     <td>
       Installation instructions
@@ -25,10 +25,10 @@ This section includes the reference documentation for nanocl
   </tr>
   <tr>
     <td>
-      <a href="./manuals/">Manuals</a>
+      <a href="./references/">References</a>
     </td>
     <td>
-      Man pages of nanocl
+      References documentation
     </td>
   </tr>
 </table>

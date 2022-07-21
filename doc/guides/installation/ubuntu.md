@@ -58,5 +58,5 @@ You can install Nanocl in different ways, depending on your needs:
 
    > Receiving a GPG error when running `apt-get update`? Your default umask may
    > not be set correctly, causing the public key file for the repo to not be
-   > detected. Run the following command and then try to update your repo again:
-   > `sudo chmod a+r /etc/apt/keyrings/next-hat.gpg`.
+   > detected.</br> Run the following command and then try to update your repo
+   > again:</br> `sudo chmod a+r /etc/apt/keyrings/next-hat.gpg`
