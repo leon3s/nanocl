@@ -14,10 +14,9 @@
   <img src="./doc/images/infra.png" />
 </div>
 
-# Let's get started
+## Let's get started
 
 - [Installation](./doc/installation/)
-- [Getting started!](./doc/guides/get-started/)
 - [Guides](./doc/guides/)
 - [References](./doc/references)
 

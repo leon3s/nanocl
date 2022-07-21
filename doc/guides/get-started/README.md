@@ -18,20 +18,26 @@ machine.</br> If you do not have nanocl installed, see
 <table>
   <tr>
     <th align="left">
-      <img class="nxtmdoc-delete" width="400" height="0">
       <p>Title</p>
     </th>
     <th align="left">
-      <img class="nxtmdoc-delete" width="400" height="0">
       <p>Description</p>
     </th>
   </tr>
   <tr>
     <td>
-      <a href="./1.orientation-and-setup">Orientation and setup</a>
+      <a href="./1.orientation-and-setup.mc">Orientation and setup</a>
     </td>
     <td>
       Your first step using <code class="plaintext">nanocl</code>
+    </td>
+  </tr>
+    <tr>
+    <td>
+      <a href="./2.your-first-cargo.md">Your first cargo</a>
+    </td>
+    <td>
+      Create your first cargo using <code class="plaintext">CLI</code>
     </td>
   </tr>
 </table>
