@@ -5,7 +5,7 @@ set -e -x
 # variables
 pkg_name="nanocld"
 arch=`dpkg --print-architecture`
-version=`cat ./nanocli/Cargo.toml | grep -m 1 "version = \"" | sed 's/[^0-9.]*\([0-9.]*\).*/\1/'`
+version=`cat ./nanocld/Cargo.toml | grep -m 1 "version = \"" | sed 's/[^0-9.]*\([0-9.]*\).*/\1/'`
 release_path="../target/${pkg_name}_${version}_${arch}"
 
 cd nanocld
