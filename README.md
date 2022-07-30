@@ -1,6 +1,6 @@
 <div align="center">
   <img
-    src="./doc/images/logo.png"
+    src="https://download.next-hat.com/ressources/images/logo.png"
   />
   <h1><strong> nanocl </strong></h1>
 </div>
